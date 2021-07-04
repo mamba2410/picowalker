@@ -24,7 +24,7 @@ This is completely up for debate.
 The key components (as far as I'm aware) are:
 
 - Main controller (Pico)
-- LCD screen
+- LCD screen (96x64 2-bit greyscale) (or equivalent backlit OLED)
 - IrDA interface
 - Step counter
 - Control buttons

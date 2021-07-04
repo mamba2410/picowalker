@@ -40,6 +40,7 @@ For things that need doing, see the [todo doc](./docs/TODO.md).
 
 ### Pokewalker
 - [Original pokewalker hack by Dmitry.GR](http://dmitry.gr/?r=05.Projects&proj=28.%20pokewalker)
+- [H8/300h Series software manual (for looking at the original disassembly)](https://www.renesas.com/us/en/document/mah/h8300h-series-software-manual)
 
 
 ### Hardware

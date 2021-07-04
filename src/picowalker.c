@@ -23,3 +23,38 @@ int main() {
 		sleep_ms(250);
 	}
 }
+
+
+void walker_entry() {
+	// set stack
+	// Zero BSS and copy data
+	// Basic config
+	// init accelerometer
+	// if WDT_TCSRWD1&1 != 0 {
+	// 	reset_caused by watchdog
+	// 	get byte at 0x0072 in eeprom, increment then store again
+	// } else {
+	// 	reset_cause_analyse
+	// 	zero 0x3E bytes at 0xF780 (some buffer)
+	// }
+
+	/*
+	 *	Pseudocode program flow, trying to decode it from the disassembly
+	 */
+
+	/*
+	 * Set stack
+	 * Zero BSS and copy data
+	 * Basic IO config (?)
+	 * Init accelerometer
+	 * Check WDT_TCSRWD1, if bit zero is set, reset caused by watchdog timer, inc byte at 0x0072
+	 * If not, analyse cause of reset
+	 * 		zero 0x3E bytes of RAM-cached health data
+	 * 		(put number of written bytes in 0xF7A8 ?)
+	 *
+	 * 		Continue at 0x0306
+	 *
+	 *
+	 *
+	 */
+}
