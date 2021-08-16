@@ -2,22 +2,20 @@
 
 ## About
 
-This project aims to recreate a Pokewalker from Pokemon HeartGold/SoulSilver using custom hardware based around the Raspberry Pi Pico.
-People should be able to build their own fully functioning device which can interact with the original HG/SS games as the pokewalker did.
-This project does *NOT* aim to create a device used to hack/manipulate the HG/SS games and it is *NOT* aimed at creating a product to sell. This is purely for hobby and educational purposes.
-We will try to stay faithful to the original use and intent of the pokewalker, but on a new, relatively easily buildable device, since working, original Pokewalkers are becoming more and more rare.
+This branch for `picowalker` is for emulating the original code run on the Pokewalker.
+Users supply their own rom files (`pweep.rom` and `pwflash.rom`) and are then able to emulate the walker.
 
-There are other projects based around emulating the code that is on the pokewalker, however this project aims to create a new device which is capable of emulating all of the features of the original pokewalker, with room for improvement.
+The emulator core is [written in zig by PoroCYon](https://git.titandemo.org/PoroCYon/pwemu/)
 
-The project is written in C, aimed at the [Raspberry Pi Pico](https://www.raspberrypi.org/documentation/rp2040/getting-started/#getting-started-with-c) and will try to remain faithful to the original pokewalker code, with some more modern and high level approaches.
-
+This is being developed first as we would like a finished product to be available faster.
+The original recreation will take a long time.
 
 ## Help Wanted
 
 This is a very large project and I can't do it alone, so extra hands would be extremely welcome and appreciated.
 
 Help is needed to:
-- Translate and modernise the code on the original Pokewalker to the Pico.
+- Update and maintain the [emulator core](https://git.titandemo.org/PoroCYon/pwemu/).
 - Find hardware that can be used as the peripherals which are able to be controlled by the Pico.
 - Write drivers/interface code for the hardware chosen.
 - Design the physical layout and connections of the hardware.
@@ -49,7 +47,12 @@ For things that need doing, see the [todo doc](./docs/TODO.md).
 
 ## Building and Testing
 
-Make sure you have installed and built the [Raspberry Pi Pico SDK](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf) and can run the simple `blink` program before continuing.
+There are a few prerequisites for building this:
+
+- Make sure you have installed and built the [Raspberry Pi Pico SDK](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf) and can run the simple `blink` program before continuing.
+- Cross-compile [PoroCYon's emulator core](https://git.titandemo.org/PoroCYon/pwemu/) for pico and put it in `lib/libpwlib.a`. Instructions are on their git page.
+- You need two ROMs for the walker to function, the internal flash rom `rom/pwflash.rom` and the external eeprom `rom/pweep.rom`. These will not be provided.
+
 
 ### Linux
 It should be as easy as 
@@ -80,6 +83,8 @@ See instructions on the [Pico SDK datasheet.](https://datasheets.raspberrypi.org
 
 As this is technically not an original project, I am unsure about the license.
 I would like as much of this project to be as free and open source as possible, with the exception of being able to sell this as a product, since that will probably get everyone in trouble with Nintendo licensing and nobody wants that.
+
+Emulator core license is given at [the original repo](https://git.titandemo.org/PoroCYon/pwemu/-/blob/master/build.zig)
 
 Licensing suggestions would be welcome. In the meantime, I guess this is fully copyrighted to the contributors.
 

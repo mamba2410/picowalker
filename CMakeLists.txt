@@ -12,6 +12,7 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
 	src/picowalker.c
+	src/pwroms.S
 )
 
 ## Enable usb, uart etc for stdio
@@ -24,4 +25,5 @@ pico_add_extra_outputs(picowalker)
 ## Link these libs together
 target_link_libraries(picowalker
 	pico_stdlib
+	${CMAKE_SOURCE_DIR}/lib/libpwlib.a
 )

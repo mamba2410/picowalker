@@ -1,2 +1,4 @@
 build/*
 docs/disassembly.asm
+lib/*.a
+rom/*.rom
