@@ -5,6 +5,7 @@
 //#include <pico/malloc.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <malloc.h>
 
 #include "walker.h"
 #include "allocators.h"
@@ -14,8 +15,12 @@ uint8_t* pico_pw_alloc(void* ud,
 
 	uint8_t *ptr = NULL;
 	uint32_t align_offset = len_align - (len%len_align);
-	int err = memalign(&ptr, ptr_align, len+align_offset);
-	if( err < 0 );	// Should probably handle this
+	// If not using <malloc.h> then
+	//int err = memalign(&ptr, ptr_align, len+align_offset);
+	//if( err < 0 );	// Should probably handle this
+	// else
+	ptr = memalign(len+align_offset, ptr_align);
+	if (ptr == NULL);
 
 
 	return ptr;
@@ -27,8 +32,13 @@ size_t pico_pw_realloc(void* ud,
 
 	uint8_t *ptr = NULL;
 	uint32_t align_offset = len_align - (new_len%len_align);
-	int err = memalign(&ptr, buf_align, new_len+align_offset);
-	if( err < 0 );	// Should probably handle this
+
+	// If not using <malloc.h> then
+	//int err = memalign(&ptr, buf_align, new_len+align_offset);
+	//if( err < 0 );	// Should probably handle this
+	// else
+	ptr = memalign(new_len+align_offset, buf_align);
+	if (ptr == NULL);
 
 	// Should i do somehting with buf_align here?
 	memcpy(ptr, buf, buf_len);
