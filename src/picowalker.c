@@ -6,30 +6,36 @@
 
 #include "walker.h"
 #include "pwroms.h"
+#include "allocators.h"
 
 
 int main() {
 	bi_decl(bi_program_description("picowalker"));
 
-	const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 	stdio_init_all();
 
-	gpio_init(LED_PIN);
-	gpio_set_dir(LED_PIN, GPIO_OUT);
+	emu_run();
+
+}
 
 
-	size_t s = pw_walker_size();
+void emu_run() {
+	pw_walker_t walker;
 
-	while(1) {
-		printf("\nHello, World!\n");
-		puts(eeprom);					// First bytes should be the string "nintendo\n"
+	const struct pw_allocator alloc_sched_event = {
+		pico_pw_alloc, pico_pw_realloc, NULL
+	};
 
-		gpio_put(LED_PIN, 1);
-		sleep_ms(1000);
+	const struct pw_allocator alloc_ram = {
+		pico_pw_alloc, pico_pw_realloc, NULL
+	};
 
-		gpio_put(LED_PIN, 0);
-		sleep_ms(1000);
-	}
+	pw_walker_init( walker, flashrom, eeprom, &alloc_sched_event, &alloc_ram);
+	pw_walker_sched_set_interactive(walker, false);
+	pw_walker_reset(walker);
+
+	pw_walker_run(walker, 1000);
+
 }
 
 

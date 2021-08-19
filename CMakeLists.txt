@@ -12,6 +12,7 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
 	src/picowalker.c
+	src/allocators.c
 	src/pwroms.S
 )
 
