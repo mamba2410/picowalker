@@ -12,6 +12,9 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
 	src/picowalker.c
+	src/ir_comms.c
+	src/ir_comms.h
+	src/ir_commands.h
 )
 
 ## Enable usb, uart etc for stdio

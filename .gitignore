@@ -1,2 +1,6 @@
 build/*
+rom/*
+lib/*
 docs/disassembly.asm
+tags
+*.taghl

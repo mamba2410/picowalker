@@ -33,3 +33,24 @@ The key components (as far as I'm aware) are:
 - 3D printed case
 
 I would like for multiple types of component to be supported in the future, since some may be easier to get a hold of than others, but for now getting a prototype is the goal.
+
+
+
+## What does the code need to emulate?
+
+- Mainly the IR comms. Want a seamless communication with the games and the walker.
+- Pokemon/items/routes consistency with the games.
+- Minigames and micro-apps.
+- Uh some other stuff that I can't think of right now.
+
+
+
+## WIP: How the program flow should be structured
+
+- Entry/reset
+	- Device initialisation, back to a known state.
+- Main event loop
+	- Wait for steps/screen timeout/etc
+- Main menu
+	- 
+
