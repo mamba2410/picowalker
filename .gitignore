@@ -2,5 +2,6 @@ build/*
 rom/*
 lib/*
 docs/disassembly.asm
+.gdbinit
 tags
 *.taghl
