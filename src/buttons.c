@@ -21,26 +21,10 @@ void pw_irq_callback(uint gp, uint32_t events) {
 
 }
 
-// TODO: Move to states?
 void button_pressed(uint8_t button) {
 
 	pw_state_t state = pw_get_state();
 	state_handle_button_press(state, button);
 
-	switch(button) {
-		case BUTTON_L: {
-						printf("Left\n");
-						break;
-					   };
-		case BUTTON_M: {
-						printf("Middle\n");
-						break;
-					   };
-		case BUTTON_R: {
-						printf("Right\n");
-						break;
-					   };
-		default: break;
-	}
 }
 
