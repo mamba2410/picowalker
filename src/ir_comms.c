@@ -138,3 +138,4 @@ void setup_ir_uart() {
 
 	uart_set_irq_enables(IR_UART_ID, true, false);
 }
+

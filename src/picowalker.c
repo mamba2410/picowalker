@@ -3,65 +3,75 @@
 #include <stdio.h>
 #include <pico/stdlib.h>
 #include <pico/binary_info.h>
+#include <pico/time.h>
+#include <hardware/gpio.h>
 
 #include "ir_comms.h"
 
 
+#define BUTTON_LEFT 20
+#define BUTTON_MIDDLE 19
+#define BUTTON_RIGHT 18
+
+const uint LED_PIN = PICO_DEFAULT_LED_PIN;
+
 int main() {
 	bi_decl(bi_program_description("picowalker"));
 
-	const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 	gpio_init(LED_PIN);
 	gpio_set_dir(LED_PIN, GPIO_OUT);
 
 	stdio_init_all();
 
-	// Setup IR uart and rx interrupts
-	setup_ir_uart();
+	walker_entry();
 
+}
 
-	printf("Hello, world!\n");
-
-	while(1) {
-		gpio_put(LED_PIN, 1);
-		sleep_ms(250);
-		gpio_put(LED_PIN, 0);
-		sleep_ms(250);
-		printf("Hello, world!\n");
+void pw_irq_callback(uint gp, uint32_t events) {
+	switch(gp) {
+		case BUTTON_LEFT: printf("left\n"); break;
+		case BUTTON_MIDDLE: printf("middle\n"); break;
+		case BUTTON_RIGHT: printf("right\n"); break;
+		default: break;
 	}
+
+}
+
+void setup_buttons() {
+	gpio_set_irq_enabled_with_callback(BUTTON_LEFT, GPIO_IRQ_EDGE_FALL, true, &pw_irq_callback);
+	gpio_set_irq_enabled_with_callback(BUTTON_MIDDLE, GPIO_IRQ_EDGE_FALL, true, &pw_irq_callback);
+	gpio_set_irq_enabled_with_callback(BUTTON_RIGHT, GPIO_IRQ_EDGE_FALL, true, &pw_irq_callback);
 }
 
 
 void walker_entry() {
-	// set stack
-	// Zero BSS and copy data
-	// Basic config
-	// init accelerometer
-	// if WDT_TCSRWD1&1 != 0 {
-	// 	reset_caused by watchdog
-	// 	get byte at 0x0072 in eeprom, increment then store again
-	// } else {
-	// 	reset_cause_analyse
-	// 	zero 0x3E bytes at 0xF780 (some buffer)
-	// }
 
-	/*
-	 *	Pseudocode program flow, trying to decode it from the disassembly
-	 */
+	// Setup IR uart and rx interrupts
+	setup_ir_uart();
+	setup_buttons();
 
-	/*
-	 * Set stack
-	 * Zero BSS and copy data
-	 * Basic IO config (?)
-	 * Init accelerometer
-	 * Check WDT_TCSRWD1, if bit zero is set, reset caused by watchdog timer, inc byte at 0x0072
-	 * If not, analyse cause of reset
-	 * 		zero 0x3E bytes of RAM-cached health data
-	 * 		(put number of written bytes in 0xF7A8 ?)
-	 *
-	 * 		Continue at 0x0306
-	 *
-	 *
-	 *
-	 */
+	// init lcd
+	// init accel
+	
+
+	// For debug testing
+	uint32_t time_ms;
+	char buf[24];
+
+	// Event loop
+	while(1) {
+		// Check steps
+		// Check buttons
+		// Switch state
+
+		time_ms = to_ms_since_boot(get_absolute_time());
+		gpio_put(LED_PIN, 1);
+		sleep_ms(250);
+		gpio_put(LED_PIN, 0);
+		sleep_ms(250);
+		sprintf(buf, "Hello, world %d\n");
+		printf(buf);
+
+	}
+
 }
