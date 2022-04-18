@@ -15,6 +15,10 @@ add_executable(picowalker
 	src/ir_comms.c
 	src/ir_comms.h
 	src/ir_commands.h
+	src/buttons.c
+	src/buttons.h
+	src/states.c
+	src/states.h
 )
 
 ## Enable usb, uart etc for stdio

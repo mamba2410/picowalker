@@ -55,7 +55,7 @@ Make sure you have installed and built the [Raspberry Pi Pico SDK](https://datas
 It should be as easy as 
 ```
 $ cd build
-$ cmake ..
+$ cmake -DCMAKE_BUILD_TYPE=Debug ..
 $ cd ..
 $ make
 ```
