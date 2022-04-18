@@ -18,8 +18,8 @@ add_executable(picowalker
 )
 
 ## Enable usb, uart etc for stdio
-pico_enable_stdio_usb(picowalker 1)
-pico_enable_stdio_uart(picowalker 0)
+#pico_enable_stdio_usb(picowalker 1)
+pico_enable_stdio_uart(picowalker 1)
 
 ## Add outputs other than .elf file
 pico_add_extra_outputs(picowalker)

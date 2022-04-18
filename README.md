@@ -74,6 +74,35 @@ The whole buidl system is managed by the original Pico CMake so getting it to bu
 See instructions on the [Pico SDK datasheet.](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf)
 
 
+### Note on my own testing
+
+Programming over swd with FT2232h.
+See [getting started with pico sec. 6](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf)
+
+Wiring:
+```
+FT2232h	---- pico
+GND -------- GND
+3v3 -------- VSYS
+AD0 -------- SCLK (left)
+AD1 -------- SGND (mid)
+AD2 -------- SWIO (right)
+AD3 -/220R\- SWIO (right)
+BD0 -------- TX (1)
+BD1 -------- RX (2)
+```
+
+Custom interface cfg in `ft2232h.cfg`.
+
+Run with
+```
+$ openocd -f ./ft2232h.cfg -f target/rp2040.cfg &
+$ arm-none-eabi-gdb build/picowalker.elf
+(gdb) target remote localhost:3333
+(gdb) load
+(gdb) continue
+```
+
 
 
 ## License
