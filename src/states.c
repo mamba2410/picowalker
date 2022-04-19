@@ -42,7 +42,10 @@ pw_state_t pw_get_state() {
 }
 
 
-// TODO: Change to handle input
+/*
+ *	Triggers when button is pressed.
+ *	Want to spend as little time as possible in here
+ */
 void state_handle_button_press(pw_state_t s, uint8_t b) {
 
 	switch(s) {
@@ -58,6 +61,12 @@ void state_handle_button_press(pw_state_t s, uint8_t b) {
 							break;
 						   };
 		case STATE_MAIN_MENU: { pw_menu_handle_input(b); break; };
+		case STATE_CONNECT: { 
+								// If we're idling, start advertising
+								// TODO: Make this its own function
+								if( ir_get_state() == COMM_IDLE )
+									ir_set_state(COMM_ADVERTISING);
+							};
 		default: {
 					printf("Unhandled state\n");
 				 	pw_set_state(STATE_SPLASH);
@@ -65,5 +74,7 @@ void state_handle_button_press(pw_state_t s, uint8_t b) {
 				 }
 	}
 
+	// Return from here to exit interrupt and back to main loop
+	// TODO: Have a way to set main loop behaviour
 }
 
