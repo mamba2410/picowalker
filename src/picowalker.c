@@ -20,6 +20,8 @@ int main() {
 
 	stdio_init_all();
 
+    printf("Hello, picowalker!");
+
 	walker_entry();
 
 }
@@ -32,7 +34,7 @@ void walker_entry() {
 
 	// init lcd
 	// init accel
-	
+
 	// Event loop
 	while(1) {
 		// Check steps

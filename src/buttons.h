@@ -1,9 +1,9 @@
 #ifndef PW_BUTTONS_H
 #define PW_BUTTONS_H
 
-#define PIN_BUTTON_LEFT 20
-#define PIN_BUTTON_MIDDLE 19
-#define PIN_BUTTON_RIGHT 18
+#define PIN_BUTTON_LEFT     13 // GP13, phys 17
+#define PIN_BUTTON_MIDDLE   14 // GP14, phys 19
+#define PIN_BUTTON_RIGHT    15 // CP15, phys 20
 
 // Add an input type? For htings that aren't just buttons
 enum {

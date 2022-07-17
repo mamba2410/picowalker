@@ -21,8 +21,8 @@
 typedef enum {
 	COMM_IDLE,			// No current state
 	COMM_KEYEX,			// Exchanging keys
-	COMM_READY,			// 
-	COMM_ADVERTISING,	// 
+	COMM_READY,			//
+	COMM_ADVERTISING,	//
 	COMM_STATE_COUNT,
 } ir_state_t;
 
@@ -50,6 +50,9 @@ void ir_post_keyex();
 
 ir_state_t ir_get_state();
 void ir_set_state(ir_state_t s);
+
+uint16_t checksum(uint8_t packet[], size_t len);
+
 
 #endif /* IR_COMMS_H */
 

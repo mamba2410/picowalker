@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "ir_comms.h"
 #include "states.h"
 #include "menu.h"
 #include "buttons.h"
@@ -49,19 +50,19 @@ pw_state_t pw_get_state() {
 void state_handle_button_press(pw_state_t s, uint8_t b) {
 
 	switch(s) {
-		case STATE_SPLASH: { 
-							pw_set_state(STATE_MAIN_MENU); 
+		case STATE_SPLASH: {
+							pw_set_state(STATE_MAIN_MENU);
 							switch(b) {
 								case BUTTON_M: { pw_menu_set_cursor((MENU_SIZE-1)/2); break; }
 								case BUTTON_R: { pw_menu_set_cursor(MENU_SIZE-1); break; }
-								case BUTTON_L: 
+								case BUTTON_L:
 								default: { pw_menu_set_cursor(0); break; }
 							}
-							pw_menu_display(); 
+							pw_menu_display();
 							break;
 						   };
 		case STATE_MAIN_MENU: { pw_menu_handle_input(b); break; };
-		case STATE_CONNECT: { 
+		case STATE_CONNECT: {
 								// If we're idling, start advertising
 								// TODO: Make this its own function
 								if( ir_get_state() == COMM_IDLE )

@@ -52,7 +52,7 @@ For things that need doing, see the [todo doc](./docs/TODO.md).
 Make sure you have installed and built the [Raspberry Pi Pico SDK](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf) and can run the simple `blink` program before continuing.
 
 ### Linux
-It should be as easy as 
+It should be as easy as
 ```
 $ cd build
 $ cmake -DCMAKE_BUILD_TYPE=Debug ..
@@ -84,19 +84,19 @@ Wiring:
 FT2232h	---- pico
 GND -------- GND
 3v3 -------- VSYS
+GND -------- SGND (mid)
 AD0 -------- SCLK (left)
-AD1 -------- SGND (mid)
+AD1 -/220R\- SWIO (right)
 AD2 -------- SWIO (right)
-AD3 -/220R\- SWIO (right)
-BD0 -------- TX (1)
-BD1 -------- RX (2)
+BD0 -------- TX (2)
+BD1 -------- RX (1)
 ```
 
 Custom interface cfg in `ft2232h.cfg`.
 
 Run with
 ```
-$ openocd -f ./ft2232h.cfg -f target/rp2040.cfg &
+# openocd -f ./ft2232h.cfg -f target/rp2040.cfg &
 $ arm-none-eabi-gdb build/picowalker.elf
 (gdb) target remote localhost:3333
 (gdb) load

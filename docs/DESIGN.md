@@ -19,13 +19,16 @@ In the end, it would be nice if multiple peripherals or even boards could be sup
 
 ## Hardware
 
-This is completely up for debate.
+Completely open to suggestions.
 
-The key components (as far as I'm aware) are:
+Proposed hardware (for prototyping at least):
 
 - Main controller (Pico)
-- LCD screen (96x64 2-bit greyscale) (or equivalent backlit OLED)
+- LCD screen 96x64 2-bit greyscale
+    - SSD1327 128x128 4-bit greyscale is best I can find for now
 - IrDA interface
+    - TFDU4100/TFDS4500 TxR
+    - MCP2122 UART to IrDA encoder
 - Step counter
 - Control buttons
 - Speaker
@@ -52,5 +55,5 @@ I would like for multiple types of component to be supported in the future, sinc
 - Main event loop
 	- Wait for steps/screen timeout/etc
 - Main menu
-	- 
+	-
 

@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <pico/stdlib.h>
-#include <pico/mem.h>
+//#include <pico/mem.h>
 #include <hardware/uart.h>
 #include <hardware/irq.h>
 #include <string.h>
@@ -55,7 +55,7 @@ ir_err_t ir_send_packet(uint8_t packet[], size_t len) {
 		return IR_ERR_LONG_PACKET;
 	}
 
-	chk = checksum(packet, len);
+	uint16_t chk = checksum(packet, len);
 
 	packet[0x02] = (uint8_t)(chk >> 8);
 	packet[0x03] = (uint8_t)(chk*0xff);
@@ -162,7 +162,7 @@ ir_err_t ir_comm_keyex() {
 		ir_state = COMM_IDLE;
 		return IR_ERR_SIZE_MISMATCH;
 	}
-	
+
 	if((rx_buf[0] != CMD_F8) || (rx_buf[1] != 0x02)) {
 		ir_state = COMM_IDLE;
 		return IR_ERR_UNEXPECTED_PACKET;
@@ -213,7 +213,7 @@ ir_err_t ir_comm_advertising() {
 	}
 
 	// What about other commands?
-	
+
 	// TODO: Correct advertising, don't want this in here
 	for( ; advertising_attempts < MAX_ADVERTISING_ATTEMPTS; advertising_attempts++ ) {
 		packet[0x00] = CMD_FC;
