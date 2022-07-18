@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <pico/stdlib.h>
 #include <pico/binary_info.h>
+#include <hardware/i2c.h>
 
 #include "ir_comms.h"
 #include "buttons.h"
@@ -35,12 +36,14 @@ void walker_entry() {
 
 
 	ssd1327_t oled = {
-			i2c: i2c0,
-			speed: 100*1000,
-			sda: 4, // GP4
-			scl: 5, // GP5
+			i2c: i2c_default,
+			speed: 400*1000,
+			sda: PICO_DEFAULT_I2C_SDA_PIN, // GP4
+			scl: PICO_DEFAULT_I2C_SCL_PIN, // GP5
+            width: 128,
+            height: 128,
 	};
-	oled_init(oled);
+	oled_init(&oled);
 
 	// init accel
 

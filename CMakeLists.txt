@@ -35,4 +35,5 @@ pico_add_extra_outputs(picowalker)
 ## Link these libs together
 target_link_libraries(picowalker
 	pico_stdlib
+    hardware_i2c
 )

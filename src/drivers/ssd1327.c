@@ -1,4 +1,5 @@
 #include <hardware/i2c.h>
+#include <hardware/gpio.h>
 
 #include "ssd1327.h"
 
@@ -11,14 +12,14 @@ static unsigned char pokeball_bin[] = {
 static unsigned int pokeball_bin_len = 16;
 
 int oled_write(ssd1327_t *oled, uint8_t *buf, size_t len) {
-	i2c_write_blocking(oled->i2c, (OLED_ADDR | OLED_WRITE_MODE), buf, len, false);
+	i2c_write_blocking(&(oled->i2c), (OLED_ADDR & OLED_WRITE_MODE), buf, len, false);
 }
 
 int oled_init(ssd1327_t *oled) {
 	uint8_t buf[8];
 	size_t cursor = 0;
 
-	i2c_init(oled->i2c, oled->speed);
+	i2c_init(&(oled->i2c), oled->speed);
 	gpio_set_function(oled->sda, GPIO_FUNC_I2C);
 	gpio_set_function(oled->scl, GPIO_FUNC_I2C);
 	gpio_pull_up(oled->sda);
@@ -63,7 +64,7 @@ int oled_init(ssd1327_t *oled) {
     };
     pw_img_to_oled(&pokeball, &pokeball_oled);
 
-    oled_draw(oled, pokeball_oled);
+    oled_draw(oled, &pokeball_oled);
 
 
 }
@@ -112,7 +113,7 @@ void pw_img_to_oled(pw_img_t *pw_img, oled_img_t *oled_img) {
     //memzero(oled_img->data, oled_img->size);
 
 	// i = number of bytes into pw_img
-	for(size_t i = 0; i < pw_len; i += 2) {
+	for(size_t i = 0; i < pw_img->size; i += 2) {
 		bit_plane_upper = pw_img->data[i];
 		bit_plane_lower = pw_img->data[i+1];
 

@@ -1,19 +1,21 @@
 #ifndef DRIVER_SSD1327_H
 #define DRIVER_SSD1327_H
 
-#define OLED_ADDRESS	_u(0x3c) // from datasheet 8.1.5
+//#define OLED_ADDR   0x3c // from datasheet 8.1.5
+#define OLED_ADDR   0x7b // from back of oled
 #define OLED_WIDTH	128
 #define OLED_HEIGHT	128
 #define OLED_PAGE_HEIGHT 8
 #define OLED_NUM_PAGES	OLED_HEIGHT/OLED_PAGE_HEIGHT
 
-#define OLED_READ_MODE	_u(0x01)
-#define OLED_WRITE_MODE	_u(0x00)
+#define OLED_READ_MODE	_u(0xff)
+#define OLED_WRITE_MODE	_u(0xfe)
 
 #define OLED_CMD_OFF	0xae
-#define OLED_CMD_ON	0xaf
+#define OLED_CMD_ON	    0xaf
 #define OLED_CMD_REMAP	0xa0
 #define OLED_CMD_DISPLAY_MODE	0xa4
+#define OLED_CMD_DATA   0x40
 
 #define OLED_DEFAULT_MAP	0x51
 #define OLED_DISPLAY_ALL_ON	0x01
