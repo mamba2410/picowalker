@@ -6,3 +6,4 @@ docs/disassembly.asm
 tags
 *.taghl
 *.swp
+*.bin

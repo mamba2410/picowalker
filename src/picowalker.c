@@ -42,7 +42,6 @@ void walker_entry() {
 	};
 	oled_init(oled);
 
-	// init lcd
 	// init accel
 
 	// Event loop

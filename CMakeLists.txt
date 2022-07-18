@@ -21,6 +21,8 @@ add_executable(picowalker
 	src/states.h
 	src/menu.c
 	src/menu.h
+    src/drivers/ssd1327.c
+    src/drivers/ssd1327.h
 )
 
 ## Enable usb, uart etc for stdio
