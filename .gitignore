@@ -5,3 +5,4 @@ docs/disassembly.asm
 .gdbinit
 tags
 *.taghl
+*.swp
