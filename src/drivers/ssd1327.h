@@ -1,12 +1,17 @@
 #ifndef DRIVER_SSD1327_H
 #define DRIVER_SSD1327_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 //#define OLED_ADDR   0x3c // from datasheet 8.1.5
-#define OLED_ADDR   0x7b // from back of oled
+//#define OLED_ADDR   0x7b // from back of oled
+#define OLED_ADDR   0x3c
 #define OLED_WIDTH	128
 #define OLED_HEIGHT	128
 #define OLED_PAGE_HEIGHT 8
 #define OLED_NUM_PAGES	OLED_HEIGHT/OLED_PAGE_HEIGHT
+#define OLED_BPP    4
 
 #define OLED_READ_MODE	_u(0xff)
 #define OLED_WRITE_MODE	_u(0xfe)
@@ -24,7 +29,7 @@
 
 
 typedef struct {
-	i2c_inst_t i2c;
+	i2c_inst_t* i2c;
 	uint speed;
 	uint8_t sda;
 	uint8_t scl;

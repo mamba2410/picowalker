@@ -1,5 +1,7 @@
 #include <hardware/i2c.h>
 #include <hardware/gpio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "ssd1327.h"
 
@@ -12,14 +14,16 @@ static unsigned char pokeball_bin[] = {
 static unsigned int pokeball_bin_len = 16;
 
 int oled_write(ssd1327_t *oled, uint8_t *buf, size_t len) {
-	i2c_write_blocking(&(oled->i2c), (OLED_ADDR & OLED_WRITE_MODE), buf, len, false);
+	i2c_write_blocking(oled->i2c, (OLED_ADDR & OLED_WRITE_MODE), buf, len, true);
 }
 
+#define OLED_BUF_SIZE 32
 int oled_init(ssd1327_t *oled) {
-	uint8_t buf[8];
+	uint8_t buf[OLED_BUF_SIZE];
 	size_t cursor = 0;
+    memset(buf, 0, OLED_BUF_SIZE);
 
-	i2c_init(&(oled->i2c), oled->speed);
+	i2c_init(oled->i2c, oled->speed);
 	gpio_set_function(oled->sda, GPIO_FUNC_I2C);
 	gpio_set_function(oled->scl, GPIO_FUNC_I2C);
 	gpio_pull_up(oled->sda);
@@ -52,6 +56,8 @@ int oled_init(ssd1327_t *oled) {
         sleep_ms(500);
     }
 
+    oled_clear_ram(oled);
+
     pw_img_t pokeball = {
             width: 8,
             height: 8,
@@ -61,6 +67,7 @@ int oled_init(ssd1327_t *oled) {
     oled_img_t pokeball_oled = {
             x: 0,
             y: 0,
+            data: 0,
     };
     pw_img_to_oled(&pokeball, &pokeball_oled);
 
@@ -80,19 +87,43 @@ void oled_set_cursor(ssd1327_t *oled, oled_img_t *img) {
     buf[bc++] = (img->x + img->width)/2 - 1;
     buf[bc++] = 0x75; // row address
     buf[bc++] = img->y;
-    buf[bc++] = (img->x + img->width) - 1;
+    buf[bc++] = (img->y + img->height) - 1;
 
     oled_write(oled, buf, bc);
 }
 
+int oled_clear_ram(ssd1327_t *oled) {
+    // size in bytes, should be 8k for 128x128 4bpp oled
+    size_t oled_size = oled->width * oled->height * OLED_BPP/8;
+
+    uint8_t *buf = malloc(oled_size+1);
+    memset(buf, 0, oled_size+1);
+
+    oled_img_t img = {
+        width: oled->width,
+        height: oled->height,
+        x: 0,
+        y: 0,
+        data: buf,
+        size: oled_size,
+    };
+
+    int err = oled_draw(oled, &img);
+    free(buf);
+    return err;
+}
+
 int oled_draw(ssd1327_t *oled, oled_img_t *img) {
-    uint8_t buf[256 + 1];
+    uint8_t *buf = malloc(img->size+1);
 
     buf[0] = OLED_CMD_DATA;
     memcpy(buf+1, img->data, img->size);
 
     oled_set_cursor(oled, img);
     oled_write(oled, buf, img->size+1);
+
+    free(buf);
+    return 0;
 }
 
 
@@ -109,8 +140,11 @@ void pw_img_to_oled(pw_img_t *pw_img, oled_img_t *oled_img) {
     pw_img->size = pw_img->width * pw_img->height * 2/8;
     oled_img->width = pw_img->width;
     oled_img->height = pw_img->height;
-    oled_img->size = oled_img->width * oled_img->height; // 1 byte per pixel (for now)
-    //memzero(oled_img->data, oled_img->size);
+    oled_img->size = oled_img->width * oled_img->height * OLED_BPP/8;
+    uint8_t *buf = malloc(oled_img->width * oled_img->height);
+    if(!oled_img->data) {
+        oled_img->data = malloc(oled_img->size);
+    }
 
 	// i = number of bytes into pw_img
 	for(size_t i = 0; i < pw_img->size; i += 2) {
@@ -129,11 +163,18 @@ void pw_img_to_oled(pw_img_t *pw_img, oled_img_t *oled_img) {
 
 			// Convert pw 2bpp to oled 4bpp via map
 			// assuming 1 byte per pixel
-			oled_img->data[ (row*oled_img->width)+col ] = greyscale_map[pixel_value];
+			//oled_img->data[ (row*oled_img->width)+col ] = greyscale_map[pixel_value];
+			buf[ (row*oled_img->width)+col ] = greyscale_map[pixel_value];
 
 		}
 	}
 
+    for(size_t i = 0; i < oled_img->size; i++) {
+        uint8_t v = (buf[2*i]<<4) | (buf[2*i+1]&0x0f);  // merge 2 pixels into one byte
+        oled_img->data[i] = v;
+    }
+
+    //free(buf);
 
 }
 
