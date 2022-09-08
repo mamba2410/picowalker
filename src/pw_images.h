@@ -19,4 +19,34 @@ extern pw_img_t text_mm_trainer;
 extern pw_img_t text_mm_inventory;
 extern pw_img_t text_mm_settings;
 
+extern pw_img_t icon_mm_pokeradar;
+extern pw_img_t icon_mm_dowsing;
+extern pw_img_t icon_mm_connect;
+extern pw_img_t icon_mm_trainer;
+extern pw_img_t icon_mm_inventory;
+extern pw_img_t icon_mm_settings;
+
+extern pw_img_t text_character_0;
+extern pw_img_t text_character_1;
+extern pw_img_t text_character_2;
+extern pw_img_t text_character_3;
+extern pw_img_t text_character_4;
+extern pw_img_t text_character_5;
+extern pw_img_t text_character_6;
+extern pw_img_t text_character_7;
+extern pw_img_t text_character_8;
+extern pw_img_t text_character_9;
+extern pw_img_t text_character_colon;
+extern pw_img_t text_character_dash;
+extern pw_img_t text_character_slash;
+
+
+extern pw_img_t img_route;
+
+extern pw_img_t img_pokemon_small_frame1;
+extern pw_img_t img_pokemon_small_frame2;
+extern pw_img_t img_pokemon_large_frame1;
+extern pw_img_t img_pokemon_large_frame2;
+extern pw_img_t text_pokemon_name;
+
 #endif /* PW_IMAGES_H */
