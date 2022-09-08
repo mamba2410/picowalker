@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "drivers/ssd1327.h"
 #include "screen.h"
 
@@ -41,4 +43,7 @@ int pw_screen_draw_img(pw_img_t *img, size_t x, size_t y) {
 
     oled_draw(&(screen.chip), &oled_img);
 
+    free(oled_img.data);
+
 }
+

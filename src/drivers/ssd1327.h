@@ -5,6 +5,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "../pw_images.h"
+
+
 #define OLED_ADDR   0x3c // from datasheet 8.1.5
 #define OLED_WIDTH	128
 #define OLED_HEIGHT	128
@@ -44,11 +47,6 @@ typedef struct {
     size_t size;
 } oled_img_t;
 
-typedef struct {
-    size_t height, width;
-    uint8_t *data;
-    size_t size;
-} pw_img_t;
 
 int oled_write(ssd1327_t *oled, uint8_t *data, size_t len);
 int oled_init(ssd1327_t *oled);
