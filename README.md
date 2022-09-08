@@ -12,6 +12,25 @@ There are other projects based around emulating the code that is on the pokewalk
 The project is written in C, aimed at the [Raspberry Pi Pico](https://www.raspberrypi.org/documentation/rp2040/getting-started/#getting-started-with-c) and will try to remain faithful to the original pokewalker code, with some more modern and high level approaches.
 
 
+## Project state
+
+Currently nowhere near playable but I have:
+
+- Basic OLED functionality
+- Basic IR functionality
+- Buttons
+- Menu states
+
+The OLED can draw original Pokewalker-encoded images and convert them on-the-fly.
+The new images are 4-bpp so are twice as large in file size unfortunately.
+
+Next steps:
+
+- Implement graphical versions of the menus
+- Add player data/route data/pokemon data
+- Add micro-apps
+
+
 ## Help Wanted
 
 This is a very large project and I can't do it alone, so extra hands would be extremely welcome and appreciated.
@@ -25,7 +44,8 @@ Help is needed to:
 - Find/create a good license that won't get us in trouble. (see License section)
 
 
-If you would like to contribute, please make sure you have read the [design doc](./docs/DESIGN.md).
+If you would like to try out the current implementation or contribute to the project, please read
+the [design doc](./docs/DESIGN.md).
 
 For things that need doing, see the [todo doc](./docs/TODO.md).
 
@@ -79,7 +99,10 @@ See instructions on the [Pico SDK datasheet.](https://datasheets.raspberrypi.org
 Programming over swd with FT2232h.
 See [getting started with pico sec. 6](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf)
 
-Wiring:
+See [the design doc](docs/DESIGN.md#witing-diagram) for components.
+
+Debug wiring:
+
 ```
 FT2232h	---- pico
 GND -------- GND
@@ -103,6 +126,7 @@ $ arm-none-eabi-gdb build/picowalker.elf
 (gdb) continue
 ```
 
+(You might want to create a `.gdbinit` file in the project directory to auto-target OpenOCD)
 
 
 ## License

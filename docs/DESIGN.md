@@ -25,7 +25,7 @@ Proposed hardware (for prototyping at least):
 
 - Main controller (Pico)
 - LCD screen 96x64 2-bit greyscale
-    - SSD1327 128x128 4-bit greyscale is best I can find for now
+    - SSD1327 128x128 4-bit greyscale oled is best I can find for now.
 - IrDA interface
     - TFDU4100/TFDS4500 TxR
     - MCP2122 UART to IrDA encoder
@@ -48,12 +48,22 @@ I would like for multiple types of component to be supported in the future, sinc
 
 
 
-## WIP: How the program flow should be structured
+## Wiring diagram
 
-- Entry/reset
-	- Device initialisation, back to a known state.
-- Main event loop
-	- Wait for steps/screen timeout/etc
-- Main menu
-	-
+```
+Pico           Peripheral
+----------------------------
+17 (GP13) ---- Button left
+19 (GP14) ---- Button middle
+20 (GP15) ---- Button right
+ 6 (GP4) ----- OLED SDA
+ 7 (GP5) ----- OLED SCL
+```
+
+Buttons have a 1k pull-up resistor.
+
+SDA/SCL have a 4k pull-up resistor.
+
+Everything runs on 5V DC.
+
 
