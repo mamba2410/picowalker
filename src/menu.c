@@ -6,6 +6,7 @@
 #include "states.h"
 #include "buttons.h"
 #include "pw_images.h"
+#include "screen.h"
 
 static pw_state_t const MENU_ENTRIES[] = {
 	STATE_POKE_RADAR,

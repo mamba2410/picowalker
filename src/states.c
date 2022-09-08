@@ -19,7 +19,7 @@ const char* const state_strings[] = {
 };
 
 state_draw_func_t* const state_draw_init_funcs[] = {
-    0,
+    pw_screen_clear,
     pw_splash_init_display,
     pw_menu_init_display,
 };
@@ -66,7 +66,7 @@ void state_handle_button_press(pw_state_t s, uint8_t b) {
 								case BUTTON_L:
 								default: { pw_menu_set_cursor(0); break; }
 							}
-							pw_menu_display();
+							pw_menu_init_display();
 							break;
 						   };
 		case STATE_MAIN_MENU: { pw_menu_handle_input(b); break; };
@@ -89,8 +89,7 @@ void state_handle_button_press(pw_state_t s, uint8_t b) {
 
 void pw_splash_init_display() {
     pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
-    pw_screen_draw_img(&img_route, 0, SCREEN_HEIGHT-16)
-
+    pw_screen_draw_img(&img_route, 0, SCREEN_HEIGHT-16);
 
 }
 

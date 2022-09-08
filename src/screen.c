@@ -48,6 +48,6 @@ int pw_screen_draw_img(pw_img_t *img, size_t x, size_t y) {
 }
 
 
-int pw_screen_clear() {
+void pw_screen_clear() {
     oled_clear_ram(&screen.chip);
 }

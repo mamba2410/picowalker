@@ -18,6 +18,7 @@ typedef struct {
 
 int pw_screen_init();
 int pw_screen_draw_img(pw_img_t *img, size_t x, size_t y);
-int pw_clear_screen();
+
+void pw_screen_clear();
 
 #endif /* PW_SCREEN_H */
