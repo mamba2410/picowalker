@@ -5,6 +5,7 @@
 #include "menu.h"
 #include "states.h"
 #include "buttons.h"
+#include "pw_images.h"
 
 static pw_state_t const MENU_ENTRIES[] = {
 	STATE_POKE_RADAR,
@@ -16,26 +17,19 @@ static pw_state_t const MENU_ENTRIES[] = {
 };
 const int8_t MENU_SIZE = sizeof(MENU_ENTRIES);
 
-// TODO: remove when using actual graphics
-static char* const MENU_TITLES[] = {
-	"Poke Radar",
-	"Dowsing",
-	"Connect",
-	"Trainer Card",
-	"Pokemon and Items",
-	"Settings",
+static pw_img_t* const MENU_TITLES[] = {
+    &text_mm_pokeradar,
+    &text_mm_dowsing,
+    &text_mm_connect,
+    &text_mm_trainer,
+    &text_mm_inventory,
+    &text_mm_settings,
 };
 
 static int8_t cursor = 0;
 
 void pw_menu_display() {
-	printf("Menu:\n");
-	for(int8_t i = 0; i < MENU_SIZE; i++) {
-		printf("%c %s\n",
-				(i==cursor)?'>':' ',
-				MENU_TITLES[i]);
-	}
-	printf("\n");
+    pw_screen_draw_img(MENU_TITLES[cursor], 0, 0);
 }
 
 void pw_menu_handle_input(uint8_t b) {

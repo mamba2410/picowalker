@@ -4,6 +4,7 @@
 #include "states.h"
 #include "menu.h"
 #include "buttons.h"
+#include "screen.h"
 
 const char* const state_strings[] = {
 	"Screensaver",
@@ -30,6 +31,7 @@ bool pw_set_state(pw_state_t s) {
 	if(s != pw_state) {
 		pw_state = s;
 		printf("Changed state to %s\n", state_strings[s]);
+        pw_screen_clear();
 		// TODO: Notify when changed to and from state
 		return true;
 	} else {
