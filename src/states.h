@@ -2,6 +2,7 @@
 #define PW_STATES_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
 	STATE_SCREENSAVER,
@@ -16,7 +17,11 @@ typedef enum {
 	N_STATES,
 } pw_state_t;
 
+typedef void (*state_draw_func_t)();
+
 extern const char* const state_strings[];
+extern state_draw_func_t* const state_draw_init_funcs[];
+extern state_draw_func_t* const state_draw_update_funcs[];
 
 bool pw_set_state(pw_state_t s);
 pw_state_t pw_get_state();

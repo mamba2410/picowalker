@@ -18,6 +18,12 @@ const char* const state_strings[] = {
 	"Settings",
 };
 
+state_draw_func_t* const state_draw_init_funcs[] = {
+    0,
+    pw_splash_init_display,
+    pw_menu_init_display,
+};
+
 static pw_state_t pw_state = STATE_SPLASH;
 
 bool pw_set_state(pw_state_t s) {
@@ -79,5 +85,12 @@ void state_handle_button_press(pw_state_t s, uint8_t b) {
 
 	// Return from here to exit interrupt and back to main loop
 	// TODO: Have a way to set main loop behaviour
+}
+
+void pw_splash_init_display() {
+    pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
+    pw_screen_draw_img(&img_route, 0, SCREEN_HEIGHT-16)
+
+
 }
 

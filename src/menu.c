@@ -28,7 +28,7 @@ static pw_img_t* const MENU_TITLES[] = {
 
 static int8_t cursor = 0;
 
-void pw_menu_display() {
+void pw_menu_init_display() {
     pw_screen_draw_img(MENU_TITLES[cursor], 0, 0);
 }
 
@@ -45,7 +45,7 @@ void pw_menu_handle_input(uint8_t b) {
 
     // if we're still on the menu, update the display
 	if(!changed_state)
-		pw_menu_display();
+		pw_menu_init_display();
 
 }
 
