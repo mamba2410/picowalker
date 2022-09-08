@@ -21,6 +21,8 @@ add_executable(picowalker
 	src/states.h
 	src/menu.c
 	src/menu.h
+    src/screen.c
+    src/screen.h
     src/drivers/ssd1327.c
     src/drivers/ssd1327.h
 )

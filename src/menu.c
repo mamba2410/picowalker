@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdint.h>
 
 #include "menu.h"
 #include "states.h"
@@ -30,7 +31,7 @@ static int8_t cursor = 0;
 void pw_menu_display() {
 	printf("Menu:\n");
 	for(int8_t i = 0; i < MENU_SIZE; i++) {
-		printf("%c %s\n", 
+		printf("%c %s\n",
 				(i==cursor)?'>':' ',
 				MENU_TITLES[i]);
 	}
@@ -48,6 +49,7 @@ void pw_menu_handle_input(uint8_t b) {
 		default: break;
 	}
 
+    // if we're still on the menu, update the display
 	if(!changed_state)
 		pw_menu_display();
 
