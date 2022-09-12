@@ -63,7 +63,7 @@ int oled_init(ssd1327_t *oled) {
 
 
 void oled_set_cursor(ssd1327_t *oled, oled_img_t *img) {
-    uint8_t *buf = oled_msg_buf;
+    uint8_t buf[8];
 
     size_t bc = 0;
     buf[bc++] = 0x00;
@@ -98,10 +98,11 @@ int oled_clear_ram(ssd1327_t *oled) {
 
 int oled_draw(ssd1327_t *oled, oled_img_t *img) {
 
+    oled_set_cursor(oled, img);
+
     oled_msg_buf[0] = OLED_CMD_DATA;
     memcpy(oled_msg_buf+1, img->data, img->size);
 
-    oled_set_cursor(oled, img);
     oled_write(oled, oled_msg_buf, img->size+1);
 
     return 0;

@@ -66,6 +66,7 @@ bool move_cursor(int8_t move) {
 	cursor += move;
 
 	if( cursor < 0 || cursor >= MENU_SIZE ) {
+        cursor = 0;
 		pw_set_state(STATE_SPLASH);
 		return true;
 	}

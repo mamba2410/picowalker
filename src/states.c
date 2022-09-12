@@ -31,7 +31,7 @@ state_draw_func_t* const state_draw_init_funcs[] = {
 
 };
 
-static pw_state_t pw_state = STATE_SPLASH;
+static pw_state_t pw_state = STATE_SCREENSAVER;
 
 bool pw_set_state(pw_state_t s) {
 	if(s > N_STATES || s < 0) {
@@ -43,7 +43,6 @@ bool pw_set_state(pw_state_t s) {
 
 	if(s != pw_state) {
 		pw_state = s;
-		printf("Changed state to %s\n", state_strings[s]);
         pw_screen_clear();
         state_draw_init_funcs[s]();
 		// TODO: Notify when changed to and from state
@@ -67,14 +66,13 @@ void state_handle_button_press(pw_state_t s, uint8_t b) {
 
 	switch(s) {
 		case STATE_SPLASH: {
-							pw_set_state(STATE_MAIN_MENU);
 							switch(b) {
 								case BUTTON_M: { pw_menu_set_cursor((MENU_SIZE-1)/2); break; }
-								case BUTTON_R: { pw_menu_set_cursor(MENU_SIZE-1); break; }
-								case BUTTON_L:
+								case BUTTON_L: { pw_menu_set_cursor(MENU_SIZE-1); break; }
+								case BUTTON_R:
 								default: { pw_menu_set_cursor(0); break; }
 							}
-							pw_menu_init_display();
+							pw_set_state(STATE_MAIN_MENU);
 							break;
 						   };
 		case STATE_MAIN_MENU: { pw_menu_handle_input(b); break; };
