@@ -14,6 +14,8 @@
 #define OLED_PAGE_HEIGHT 8
 #define OLED_NUM_PAGES	OLED_HEIGHT/OLED_PAGE_HEIGHT
 #define OLED_BPP    4
+#define OLED_MAX_MEM    (OLED_WIDTH*OLED_HEIGHT) // enough to hold 1byte per pixel
+#define OLED_MSG_BUF_SIZE   (OLED_MAX_MEM*OLED_BPP/8 + 1) // enough to hold a full pixel buffer
 
 #define OLED_READ_MODE	_u(0xff)
 #define OLED_WRITE_MODE	_u(0xfe)

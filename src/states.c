@@ -22,6 +22,13 @@ state_draw_func_t* const state_draw_init_funcs[] = {
     pw_screen_clear,
     pw_splash_init_display,
     pw_menu_init_display,
+    pw_screen_clear,
+    pw_screen_clear,
+    pw_screen_clear,
+    pw_screen_clear,
+    pw_screen_clear,
+    pw_screen_clear,
+
 };
 
 static pw_state_t pw_state = STATE_SPLASH;
@@ -38,6 +45,7 @@ bool pw_set_state(pw_state_t s) {
 		pw_state = s;
 		printf("Changed state to %s\n", state_strings[s]);
         pw_screen_clear();
+        state_draw_init_funcs[s]();
 		// TODO: Notify when changed to and from state
 		return true;
 	} else {

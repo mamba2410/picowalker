@@ -5,7 +5,12 @@
 
 static screen_t screen;
 
+static uint8_t *screen_buf = 0;
+
 int pw_screen_init() {
+
+    if(!screen_buf)
+        screen_buf = malloc(SCREEN_BUF_SIZE);
 
 	ssd1327_t oled = {
 			i2c: i2c_default,
@@ -35,7 +40,7 @@ int pw_screen_init() {
 
 int pw_screen_draw_img(pw_img_t *img, size_t x, size_t y) {
     oled_img_t oled_img;
-    oled_img.data = 0;
+    oled_img.data = screen_buf;
 
     pw_img_to_oled(img, &oled_img);
     oled_img.x = x + screen.offset_x;
@@ -43,11 +48,10 @@ int pw_screen_draw_img(pw_img_t *img, size_t x, size_t y) {
 
     oled_draw(&(screen.chip), &oled_img);
 
-    free(oled_img.data);
-
 }
 
 
 void pw_screen_clear() {
     oled_clear_ram(&screen.chip);
 }
+

@@ -8,6 +8,8 @@
 #define SCREEN_WIDTH    96
 #define SCREEN_HEIGHT   64
 
+#define SCREEN_BUF_SIZE (SCREEN_WIDTH*SCREEN_HEIGHT*OLED_BPP/8)
+
 typedef struct {
     ssd1327_t chip;
     size_t width, height;

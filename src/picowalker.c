@@ -8,9 +8,9 @@
 
 #include "ir_comms.h"
 #include "buttons.h"
-//#include "drivers/ssd1327.h"
 #include "screen.h"
 #include "pw_images.h"
+#include "states.h"
 
 
 void walker_entry();
@@ -47,7 +47,7 @@ void walker_entry() {
 
     pw_screen_init();
 
-    pw_screen_draw_img(&text_mm_settings, 0, 0);
+    pw_set_state(STATE_SPLASH);
 
 	// init accel
 

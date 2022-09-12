@@ -7,15 +7,23 @@
 
 static uint8_t greyscale_map[] = {0x0, 0x4, 0x8, 0xF};
 
+static uint8_t *oled_decode_buf = 0;    // for decoding images into
+static uint8_t *oled_msg_buf = 0; // I2C message buffer
+
 int oled_write(ssd1327_t *oled, uint8_t *buf, size_t len) {
 	i2c_write_blocking(oled->i2c, (OLED_ADDR & OLED_WRITE_MODE), buf, len, true);
 }
 
-#define OLED_BUF_SIZE 32
 int oled_init(ssd1327_t *oled) {
-	uint8_t buf[OLED_BUF_SIZE];
-	size_t cursor = 0;
-    memset(buf, 0, OLED_BUF_SIZE);
+
+    if(!oled_decode_buf)
+        oled_decode_buf = malloc(OLED_MAX_MEM); // 8bpp, unpacked
+
+    if(!oled_msg_buf)
+        oled_msg_buf = malloc(OLED_MSG_BUF_SIZE); // 4bpp, packed
+
+    uint8_t *buf = oled_msg_buf;
+    size_t cursor = 0;
 
 	i2c_init(oled->i2c, oled->speed);
 	gpio_set_function(oled->sda, GPIO_FUNC_I2C);
@@ -55,7 +63,7 @@ int oled_init(ssd1327_t *oled) {
 
 
 void oled_set_cursor(ssd1327_t *oled, oled_img_t *img) {
-    uint8_t buf[8];
+    uint8_t *buf = oled_msg_buf;
 
     size_t bc = 0;
     buf[bc++] = 0x00;
@@ -71,35 +79,31 @@ void oled_set_cursor(ssd1327_t *oled, oled_img_t *img) {
 
 int oled_clear_ram(ssd1327_t *oled) {
     // size in bytes, should be 8k for 128x128 4bpp oled
-    size_t oled_size = oled->width * oled->height * OLED_BPP/8;
+    //size_t oled_size = oled->width * oled->height * OLED_BPP/8;
 
-    uint8_t *buf = malloc(oled_size+1);
-    memset(buf, 0, oled_size+1);
+    memset(oled_msg_buf, 0, OLED_MSG_BUF_SIZE);
 
     oled_img_t img = {
         width: oled->width,
         height: oled->height,
         x: 0,
         y: 0,
-        data: buf,
-        size: oled_size,
+        data: oled_msg_buf,
+        size: OLED_MSG_BUF_SIZE,
     };
 
     int err = oled_draw(oled, &img);
-    free(buf);
     return err;
 }
 
 int oled_draw(ssd1327_t *oled, oled_img_t *img) {
-    uint8_t *buf = malloc(img->size+1);
 
-    buf[0] = OLED_CMD_DATA;
-    memcpy(buf+1, img->data, img->size);
+    oled_msg_buf[0] = OLED_CMD_DATA;
+    memcpy(oled_msg_buf+1, img->data, img->size);
 
     oled_set_cursor(oled, img);
-    oled_write(oled, buf, img->size+1);
+    oled_write(oled, oled_msg_buf, img->size+1);
 
-    free(buf);
     return 0;
 }
 
@@ -118,7 +122,9 @@ void pw_img_to_oled(pw_img_t *pw_img, oled_img_t *oled_img) {
     oled_img->width = pw_img->width;
     oled_img->height = pw_img->height;
     oled_img->size = oled_img->width * oled_img->height * OLED_BPP/8;
-    uint8_t *buf = malloc(oled_img->width * oled_img->height);
+    //uint8_t *buf = malloc(oled_img->width * oled_img->height);
+    uint8_t *buf = oled_decode_buf;
+
     if(!oled_img->data) {
         oled_img->data = malloc(oled_img->size);
     }
