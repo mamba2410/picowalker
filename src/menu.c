@@ -27,10 +27,43 @@ static pw_img_t* const MENU_TITLES[] = {
     &text_mm_settings,
 };
 
+static pw_img_t* const MENU_ICONS[] = {
+    &icon_mm_pokeradar,
+    &icon_mm_dowsing,
+    &icon_mm_connect,
+    &icon_mm_trainer,
+    &icon_mm_inventory,
+    &icon_mm_settings,
+};
+
 static int8_t cursor = 0;
 
 void pw_menu_init_display() {
-    pw_screen_draw_img(MENU_TITLES[cursor], 0, 0);
+    pw_screen_draw_img(MENU_TITLES[cursor], 8, 0);
+
+    if(cursor == 0) {
+        pw_screen_draw_img(&icon_mm_return, 0, 0);
+    } else {
+        pw_screen_draw_img(&icon_mm_larrow, 0, 0);
+    }
+
+    if(cursor == MENU_SIZE-1) {
+        pw_screen_draw_img(&icon_mm_return, SCREEN_WIDTH-8, 0);
+    } else {
+        pw_screen_draw_img(&icon_mm_rarrow, SCREEN_WIDTH-8, 0);
+    }
+
+    size_t y_values[] = {28, 32, 36, 34, 32, 28};
+    for(size_t i = 0; i < MENU_SIZE; i++) {
+        pw_screen_draw_img(MENU_ICONS[i], i*16, y_values[i]);
+        if(cursor == i) {
+            pw_screen_draw_img(&icon_arrow_down_normal, i*16, y_values[i]-8);
+        } else {
+            pw_screen_draw_img(&icon_arrow_up_normal, i*16, y_values[i]-8);
+        }
+    }
+
+
 }
 
 void pw_menu_handle_input(uint8_t b) {

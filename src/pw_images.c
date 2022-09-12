@@ -36,4 +36,14 @@ pw_img_t img_pokemon_large_frame1 = {.width=64, .height=48, .data=&(eeprom[0x933
 pw_img_t img_pokemon_large_frame2 = {.width=64, .height=48, .data=&(eeprom[0x973e]), .size=0x300};
 pw_img_t text_pokemon_name = {.width=80, .height=16, .data=&(eeprom[0x993e]), .size=320};
 
+pw_img_t icon_mm_larrow = {.width=8, .height=16, .data=&(eeprom[0x05b8]), .size=0x20};;
+pw_img_t icon_mm_rarrow = {.width=8, .height=16, .data=&(eeprom[0x05d8]), .size=0x20};;
+pw_img_t icon_mm_return = {.width=8, .height=16, .data=&(eeprom[0x05f8]), .size=0x20};;
+
+pw_img_t icon_arrow_up_normal    = {.width=8, .height=8, .data=&(eeprom[0x04f8]), .size=16};
+pw_img_t icon_arrow_down_normal  = {.width=8, .height=8, .data=&(eeprom[0x0508]), .size=16};
+pw_img_t icon_arrow_left_normal  = {.width=8, .height=8, .data=&(eeprom[0x0518]), .size=16};
+pw_img_t icon_arrow_right_normal = {.width=8, .height=8, .data=&(eeprom[0x0528]), .size=16};
+
+pw_img_t icon_watt_symbol = {.width=16, .height=16, .data=&(eeprom[0x0420]), .size=0x40};
 

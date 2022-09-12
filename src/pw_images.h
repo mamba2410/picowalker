@@ -40,7 +40,6 @@ extern pw_img_t text_character_colon;
 extern pw_img_t text_character_dash;
 extern pw_img_t text_character_slash;
 
-
 extern pw_img_t img_route;
 
 extern pw_img_t img_pokemon_small_frame1;
@@ -48,5 +47,16 @@ extern pw_img_t img_pokemon_small_frame2;
 extern pw_img_t img_pokemon_large_frame1;
 extern pw_img_t img_pokemon_large_frame2;
 extern pw_img_t text_pokemon_name;
+
+extern pw_img_t icon_mm_larrow;
+extern pw_img_t icon_mm_rarrow;
+extern pw_img_t icon_mm_return;
+
+extern pw_img_t icon_arrow_up_normal;
+extern pw_img_t icon_arrow_down_normal;
+extern pw_img_t icon_arrow_left_normal;
+extern pw_img_t icon_arrow_right_normal;
+
+extern pw_img_t icon_watt_symbol;
 
 #endif /* PW_IMAGES_H */
