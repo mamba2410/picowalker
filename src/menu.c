@@ -41,27 +41,23 @@ static int8_t cursor = 0;
 void pw_menu_init_display() {
     pw_screen_draw_img(MENU_TITLES[cursor], 8, 0);
 
-    if(cursor == 0) {
-        pw_screen_draw_img(&icon_mm_return, 0, 0);
-    } else {
-        pw_screen_draw_img(&icon_mm_larrow, 0, 0);
-    }
+    pw_screen_draw_img(&icon_mm_larrow, 0, 0);
+    pw_screen_draw_img(&icon_mm_rarrow, SCREEN_WIDTH-8, 0);
 
-    if(cursor == MENU_SIZE-1) {
-        pw_screen_draw_img(&icon_mm_return, SCREEN_WIDTH-8, 0);
-    } else {
-        pw_screen_draw_img(&icon_mm_rarrow, SCREEN_WIDTH-8, 0);
-    }
-
-    size_t y_values[] = {28, 32, 36, 34, 32, 28};
+    size_t y_values[] = {24, 26, 28, 30, 26, 24};
     for(size_t i = 0; i < MENU_SIZE; i++) {
         pw_screen_draw_img(MENU_ICONS[i], i*16, y_values[i]);
         if(cursor == i) {
             pw_screen_draw_img(&icon_arrow_down_normal, i*16, y_values[i]-8);
         } else {
-            pw_screen_draw_img(&icon_arrow_up_normal, i*16, y_values[i]-8);
+            pw_screen_clear_area(i*16, y_values[i]-8, 8, 8);
         }
     }
+
+    pw_screen_draw_img(&icon_watt_symbol, SCREEN_WIDTH-icon_watt_symbol.width,
+            SCREEN_HEIGHT-icon_watt_symbol.height);
+    pw_screen_draw_integer(2410, SCREEN_WIDTH-icon_watt_symbol.width-text_characters[0].width,
+            SCREEN_HEIGHT-icon_watt_symbol.height);
 
 
 }

@@ -55,3 +55,35 @@ void pw_screen_clear() {
     oled_clear_ram(&screen.chip);
 }
 
+
+void pw_screen_clear_area(size_t x, size_t y, size_t width, size_t height) {
+    size_t size = width * height/2;
+
+    oled_img_t area = {
+        x: x+screen.offset_x,
+        y: y+screen.offset_y,
+        width: width,
+        height: height,
+        size: size,
+        data: screen_buf,
+    };
+
+    memset(screen_buf, 0, size);
+
+    oled_draw(&(screen.chip), &area);
+
+}
+
+
+void pw_screen_draw_integer(uint32_t n, size_t right_x, size_t y) {
+
+    size_t x = right_x;
+    uint32_t m = n;
+    for(uint32_t pos = 1; pos < n; pos*=10) {
+        size_t idx = m%10;
+        m = m/10;
+        pw_screen_draw_img(&text_characters[idx], x, y);
+        x -= 8;
+    }
+}
+
