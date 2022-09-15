@@ -6,6 +6,8 @@
 #include "buttons.h"
 #include "screen.h"
 
+#include "pwroms.h"
+
 const char* const state_strings[] = {
 	"Screensaver",
 	"Splash screen",
@@ -94,8 +96,11 @@ void state_handle_button_press(pw_state_t s, uint8_t b) {
 }
 
 void pw_splash_init_display() {
-    pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
-    pw_screen_draw_img(&img_route, 0, SCREEN_HEIGHT-16);
+    pw_img_t sad_pokewalker_img   = {.height=48, .width=48, .data=sad_pokewalker, .size=576};
+    pw_screen_draw_img(&sad_pokewalker_img, 48, 48);
+
+    //pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
+    //pw_screen_draw_img(&img_route, 0, SCREEN_HEIGHT-16);
 
 }
 
