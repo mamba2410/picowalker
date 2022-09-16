@@ -67,4 +67,6 @@ pw_img_t text_route_name   = {.width=80, .height=16, .data=&(eeprom[0x907e]), .s
 pw_img_t text_time  = {.width=32, .height=16, .data=&(eeprom[0x1470]), .size=0x80};
 pw_img_t text_steps = {.width=40, .height=16, .data=&(eeprom[0x13d0]), .size=0xc0};
 pw_img_t text_days  = {.width=40, .height=16, .data=&(eeprom[0x14f0]), .size=0xc0};
+pw_img_t text_total_days  = {.width=64, .height=16, .data=&(eeprom[0x1590]), .size=0x100};
+
 

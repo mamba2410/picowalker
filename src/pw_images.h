@@ -67,5 +67,6 @@ extern pw_img_t text_route_name;
 extern pw_img_t text_time;
 extern pw_img_t text_steps;
 extern pw_img_t text_days;
+extern pw_img_t text_total_days;
 
 #endif /* PW_IMAGES_H */
