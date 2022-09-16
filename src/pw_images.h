@@ -58,4 +58,14 @@ extern pw_img_t icon_arrow_right_inverted;
 
 extern pw_img_t icon_watt_symbol;
 
+extern pw_img_t icon_generic_person;
+extern pw_img_t icon_small_route;
+
+extern pw_img_t text_trainer_name;
+extern pw_img_t text_route_name;
+
+extern pw_img_t text_time;
+extern pw_img_t text_steps;
+extern pw_img_t text_days;
+
 #endif /* PW_IMAGES_H */

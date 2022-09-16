@@ -20,6 +20,10 @@ typedef struct {
 
 int pw_screen_init();
 int pw_screen_draw_img(pw_img_t *img, size_t x, size_t y);
+void pw_screen_draw_integer(uint32_t n, size_t right_x, size_t y);
+void pw_screen_draw_time(uint8_t hour, uint8_t minute, uint8_t second, size_t x, size_t y);
+void pw_screen_draw_subtime(uint8_t n, size_t x, size_t y, bool draw_colon);
+void pw_screen_clear_area(size_t x, size_t y, size_t width, size_t height);
 
 void pw_screen_clear();
 

@@ -14,6 +14,7 @@ typedef enum {
 	STATE_TRAINER_CARD,
 	STATE_INVENTORY,
 	STATE_SETTINGS,
+    STATE_ERROR,
 	N_STATES,
 } pw_state_t;
 
@@ -28,6 +29,7 @@ pw_state_t pw_get_state();
 void state_handle_button_press(pw_state_t s, uint8_t b);
 
 void pw_splash_init_display();
+void pw_error_init_display();
 
 #endif /* PW_STATES_H */
 

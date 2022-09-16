@@ -58,3 +58,13 @@ pw_img_t icon_arrow_right_inverted = {.width=8, .height=8, .data=&(eeprom[0x05a8
 
 pw_img_t icon_watt_symbol = {.width=16, .height=16, .data=&(eeprom[0x0420]), .size=0x40};
 
+pw_img_t icon_generic_person = {.width=16, .height=16, .data=&(eeprom[0x1210]), .size=0x40};
+pw_img_t icon_small_route    = {.width=16, .height=16, .data=&(eeprom[0x1390]), .size=0x40};
+
+pw_img_t text_trainer_name = {.width=80, .height=16, .data=&(eeprom[0x1250]), .size=0x320};
+pw_img_t text_route_name   = {.width=80, .height=16, .data=&(eeprom[0x907e]), .size=0x320};
+
+pw_img_t text_time  = {.width=32, .height=16, .data=&(eeprom[0x1470]), .size=0x80};
+pw_img_t text_steps = {.width=40, .height=16, .data=&(eeprom[0x13d0]), .size=0xc0};
+pw_img_t text_days  = {.width=40, .height=16, .data=&(eeprom[0x14f0]), .size=0xc0};
+

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "drivers/ssd1327.h"
 #include "screen.h"
@@ -84,6 +85,28 @@ void pw_screen_draw_integer(uint32_t n, size_t right_x, size_t y) {
         m = m/10;
         pw_screen_draw_img(&text_characters[idx], x, y);
         x -= 8;
+    }
+}
+
+void pw_screen_draw_time(uint8_t hour, uint8_t minute, uint8_t second, size_t x, size_t y) {
+    pw_screen_draw_subtime(hour, x, y, true);
+    x += 48;
+    pw_screen_draw_subtime(minute, x, y, true);
+    x += 48;
+    pw_screen_draw_subtime(second, x, y, false);
+}
+
+void pw_screen_draw_subtime(uint8_t n, size_t x, size_t y, bool draw_colon) {
+    uint8_t idx;
+
+    idx = n/10;
+    pw_screen_draw_img(&text_characters[idx], x, y);
+    x += 8;
+    idx = n%10;
+    pw_screen_draw_img(&text_characters[idx], x, y);
+    if(draw_colon) {
+        x += 8;
+        pw_screen_draw_img(&text_character_colon, x, y);
     }
 }
 
