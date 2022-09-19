@@ -4,6 +4,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define PW_REQUEST_REDRAW       (1<<0)
+#define PW_REQUEST_STATE_CHANGE (1<<1)
+
+#define PW_CLR_REQUEST(x, y) x &= ~(y)
+#define PW_SET_REQUEST(x, y) x |=  (y)
+#define PW_GET_REQUEST(x, y) (x&(y))
+
 typedef enum {
 	STATE_SCREENSAVER,
 	STATE_SPLASH,
@@ -42,6 +49,9 @@ extern state_draw_func_t* const state_draw_update_funcs[];
 
 void pw_send_to_error(uint8_t b);
 void pw_send_to_splash(uint8_t b);
+
+void pw_request_redraw();
+void pw_request_state(pw_state_t s);
 
 bool pw_set_state(pw_state_t s);
 pw_state_t pw_get_state();

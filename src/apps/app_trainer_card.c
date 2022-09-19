@@ -45,23 +45,30 @@ void pw_trainer_card_handle_input(uint8_t b) {
     switch(b) {
         case BUTTON_L:
             if(cursor <= 0) {
-
-                pw_set_state(STATE_MAIN_MENU);
+                pw_request_state(STATE_MAIN_MENU);
             } else {
                 cursor--;
-                if(cursor <= 0) pw_trainer_card_init_display();
-                else pw_trainer_card_draw_dayview(cursor, 0, 0, 0);
+                pw_request_redraw();
             }
             break;
         case BUTTON_M:
-            pw_set_state(STATE_SPLASH);
+            pw_request_state(STATE_SPLASH);
             break;
         case BUTTON_R: // TODO
-            pw_trainer_card_draw_dayview(cursor, 0, 0, 0);
+            cursor++;
+            pw_request_redraw();
             break;
         default:
-            pw_set_state(STATE_ERROR);
+            pw_request_state(STATE_ERROR);
             break;
+    }
+}
+
+void pw_trainer_card_draw_update_func() {
+    if(cursor <= 0) {
+        pw_trainer_card_init_display();
+    } else {
+        pw_trainer_card_draw_dayview(cursor, 0, 0, 0);
     }
 }
 

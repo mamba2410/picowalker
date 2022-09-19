@@ -64,18 +64,12 @@ void pw_menu_init_display() {
 
 void pw_menu_handle_input(uint8_t b) {
 
-	bool changed_state = false;
-
 	switch(b) {
-		case BUTTON_L: { changed_state = move_cursor(-1); break; };
-		case BUTTON_M: { changed_state = pw_set_state(MENU_ENTRIES[cursor]); break; };
-		case BUTTON_R: { changed_state = move_cursor(+1); break; };
+		case BUTTON_L: { move_cursor(-1); break; };
+		case BUTTON_M: { pw_request_state(MENU_ENTRIES[cursor]); break; };
+		case BUTTON_R: { move_cursor(+1); break; };
 		default: break;
 	}
-
-    // if we're still on the menu, update the display
-	if(!changed_state)
-		pw_menu_init_display();
 
 }
 
@@ -85,6 +79,7 @@ void pw_menu_set_cursor(int8_t c) {
 	} else {
 		cursor = c;
 	}
+    //pw_request_redraw();
 
 }
 
@@ -96,11 +91,12 @@ bool move_cursor(int8_t move) {
 
 	if( cursor < 0 || cursor >= MENU_SIZE ) {
         cursor = 0;
-		pw_set_state(STATE_SPLASH);
+		pw_request_state(STATE_SPLASH);
 		return true;
 	}
 
 	cursor %= MENU_SIZE;
+    pw_request_redraw();
 
 	return false;
 }

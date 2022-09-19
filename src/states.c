@@ -78,7 +78,7 @@ state_draw_func_t* const state_draw_init_funcs[] = {
 state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
     [STATE_SCREENSAVER]     = pw_empty_event,
 	[STATE_SPLASH]          = pw_empty_event,
-	[STATE_MAIN_MENU]       = pw_empty_event,
+	[STATE_MAIN_MENU]       = pw_menu_init_display, // TODO: Change to lighter function
 	[STATE_POKE_RADAR]      = pw_empty_event,
 	[STATE_DOWSING]         = pw_empty_event,
 	[STATE_CONNECT]         = pw_empty_event,
@@ -88,8 +88,19 @@ state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
     [STATE_ERROR]           = pw_empty_event,
 };
 
-static pw_state_t pw_state = STATE_SCREENSAVER;
+static pw_state_t pw_current_state = STATE_SCREENSAVER;
+static pw_state_t pw_requested_state = 0;
+static uint32_t pw_requests = 0;
 
+
+void pw_request_state(pw_state_t s_to) {
+    PW_SET_REQUEST(pw_requests, PW_REQUEST_REDRAW);
+    pw_requested_state = s_to;
+}
+
+void pw_request_redraw() {
+    PW_SET_REQUEST(pw_requests, PW_REQUEST_REDRAW);
+}
 
 bool pw_set_state(pw_state_t s) {
 	if(s > N_STATES || s < 0) {
@@ -97,10 +108,10 @@ bool pw_set_state(pw_state_t s) {
 		return false;
 	}
 
-	pw_state_t prev_state = pw_state;
+	pw_state_t prev_state = pw_current_state;
 
-	if(s != pw_state) {
-		pw_state = s;
+	if(s != pw_current_state) {
+		pw_current_state = s;
         state_init_funcs[s]();
         state_draw_init_funcs[s]();
 		// TODO: Notify when changed to and from state
@@ -113,17 +124,28 @@ bool pw_set_state(pw_state_t s) {
 
 
 pw_state_t pw_get_state() {
-	return pw_state;
+	return pw_current_state;
 }
 
 
 //may not be needed/used
 void pw_state_init() {
-    state_init_funcs[pw_state]();
+    state_init_funcs[pw_current_state]();
 }
 
 void pw_state_run_event_loop() {
-    state_event_loop_funcs[pw_state]();
+    if(PW_GET_REQUEST(pw_requests, PW_REQUEST_STATE_CHANGE)) {
+        pw_set_state(pw_requested_state);
+        PW_CLR_REQUEST(pw_requests, PW_REQUEST_STATE_CHANGE);
+        PW_CLR_REQUEST(pw_requests, PW_REQUEST_REDRAW);
+    }
+
+    state_event_loop_funcs[pw_current_state]();
+
+    if(PW_GET_REQUEST(pw_requests, PW_REQUEST_REDRAW)) {
+        state_draw_update_funcs[pw_current_state]();
+        PW_CLR_REQUEST(pw_requests, PW_REQUEST_REDRAW);
+    }
 }
 
 /*
@@ -131,23 +153,23 @@ void pw_state_run_event_loop() {
  *	Want to spend as little time as possible in here
  */
 void pw_state_handle_input(uint8_t b) {
-    state_input_funcs[pw_state](b);
+    state_input_funcs[pw_current_state](b);
 }
 
 void pw_state_draw_init() {
-    state_draw_init_funcs[pw_state]();
+    state_draw_init_funcs[pw_current_state]();
 }
 
 void pw_state_draw_update() {
-    state_draw_update_funcs[pw_state]();
+    state_draw_update_funcs[pw_current_state]();
 }
 
 void pw_send_to_error(uint8_t b) {
-    pw_set_state(STATE_ERROR);
+    pw_request_state(STATE_ERROR);
 }
 
 void pw_send_to_splash(uint8_t b) {
-    pw_set_state(STATE_SPLASH);
+    pw_request_state(STATE_SPLASH);
 }
 
 
@@ -166,7 +188,7 @@ void pw_splash_handle_input(uint8_t b) {
 		case BUTTON_R:
 		default: { pw_menu_set_cursor(0); break; }
 	}
-	pw_set_state(STATE_MAIN_MENU);
+	pw_request_state(STATE_MAIN_MENU);
 }
 
 void pw_splash_init_display() {
