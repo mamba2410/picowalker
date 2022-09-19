@@ -60,6 +60,7 @@ void walker_entry() {
         pw_state_run_event_loop();
 
         // Update screen since (presumably) we aren't doing anything time-critical
+        // TODO: Could break if we interrupt half way through, draw something else, and return
         now = get_absolute_time();
         if(absolute_time_diff_us(prev_screen_redraw, now) > SCREEN_REDRAW_DELAY_US) {
             prev_screen_redraw = now;

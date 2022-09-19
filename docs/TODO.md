@@ -1,7 +1,12 @@
 # TODO
 
 ## Bug Fixes
-It doesn't work.
+
+- Do not draw inside interrupts, instead have some sort of request flags to request redraw
+  before/after an event loop iteration.
+- Similar thing for changing states, request a state change, then fulfil it after event loop
+  ends.
+
 
 ## Features
 
@@ -9,7 +14,6 @@ It doesn't work.
 - Minigames
 - Proper IR functionality
 - Accelerometer
-- LCD
 - Sound
 - Watchdog reset
 - Screensaver after time limit
