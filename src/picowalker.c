@@ -43,18 +43,17 @@ void walker_entry() {
 
 	// Setup IR uart and rx interrupts
 	setup_ir_uart();
-	setup_buttons();
-
+	pw_setup_buttons();
     pw_screen_init();
 
     pw_set_state(STATE_SPLASH);
-
-	// init accel
 
 	// Event loop
 	while(1) {
 		// Check steps
 		// Switch state
+
+        pw_state_run_event_loop();
 
 		gpio_put(LED_PIN, 1);
 		sleep_ms(250);

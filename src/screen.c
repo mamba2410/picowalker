@@ -90,9 +90,9 @@ void pw_screen_draw_integer(uint32_t n, size_t right_x, size_t y) {
 
 void pw_screen_draw_time(uint8_t hour, uint8_t minute, uint8_t second, size_t x, size_t y) {
     pw_screen_draw_subtime(hour, x, y, true);
-    x += 48;
+    x += 24;
     pw_screen_draw_subtime(minute, x, y, true);
-    x += 48;
+    x += 24;
     pw_screen_draw_subtime(second, x, y, false);
 }
 

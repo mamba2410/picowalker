@@ -10,33 +10,86 @@
 
 #include "pwroms.h"
 
-const char* const state_strings[] = {
-	"Screensaver",
-	"Splash screen",
-	"Main menu",
-	"Poke radar",
-	"Dowsing",
-	"Connect",
-	"Trainer card",
-	"Pokemon and items",
-	"Settings",
-    "Error",
+const char* const state_strings[N_STATES] = {
+    [STATE_SCREENSAVER]     = "Screensaver",
+	[STATE_SPLASH]          = "Splash screen",
+	[STATE_MAIN_MENU]       = "Main menu",
+	[STATE_POKE_RADAR]      = "Poke radar",
+	[STATE_DOWSING]         = "Dowsing",
+	[STATE_CONNECT]         = "Connect",
+	[STATE_TRAINER_CARD]    = "Trainer card",
+	[STATE_INVENTORY]       = "Pokemon and items",
+	[STATE_SETTINGS]        = "Settings",
+    [STATE_ERROR]           = "Error",
+};
+
+state_event_func_t* const state_init_funcs[N_STATES] = {
+    [STATE_SCREENSAVER]     = pw_empty_event,
+	[STATE_SPLASH]          = pw_empty_event,
+	[STATE_MAIN_MENU]       = pw_empty_event,
+	[STATE_POKE_RADAR]      = pw_empty_event,
+	[STATE_DOWSING]         = pw_empty_event,
+	[STATE_CONNECT]         = pw_empty_event,
+	[STATE_TRAINER_CARD]    = pw_empty_event,
+	[STATE_INVENTORY]       = pw_empty_event,
+	[STATE_SETTINGS]        = pw_empty_event,
+    [STATE_ERROR]           = pw_empty_event,
+};
+
+state_event_func_t* const state_event_loop_funcs[N_STATES] = {
+    [STATE_SCREENSAVER]     = pw_empty_event,
+	[STATE_SPLASH]          = pw_empty_event,
+	[STATE_MAIN_MENU]       = pw_empty_event,
+	[STATE_POKE_RADAR]      = pw_empty_event,
+	[STATE_DOWSING]         = pw_empty_event,
+	[STATE_CONNECT]         = pw_empty_event,
+	[STATE_TRAINER_CARD]    = pw_empty_event,
+	[STATE_INVENTORY]       = pw_empty_event,
+	[STATE_SETTINGS]        = pw_empty_event,
+    [STATE_ERROR]           = pw_empty_event,
+};
+
+state_input_func_t* const state_input_funcs[N_STATES] = {
+    [STATE_SCREENSAVER]     = pw_empty_input,
+	[STATE_SPLASH]          = pw_splash_handle_input,
+	[STATE_MAIN_MENU]       = pw_menu_handle_input,
+	[STATE_POKE_RADAR]      = pw_send_to_error,
+	[STATE_DOWSING]         = pw_send_to_error,
+	[STATE_CONNECT]         = pw_send_to_error,
+	[STATE_TRAINER_CARD]    = pw_trainer_card_handle_input,
+	[STATE_INVENTORY]       = pw_send_to_error,
+	[STATE_SETTINGS]        = pw_send_to_error,
+    [STATE_ERROR]           = pw_send_to_splash,
 };
 
 state_draw_func_t* const state_draw_init_funcs[] = {
-    pw_screen_clear,
-    pw_splash_init_display,
-    pw_menu_init_display,
-    pw_screen_clear,
-    pw_screen_clear,
-    pw_screen_clear,
-    pw_trainer_card_init_display,
-    pw_screen_clear,
-    pw_screen_clear,
-    pw_error_init_display,
+    [STATE_SCREENSAVER]     = pw_screen_clear,
+	[STATE_SPLASH]          = pw_splash_init_display,
+	[STATE_MAIN_MENU]       = pw_menu_init_display,
+	[STATE_POKE_RADAR]      = pw_screen_clear,
+	[STATE_DOWSING]         = pw_screen_clear,
+	[STATE_CONNECT]         = pw_screen_clear,
+	[STATE_TRAINER_CARD]    = pw_trainer_card_init_display,
+	[STATE_INVENTORY]       = pw_screen_clear,
+	[STATE_SETTINGS]        = pw_screen_clear,
+    [STATE_ERROR]           = pw_error_init_display,
+};
+
+state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
+    [STATE_SCREENSAVER]     = pw_empty_event,
+	[STATE_SPLASH]          = pw_empty_event,
+	[STATE_MAIN_MENU]       = pw_empty_event,
+	[STATE_POKE_RADAR]      = pw_empty_event,
+	[STATE_DOWSING]         = pw_empty_event,
+	[STATE_CONNECT]         = pw_empty_event,
+	[STATE_TRAINER_CARD]    = pw_empty_event,
+	[STATE_INVENTORY]       = pw_empty_event,
+	[STATE_SETTINGS]        = pw_empty_event,
+    [STATE_ERROR]           = pw_empty_event,
 };
 
 static pw_state_t pw_state = STATE_SCREENSAVER;
+
 
 bool pw_set_state(pw_state_t s) {
 	if(s > N_STATES || s < 0) {
@@ -48,57 +101,72 @@ bool pw_set_state(pw_state_t s) {
 
 	if(s != pw_state) {
 		pw_state = s;
-        pw_screen_clear();
+        state_init_funcs[s]();
         state_draw_init_funcs[s]();
 		// TODO: Notify when changed to and from state
 		return true;
 	} else {
-		printf("Error: tried to change state to same state\n");
+		printf("Warn: tried to change state to same state\n");
 		return false;
 	}
 }
+
 
 pw_state_t pw_get_state() {
 	return pw_state;
 }
 
 
+//may not be needed/used
+void pw_state_init() {
+    state_init_funcs[pw_state]();
+}
+
+void pw_state_run_event_loop() {
+    state_event_loop_funcs[pw_state]();
+}
+
 /*
  *	Triggers when button is pressed.
  *	Want to spend as little time as possible in here
  */
-void state_handle_button_press(pw_state_t s, uint8_t b) {
+void pw_state_handle_input(uint8_t b) {
+    state_input_funcs[pw_state](b);
+}
 
-	switch(s) {
-		case STATE_SPLASH:
-			switch(b) {
-				case BUTTON_M: { pw_menu_set_cursor((MENU_SIZE-1)/2); break; }
-				case BUTTON_L: { pw_menu_set_cursor(MENU_SIZE-1); break; }
-				case BUTTON_R:
-				default: { pw_menu_set_cursor(0); break; }
-			}
-			pw_set_state(STATE_MAIN_MENU);
-			break;
-		case STATE_MAIN_MENU:
-            pw_menu_handle_input(b);
-            break;
+void pw_state_draw_init() {
+    state_draw_init_funcs[pw_state]();
+}
 
-        case STATE_TRAINER_CARD:
-            pw_trainer_card_handle_input(b);
-		case STATE_CONNECT:
-			 //if( ir_get_state() == COMM_IDLE )
-			 //	ir_set_state(COMM_ADVERTISING);
-        case STATE_ERROR:
-            pw_set_state(STATE_SPLASH);
-            break;
-		default:
-			printf("Unhandled state\n");
-			pw_set_state(STATE_ERROR);
-			break;
+void pw_state_draw_update() {
+    state_draw_update_funcs[pw_state]();
+}
+
+void pw_send_to_error(uint8_t b) {
+    pw_set_state(STATE_ERROR);
+}
+
+void pw_send_to_splash(uint8_t b) {
+    pw_set_state(STATE_SPLASH);
+}
+
+
+/*
+ *  ========================================
+ *  State functions
+ *  ========================================
+ */
+void pw_empty_event() {}
+void pw_empty_input(uint8_t b) {}
+
+void pw_splash_handle_input(uint8_t b) {
+	switch(b) {
+		case BUTTON_M: { pw_menu_set_cursor((MENU_SIZE-1)/2); break; }
+		case BUTTON_L: { pw_menu_set_cursor(MENU_SIZE-1); break; }
+		case BUTTON_R:
+		default: { pw_menu_set_cursor(0); break; }
 	}
-
-	// Return from here to exit interrupt and back to main loop
-	// TODO: Have a way to set main loop behaviour
+	pw_set_state(STATE_MAIN_MENU);
 }
 
 void pw_splash_init_display() {

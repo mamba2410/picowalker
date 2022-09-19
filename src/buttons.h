@@ -15,8 +15,7 @@ enum {
 };
 
 
-void setup_buttons();
+void pw_setup_buttons();
 void pw_irq_callback(uint gp, uint32_t events);
-void button_pressed(uint8_t button);
 
 #endif /* PW_BUTTONS_H */
