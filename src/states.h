@@ -70,6 +70,7 @@ void pw_empty_input(uint8_t b);
 
 // STATE_SPLASH
 void pw_splash_init_display();
+void pw_splash_update_display();
 void pw_splash_handle_input(uint8_t b);
 
 // STATE_ERROR

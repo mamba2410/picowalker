@@ -77,8 +77,8 @@ state_draw_func_t* const state_draw_init_funcs[] = {
 
 state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
     [STATE_SCREENSAVER]     = pw_empty_event,
-	[STATE_SPLASH]          = pw_empty_event,
-	[STATE_MAIN_MENU]       = pw_menu_init_display, // TODO: Change to lighter function
+	[STATE_SPLASH]          = pw_splash_update_display,
+	[STATE_MAIN_MENU]       = pw_menu_update_display,
 	[STATE_POKE_RADAR]      = pw_empty_event,
 	[STATE_DOWSING]         = pw_empty_event,
 	[STATE_CONNECT]         = pw_empty_event,
@@ -91,6 +91,8 @@ state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
 static pw_state_t pw_current_state = STATE_SCREENSAVER;
 static pw_state_t pw_requested_state = 0;
 static uint32_t pw_requests = 0;
+
+static uint8_t splash_anim_frame = 0;
 
 
 void pw_request_state(pw_state_t s_to) {
@@ -195,7 +197,15 @@ void pw_splash_handle_input(uint8_t b) {
 void pw_splash_init_display() {
     pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
     pw_screen_draw_img(&img_route, 0, SCREEN_HEIGHT-img_route.height-16);
+}
 
+void pw_splash_update_display() {
+    if(splash_anim_frame) {
+        pw_screen_draw_img(&img_pokemon_large_frame2, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
+    } else {
+        pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
+    }
+    splash_anim_frame = !splash_anim_frame;
 }
 
 void pw_error_init_display() {

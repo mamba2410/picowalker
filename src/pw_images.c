@@ -36,7 +36,7 @@ pw_img_t img_route = {.width=32, .height=24, .data=&(eeprom[0x8fbe]), .size=0xc0
 pw_img_t img_pokemon_small_frame1 = {.width=32, .height=24, .data=&(eeprom[0x91be]), .size=48};
 pw_img_t img_pokemon_small_frame2 = {.width=32, .height=24, .data=&(eeprom[0x91ee]), .size=48};
 pw_img_t img_pokemon_large_frame1 = {.width=64, .height=48, .data=&(eeprom[0x933e]), .size=0x300};
-pw_img_t img_pokemon_large_frame2 = {.width=64, .height=48, .data=&(eeprom[0x973e]), .size=0x300};
+pw_img_t img_pokemon_large_frame2 = {.width=64, .height=48, .data=&(eeprom[0x963e]), .size=0x300};
 pw_img_t text_pokemon_name = {.width=80, .height=16, .data=&(eeprom[0x993e]), .size=320};
 
 pw_img_t icon_mm_larrow = {.width=8, .height=16, .data=&(eeprom[0x05b8]), .size=0x20};;

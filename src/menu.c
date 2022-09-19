@@ -73,7 +73,7 @@ void pw_menu_handle_input(uint8_t b) {
 
 }
 
-void pw_menu_draw_update() {
+void pw_menu_update_display() {
     /*
      *  Redraw title, arrows
      */
