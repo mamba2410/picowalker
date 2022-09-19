@@ -80,12 +80,12 @@ void pw_screen_draw_integer(uint32_t n, size_t right_x, size_t y) {
 
     size_t x = right_x;
     uint32_t m = n;
-    for(uint32_t pos = 1; pos < n; pos*=10) {
+    do {
         size_t idx = m%10;
         m = m/10;
-        pw_screen_draw_img(&text_characters[idx], x, y);
         x -= 8;
-    }
+        pw_screen_draw_img(&text_characters[idx], x, y);
+    } while(m>0);
 }
 
 void pw_screen_draw_time(uint8_t hour, uint8_t minute, uint8_t second, size_t x, size_t y) {
