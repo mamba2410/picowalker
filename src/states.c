@@ -30,7 +30,7 @@ state_event_func_t* const state_init_funcs[N_STATES] = {
 	[STATE_POKE_RADAR]      = pw_empty_event,
 	[STATE_DOWSING]         = pw_empty_event,
 	[STATE_CONNECT]         = pw_empty_event,
-	[STATE_TRAINER_CARD]    = pw_empty_event,
+	[STATE_TRAINER_CARD]    = pw_trainer_card_init,
 	[STATE_INVENTORY]       = pw_empty_event,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
@@ -82,7 +82,7 @@ state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
 	[STATE_POKE_RADAR]      = pw_empty_event,
 	[STATE_DOWSING]         = pw_empty_event,
 	[STATE_CONNECT]         = pw_empty_event,
-	[STATE_TRAINER_CARD]    = pw_empty_event,
+	[STATE_TRAINER_CARD]    = pw_trainer_card_draw_update,
 	[STATE_INVENTORY]       = pw_empty_event,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
@@ -94,7 +94,7 @@ static uint32_t pw_requests = 0;
 
 
 void pw_request_state(pw_state_t s_to) {
-    PW_SET_REQUEST(pw_requests, PW_REQUEST_REDRAW);
+    PW_SET_REQUEST(pw_requests, PW_REQUEST_STATE_CHANGE);
     pw_requested_state = s_to;
 }
 
@@ -112,6 +112,7 @@ bool pw_set_state(pw_state_t s) {
 
 	if(s != pw_current_state) {
 		pw_current_state = s;
+        pw_screen_clear();
         state_init_funcs[s]();
         state_draw_init_funcs[s]();
 		// TODO: Notify when changed to and from state

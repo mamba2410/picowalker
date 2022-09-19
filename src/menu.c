@@ -56,7 +56,7 @@ void pw_menu_init_display() {
 
     pw_screen_draw_img(&icon_watt_symbol, SCREEN_WIDTH-icon_watt_symbol.width,
             SCREEN_HEIGHT-icon_watt_symbol.height);
-    pw_screen_draw_integer(2410, SCREEN_WIDTH-icon_watt_symbol.width-text_characters[0].width,
+    pw_screen_draw_integer(2410, SCREEN_WIDTH-icon_watt_symbol.width,
             SCREEN_HEIGHT-icon_watt_symbol.height);
 
 
@@ -70,6 +70,23 @@ void pw_menu_handle_input(uint8_t b) {
 		case BUTTON_R: { move_cursor(+1); break; };
 		default: break;
 	}
+
+}
+
+void pw_menu_draw_update() {
+    /*
+     *  Redraw title, arrows
+     */
+    pw_screen_draw_img(MENU_TITLES[cursor], 8, 0);
+
+    size_t y_values[] = {24, 26, 28, 30, 26, 24};
+    for(size_t i = 0; i < MENU_SIZE; i++) {
+        if(cursor == i) {
+            pw_screen_draw_img(&icon_arrow_down_normal, i*16, y_values[i]-8);
+        } else {
+            pw_screen_clear_area(i*16, y_values[i]-8, 8, 8);
+        }
+    }
 
 }
 
