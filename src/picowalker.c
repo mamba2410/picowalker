@@ -3,21 +3,21 @@
 #include <stdio.h>
 #include <pico/stdlib.h>
 #include <pico/binary_info.h>
+#include <pico/time.h>
 #include <hardware/i2c.h>
 #include <string.h>
 
 #include "ir_comms.h"
 #include "buttons.h"
 #include "screen.h"
-#include "pw_images.h"
+
 #include "states.h"
 
+#define SCREEN_REDRAW_DELAY_US  1000000 // 1 second
 
 void walker_entry();
-void oled_test();
 
 const uint LED_PIN = PICO_DEFAULT_LED_PIN;
-
 
 int main() {
     bi_decl(bi_2pins_with_func(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C));
@@ -48,17 +48,23 @@ void walker_entry() {
 
     pw_set_state(STATE_SPLASH);
 
-	// Event loop
-	while(1) {
-		// Check steps
-		// Switch state
+    absolute_time_t now, prev_screen_redraw;
+    prev_screen_redraw = get_absolute_time();
 
+	// Event loop
+    // BEWARE: Could (WILL) receive interrupts during this time
+	while(1) {
+        // TODO: Things to do regardless of state (eg check steps, battery etc.)
+
+        // Run current state's event loop
         pw_state_run_event_loop();
 
-		gpio_put(LED_PIN, 1);
-		sleep_ms(250);
-		gpio_put(LED_PIN, 0);
-		sleep_ms(250);
+        // Update screen since (presumably) we aren't doing anything time-critical
+        now = get_absolute_time();
+        if(absolute_time_diff_us(prev_screen_redraw, now) > SCREEN_REDRAW_DELAY_US) {
+            prev_screen_redraw = now;
+            pw_state_draw_update();
+        }
 
 	}
 
