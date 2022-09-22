@@ -60,5 +60,8 @@ typedef struct {
 } pokemon_info_t;
 
 
+extern walker_info_t const *g_walker_info;
+extern walker_info_t const *g_walker_info_copy;
+
 
 #endif /* PW_TRAINER_INFO_H */

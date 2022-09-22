@@ -6,9 +6,12 @@
 #include "../buttons.h"
 #include "../screen.h"
 #include "../pw_images.h"
+#include "../pwroms.h"
 
 static int8_t cursor = 0;
 static int8_t prev_drawn = 0;
+
+static uint32_t prev_step_counts[] = &(eeprom[0xcef0]);
 
 void pw_trainer_card_init() {
     cursor = 0;
@@ -87,7 +90,7 @@ void pw_trainer_card_draw_update() {
         if(cursor <= 0) {
             pw_trainer_card_init_display();
         } else {
-            pw_trainer_card_draw_dayview(cursor, 0, 0, 0);
+            pw_trainer_card_draw_dayview(cursor, prev_step_counts[cursor-1], 0, 0);
         }
         prev_drawn = cursor;
     }
