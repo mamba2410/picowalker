@@ -27,6 +27,9 @@ add_executable(picowalker
     src/pwroms.h
     src/pw_images.c
     src/pw_images.h
+    src/trainer_info.c
+    src/trainer_info.h
+    src/route_info.h
     src/drivers/ssd1327.c
     src/drivers/ssd1327.h
     src/apps/app_trainer_card.c

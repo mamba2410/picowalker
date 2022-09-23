@@ -11,7 +11,7 @@
 static int8_t cursor = 0;
 static int8_t prev_drawn = 0;
 
-static uint32_t prev_step_counts[] = &(eeprom[0xcef0]);
+static uint32_t *prev_step_counts = (uint32_t*)&(eeprom[0xcef0]);
 
 void pw_trainer_card_init() {
     cursor = 0;

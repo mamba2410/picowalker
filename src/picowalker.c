@@ -10,8 +10,9 @@
 #include "ir_comms.h"
 #include "buttons.h"
 #include "screen.h"
-
 #include "states.h"
+
+#include "trainer_info.h"
 
 #define SCREEN_REDRAW_DELAY_US  1000000 // 1 second
 
@@ -28,7 +29,7 @@ int main() {
 
 	stdio_init_all();
 
-    printf("Hello, picowalker!");
+    printf("Hello, picowalker!\n");
 
 #if !defined(i2c_default) || !defined(PICO_DEFAULT_I2C_SDA_PIN) || !defined(PICO_DEFAULT_I2C_SCL_PIN)
 #warning i2c / oled_i2d example requires a board with I2C pins
@@ -40,6 +41,8 @@ int main() {
 }
 
 void walker_entry() {
+
+    pw_check_struct_sizes();
 
 	// Setup IR uart and rx interrupts
 	setup_ir_uart();
