@@ -5,6 +5,8 @@
 #include "menu.h"
 #include "buttons.h"
 #include "screen.h"
+#include "utils.h"
+#include "trainer_info.h"
 
 #include "apps/app_trainer_card.h"
 
@@ -197,6 +199,8 @@ void pw_splash_handle_input(uint8_t b) {
 void pw_splash_init_display() {
     pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
     pw_screen_draw_img(&img_route, 0, SCREEN_HEIGHT-img_route.height-16);
+    uint32_t today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
+    pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
 }
 
 void pw_splash_update_display() {
@@ -206,6 +210,8 @@ void pw_splash_update_display() {
         pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
     }
     splash_anim_frame = !splash_anim_frame;
+    uint32_t today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
+    pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
 }
 
 void pw_error_init_display() {

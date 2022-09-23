@@ -8,3 +8,7 @@
 - Interestingly, some of the "padding" isn't just zero. I don't know if this is significant.
 
 
+- Splash menu steps reset on power loss, but current watts and total lifetime steps (in trainer card) remain
+
+- is `HealthData.todaySteps` in the eeprom really today's steps? I have 13707 on a fresh route.
+

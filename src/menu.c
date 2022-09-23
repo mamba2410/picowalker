@@ -7,6 +7,8 @@
 #include "buttons.h"
 #include "pw_images.h"
 #include "screen.h"
+#include "utils.h"
+#include "trainer_info.h"
 
 static pw_state_t const MENU_ENTRIES[] = {
 	STATE_POKE_RADAR,
@@ -54,9 +56,10 @@ void pw_menu_init_display() {
         }
     }
 
+    const uint16_t current_watts = swap_bytes_u16(g_reliable_data_1->health_data.be_current_watts);;
     pw_screen_draw_img(&icon_watt_symbol, SCREEN_WIDTH-icon_watt_symbol.width,
             SCREEN_HEIGHT-icon_watt_symbol.height);
-    pw_screen_draw_integer(2410, SCREEN_WIDTH-icon_watt_symbol.width,
+    pw_screen_draw_integer(current_watts, SCREEN_WIDTH-icon_watt_symbol.width,
             SCREEN_HEIGHT-icon_watt_symbol.height);
 
 

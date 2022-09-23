@@ -8,6 +8,7 @@
 #include "../pw_images.h"
 #include "../pwroms.h"
 #include "../utils.h"
+#include "../trainer_info.h"
 
 static int8_t cursor = 0;
 static int8_t prev_drawn = 0;
@@ -91,7 +92,16 @@ void pw_trainer_card_draw_update() {
         if(cursor <= 0) {
             pw_trainer_card_init_display();
         } else {
-            pw_trainer_card_draw_dayview(cursor, swap_bytes_u32(prev_step_counts[cursor-1]), 0, 0);
+            uint32_t const total_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_total_steps);
+            uint32_t const today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
+            uint16_t const total_days = swap_bytes_u16(g_reliable_data_1->health_data.be_total_days);
+            pw_trainer_card_draw_dayview(
+                    cursor,
+                    swap_bytes_u32(prev_step_counts[cursor-1]),
+                    total_steps,
+                    //total_steps+today_steps,
+                    total_days
+            );
         }
         prev_drawn = cursor;
     }
