@@ -41,6 +41,7 @@ typedef struct {
     uint8_t item_name_image[0x180];
 } special_route_info_t;
 
-// reoute_info_t at 0x8f00
+extern route_info_t const *g_route_info;
+extern special_route_info_t const *g_special_route_info;
 
 #endif /* PW_ROUTE_INFO_H */

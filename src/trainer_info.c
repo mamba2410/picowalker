@@ -8,15 +8,7 @@
 reliable_data_t const *g_reliable_data_1 = (reliable_data_t*)&(eeprom[0x0080]);
 reliable_data_t const *g_reliable_data_2 = (reliable_data_t*)&(eeprom[0x0180]);
 
-uint16_t swap_bytes_u16(uint16_t x) {
-    uint16_t y = (x>>8) | ((x&0xff)<<8);
-    return y;
-}
 
-uint32_t swap_bytes_u32(uint32_t x) {
-    uint32_t y = (x>>24) | ((x&0x00ff0000)>>8) | ((x&0x0000ff00)<<8) | ((x&0xff)<<24);
-    return y;
-}
 
 void pw_check_struct_sizes() {
     size_t reliable_data_size = sizeof(reliable_data_t), reliable_data_expected = 0x0171-0x0080+1;
@@ -39,6 +31,13 @@ void pw_check_struct_sizes() {
     printf("%p\n", 0x80 + (void*)&(g_reliable_data_1->lcd_config) - (void*)g_reliable_data_1);
     printf("%p\n", 0x80 + (void*)&(g_reliable_data_1->walker_info) - (void*)g_reliable_data_1);
     printf("tid: %d\n", g_reliable_data_1->walker_info.le_tid);
+
+    char chbuf[11];
+    nintendo_to_ascii((uint8_t*)&((g_reliable_data_1->walker_info).le_trainer_name), chbuf, 8);
+    printf("Trainer name: %s\n", chbuf);
+
+
+
 }
 
 
