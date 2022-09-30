@@ -39,6 +39,8 @@ add_executable(picowalker
     src/drivers/ir.h
     src/apps/app_trainer_card.c
     src/apps/app_trainer_card.h
+    src/apps/app_comms.c
+    src/apps/app_comms.h
 )
 
 ## Enable usb, uart etc for stdio
