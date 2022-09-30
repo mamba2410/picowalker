@@ -45,7 +45,7 @@ void walker_entry() {
     pw_check_struct_sizes();
 
 	// Setup IR uart and rx interrupts
-	setup_ir_uart();
+	pw_ir_setup();
 	pw_setup_buttons();
     pw_screen_init();
 
