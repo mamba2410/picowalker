@@ -9,6 +9,7 @@
 #include "trainer_info.h"
 
 #include "apps/app_trainer_card.h"
+#include "apps/app_comms.h"
 
 #include "pwroms.h"
 
@@ -31,7 +32,7 @@ state_event_func_t* const state_init_funcs[N_STATES] = {
 	[STATE_MAIN_MENU]       = pw_empty_event,
 	[STATE_POKE_RADAR]      = pw_empty_event,
 	[STATE_DOWSING]         = pw_empty_event,
-	[STATE_CONNECT]         = pw_empty_event,
+	[STATE_CONNECT]         = pw_comms_init,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_init,
 	[STATE_INVENTORY]       = pw_empty_event,
 	[STATE_SETTINGS]        = pw_empty_event,
@@ -44,7 +45,7 @@ state_event_func_t* const state_event_loop_funcs[N_STATES] = {
 	[STATE_MAIN_MENU]       = pw_empty_event,
 	[STATE_POKE_RADAR]      = pw_empty_event,
 	[STATE_DOWSING]         = pw_empty_event,
-	[STATE_CONNECT]         = pw_empty_event,
+	[STATE_CONNECT]         = pw_comms_event_loop,
 	[STATE_TRAINER_CARD]    = pw_empty_event,
 	[STATE_INVENTORY]       = pw_empty_event,
 	[STATE_SETTINGS]        = pw_empty_event,
@@ -57,7 +58,7 @@ state_input_func_t* const state_input_funcs[N_STATES] = {
 	[STATE_MAIN_MENU]       = pw_menu_handle_input,
 	[STATE_POKE_RADAR]      = pw_send_to_error,
 	[STATE_DOWSING]         = pw_send_to_error,
-	[STATE_CONNECT]         = pw_send_to_error,
+	[STATE_CONNECT]         = pw_comms_handle_input,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_handle_input,
 	[STATE_INVENTORY]       = pw_send_to_error,
 	[STATE_SETTINGS]        = pw_send_to_error,
@@ -70,7 +71,7 @@ state_draw_func_t* const state_draw_init_funcs[] = {
 	[STATE_MAIN_MENU]       = pw_menu_init_display,
 	[STATE_POKE_RADAR]      = pw_screen_clear,
 	[STATE_DOWSING]         = pw_screen_clear,
-	[STATE_CONNECT]         = pw_screen_clear,
+	[STATE_CONNECT]         = pw_comms_init_display,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_init_display,
 	[STATE_INVENTORY]       = pw_screen_clear,
 	[STATE_SETTINGS]        = pw_screen_clear,
@@ -83,7 +84,7 @@ state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
 	[STATE_MAIN_MENU]       = pw_menu_update_display,
 	[STATE_POKE_RADAR]      = pw_empty_event,
 	[STATE_DOWSING]         = pw_empty_event,
-	[STATE_CONNECT]         = pw_empty_event,
+	[STATE_CONNECT]         = pw_comms_draw_update,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_draw_update,
 	[STATE_INVENTORY]       = pw_empty_event,
 	[STATE_SETTINGS]        = pw_empty_event,
