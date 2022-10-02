@@ -60,6 +60,9 @@ ir_err_t pw_ir_send_packet(uint8_t packet[], size_t len) {
 
 ir_err_t pw_ir_recv_packet(uint8_t packet[], size_t len) {
 
+    for(size_t i = 0; i < len; i++)
+        rx_buf_aa[i] = 0;
+
     int n_read = pw_ir_read(rx_buf_aa, len);
 
     if( ((int)n_read) != len )
@@ -71,7 +74,7 @@ ir_err_t pw_ir_recv_packet(uint8_t packet[], size_t len) {
 
     uint8_t packet_chk_h = packet[0x03];
     uint8_t packet_chk_l = packet[0x02];
-    uint16_t packet_chk = ((uint16_t)packet_chk_h << 8) | ((uint16_t)packet_chk_l);
+    uint16_t packet_chk = ((uint16_t)packet_chk_h << 8) + ((uint16_t)packet_chk_l);
 
     packet[0x02] = 0;
     packet[0x03] = 0;
@@ -162,6 +165,7 @@ ir_err_t pw_ir_listen_for_handshake() {
     size_t i = 0;
     do {
         err = pw_ir_recv_packet(rx, 8);
+        printf("%d ", i);
         i++;
     } while(rx[0] == 0xfc && i<10); // debug to clear rxbuf
 

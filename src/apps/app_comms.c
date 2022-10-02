@@ -16,6 +16,7 @@ void pw_comms_init() {
 
     g_comm_state = COMM_STATE_IDLE;
     pw_ir_set_connect_status(CONNECT_STATUS_AWAITING);
+    pw_ir_clear_rx();
 
 }
 
@@ -39,6 +40,7 @@ void pw_comms_event_loop() {
     }
 
     if(err != IR_OK) {
+        pw_ir_set_connect_status(CONNECT_STATUS_DISCONNECTED);
         return;
     }
 
