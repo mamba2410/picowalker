@@ -5,7 +5,6 @@
 #include "drivers/ir.h"
 #include "ir_comms.h"
 
-static ir_state_t ir_state = IR_STATE_IDLE;
 static uint8_t rx_buf[RX_BUF_LEN];
 static uint8_t tx_buf[TX_BUF_LEN];
 static uint8_t rx_buf_aa[RX_BUF_LEN];
@@ -15,6 +14,7 @@ static uint8_t session_id[4] = {0, 0, 0, 0};
 static bool peer_master = false;
 static size_t advertising_attempts = 0;
 static connect_status_t g_connect_status = CONNECT_STATUS_DISCONNECTED;
+static comm_state_t g_comm_state = COMM_STATE_IDLE;
 
 const char* const PW_IR_ERR_NAMES[] = {
     [IR_OK] = "ok",
@@ -120,12 +120,12 @@ uint16_t pw_ir_checksum(uint8_t *packet, size_t len) {
 }
 
 
-ir_state_t pw_ir_get_state() {
-	return ir_state;
+comm_state_t pw_ir_get_state() {
+	return g_comm_state;
 }
 
-void pw_ir_set_state(ir_state_t s) {
-	ir_state = s;
+void pw_ir_set_state(comm_state_t s) {
+	g_comm_state = s;
 }
 
 

@@ -69,4 +69,10 @@ extern pw_img_t text_steps;
 extern pw_img_t text_days;
 extern pw_img_t text_total_days;
 
+extern pw_img_t img_pokewalker_large;
+extern pw_img_t icon_connect_arcs;
+extern pw_img_t text_connecting;
+extern pw_img_t text_no_trainer_found;
+extern pw_img_t text_cannot_connect;
+
 #endif /* PW_IMAGES_H */

@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "../states.h"
+#include "../buttons.h"
 #include "../screen.h"
 #include "../pw_images.h"
 #include "../ir_comms.h"
@@ -44,9 +46,9 @@ void pw_comms_event_loop() {
 
 void pw_comms_init_display() {
 
-    pw_screen_draw_img(img_pokewalker_large, (SCREEN_WIDTH-32)/2, SCREEN_HEIGHT-32-16);
-    pw_screen_draw_img(icon_connect_arcs, (SCREEN_WIDTH-8)/2, 0);
-    pw_screen_draw_img(text_connecting, 0, SCREEN_HEIGHT-16);
+    pw_screen_draw_img(&img_pokewalker_large, (SCREEN_WIDTH-32)/2, SCREEN_HEIGHT-32-16);
+    pw_screen_draw_img(&icon_connect_arcs, (SCREEN_WIDTH-8)/2, 0);
+    pw_screen_draw_img(&text_connecting, 0, SCREEN_HEIGHT-16);
 
 }
 
@@ -71,7 +73,7 @@ void pw_comms_draw_update() {
     static bool arcs = true;
 
     if(!arcs)
-        pw_screen_draw_img(icon_connect_arcs, (SCREEN_WIDTH-8)/2, 0);
+        pw_screen_draw_img(&icon_connect_arcs, (SCREEN_WIDTH-8)/2, 0);
     else
         pw_screen_clear_area((SCREEN_WIDTH-8)/2, 0, 8, 16);
     arcs = !arcs;
