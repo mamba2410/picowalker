@@ -69,4 +69,9 @@ pw_img_t text_steps = {.width=40, .height=16, .data=&(eeprom[0x13d0]), .size=0xc
 pw_img_t text_days  = {.width=40, .height=16, .data=&(eeprom[0x14f0]), .size=0xc0};
 pw_img_t text_total_days  = {.width=64, .height=16, .data=&(eeprom[0x1590]), .size=0x100};
 
+pw_img_t img_pokewalker_large = {.width=32, .height=32, .data=&(eeprom[0x2350]), .size=0x100};
+pw_img_t icon_connect_arcs ={.width=8, .height=16, .data=&(eeprom[0x2450]), .size=0x20} ;
+pw_img_t text_connecting = {.width=96, .height=16, .data=&(eeprom[0x2530]), .size=0x180};
+pw_img_t text_no_trainer_found = {.width=96, .height=16, .data=&(eeprom[0x26b0]), .size=0x180};
+pw_img_t text_cannot_connect = {.width=96, .height=16, .data=&(eeprom[0x2b30]), .size=0x180};
 

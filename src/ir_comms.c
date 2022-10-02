@@ -14,6 +14,7 @@ static uint8_t session_id[4] = {0, 0, 0, 0};
 
 static bool peer_master = false;
 static size_t advertising_attempts = 0;
+static connect_status_t g_connect_status = CONNECT_STATUS_DISCONNECTED;
 
 const char* const PW_IR_ERR_NAMES[] = {
     [IR_OK] = "ok",
@@ -144,11 +145,8 @@ ir_err_t pw_ir_listen_for_handshake() {
         return err;
     }
 
-    //printf("Received response: 0x%02x\n", rx[0]);
     if(rx[0] != CMD_ADVERTISING)
         return IR_ERR_UNEXPECTED_PACKET;
-
-    printf("Got advert packet\n");
 
     tx[0] = CMD_ASSERT_MASTER;
     tx[1] = EXTRA_BYTE_FROM_WALKER;
@@ -158,20 +156,16 @@ ir_err_t pw_ir_listen_for_handshake() {
 
     err = pw_ir_send_packet(tx, 8);
     if(err != IR_OK) return err;
-    printf("Sent response packet\n");
 
     //usleep(5000);
     size_t i = 0;
     do {
         err = pw_ir_recv_packet(rx, 8);
-        printf("%d ", i);
         i++;
     } while(rx[0] == 0xfc && i<10); // debug to clear rxbuf
 
     //usleep(5000);
 
-
-    //if(err != IR_OK && err != IR_ERR_BAD_CHECKSUM) {
     if(err != IR_OK) {
         printf("Error recv packet: %02x: %s\n", err, PW_IR_ERR_NAMES[err]);
         printf("Packet header: ");
@@ -185,11 +179,15 @@ ir_err_t pw_ir_listen_for_handshake() {
 
     if(rx[0] == CMD_ASSERT_MASTER) {
         printf("Remote is master\n");
+        pw_ir_set_connect_status(CONNECT_STATUS_SLAVE);
         //TODO: handle this
+    } else {
+        pw_ir_set_connect_status(CONNECT_STATUS_MASTER);
     }
 
     if(rx[0] != CMD_SLAVE_ACK) {
         printf("Error: got resp: %02x\n", tx[0]);
+        pw_ir_set_connect_status(CONNECT_STATUS_DISCONNECTED);
         return IR_ERR_UNEXPECTED_PACKET;
     }
 
@@ -203,8 +201,14 @@ ir_err_t pw_ir_listen_for_handshake() {
 
 
     return IR_OK;
+}
 
+void pw_ir_set_connect_status(connect_status_t s) {
+    g_connect_status = s;
+}
 
+connect_status_t pw_ir_get_connect_status() {
+    return g_connect_status;
 }
 
 /*

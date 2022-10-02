@@ -66,12 +66,12 @@
 #define EXTRA_BYTE_TO_WALKER    0x02
 
 typedef enum {
-    IR_STATE_IDLE,
-    IR_STATE_KEYEX,
-    IR_STATE_READY,
-    IR_STATE_ADVERTISING,
-    IR_STATE_COUNT,
-} ir_state_t;
+    COMM_STATE_IDLE,
+    COMM_STATE_KEYEX,
+    COMM_STATE_READY,
+    COMM_STATE_ADVERTISING,
+    COMM_STATE_COUNT,
+} comm_state_t;
 
 typedef enum {
     IR_OK,
@@ -88,13 +88,23 @@ typedef enum {
     IR_ERR_COUNT,
 } ir_err_t;
 
+typedef enum {
+    CONNECT_STATUS_AWAITING,
+    CONNECT_STATUS_DISCONNECTED,
+    CONNECT_STATUS_MASTER,
+    CONNECT_STATUS_SLAVE,
+} connect_status_t;;
+
 extern const char* const PW_IR_ERR_NAMES[];
 
 void pw_ir_setup();
 ir_err_t pw_ir_recv_packet();
 ir_err_t pw_ir_send_packet();
-ir_state_t pw_ir_get_state();
-void pw_ir_set_state(ir_state_t s);
+comm_state_t pw_ir_get_state();
+void pw_ir_set_state(comm_state_t s);
+
+void pw_ir_set_connect_status(connect_status_t s);
+connect_status_t pw_ir_get_connect_status();
 
 uint16_t pw_ir_checksum(uint8_t packet[], size_t len);
 uint16_t pw_ir_checksum_seeded(uint8_t packet[], size_t len, uint16_t seed);
