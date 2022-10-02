@@ -41,8 +41,9 @@ ir_err_t pw_ir_send_packet(uint8_t packet[], size_t len) {
 
 	uint16_t chk = pw_ir_checksum(packet, len);
 
-	packet[0x02] = (uint8_t)(chk >> 8);
-	packet[0x03] = (uint8_t)(chk*0xff);
+    // little-endian
+	packet[0x02] = (uint8_t)(chk&0xff);
+	packet[0x03] = (uint8_t)(chk>>8);
 
 
 	for(size_t i = 0; i < len; i++)

@@ -9,6 +9,9 @@
 
 int pw_ir_read(uint8_t *buf, size_t max_len) {
     size_t cursor = 0;
+
+    while( !uart_is_readable(IR_UART_ID) );
+
 	while(uart_is_readable(IR_UART_ID) && (cursor<max_len)) {
 		buf[cursor] = uart_getc(IR_UART_ID);
 		cursor++;
@@ -36,7 +39,7 @@ int pw_ir_init() {
 	int __unused actual_baudrate = uart_set_baudrate(IR_UART_ID, IR_UART_BAUD_RATE);
 	uart_set_hw_flow(IR_UART_ID, false, false);
 	uart_set_format(IR_UART_ID, IR_UART_DATA_BITS, IR_UART_STOP_BITS, IR_UART_PARITY);
-	uart_set_fifo_enabled(IR_UART_ID, false); // TODO: Use fifos?
+	uart_set_fifo_enabled(IR_UART_ID, true);
 
     /*
 	// Set up uart RX interrupt
