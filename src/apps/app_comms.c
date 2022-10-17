@@ -25,15 +25,24 @@ void pw_comms_event_loop() {
     connect_status_t cs = pw_ir_get_connect_status();
     if(cs == CONNECT_STATUS_DISCONNECTED) return;
     ir_err_t err;
+    uint8_t buf[] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77};
 
     //static size_t advertising_counts = 0;
 
     switch(cs) {
         case CONNECT_STATUS_AWAITING:
+            //pw_ir_send_packet(buf, 8);
+            //err = IR_ERR_GENERAL;
             err = pw_ir_listen_for_handshake();
             break;
         case CONNECT_STATUS_SLAVE:
+            printf("We are slave!\n");
+            pw_ir_set_connect_status(CONNECT_STATUS_DISCONNECTED);
+            break;
         case CONNECT_STATUS_MASTER:
+            printf("We are master!\n");
+
+            pw_ir_set_connect_status(CONNECT_STATUS_DISCONNECTED);
             break;
         case CONNECT_STATUS_DISCONNECTED:
             break;

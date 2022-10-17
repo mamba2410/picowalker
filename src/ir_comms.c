@@ -9,7 +9,7 @@ static uint8_t rx_buf[RX_BUF_LEN];
 static uint8_t tx_buf[TX_BUF_LEN];
 static uint8_t rx_buf_aa[RX_BUF_LEN];
 static uint8_t tx_buf_aa[TX_BUF_LEN];
-static uint8_t session_id[4] = {0, 0, 0, 0};
+static uint8_t session_id[4] = {0xde, 0xad, 0xbe, 0xef};
 
 static bool peer_master = false;
 static size_t advertising_attempts = 0;
@@ -45,9 +45,12 @@ ir_err_t pw_ir_send_packet(uint8_t packet[], size_t len) {
 	packet[0x02] = (uint8_t)(chk&0xff);
 	packet[0x03] = (uint8_t)(chk>>8);
 
-
-	for(size_t i = 0; i < len; i++)
+    printf("\twrite: ");
+    for(size_t i = 0; i < len; i++) {
+        printf("%02x", packet[i]);
 		tx_buf_aa[i] = packet[i] ^ 0xaa;
+    }
+    printf("\n");
 
     int n_written = pw_ir_write(tx_buf_aa, len);
 
@@ -65,8 +68,10 @@ ir_err_t pw_ir_recv_packet(uint8_t packet[], size_t len) {
 
     int n_read = pw_ir_read(rx_buf_aa, len);
 
-    if( ((int)n_read) != len )
+    if( ((size_t)n_read) != len ) {
+        printf("Error: expected %lu bytes, got %d\n", len, n_read);
         return IR_ERR_SIZE_MISMATCH;
+    }
 
     for(size_t i = 0; i < len; i++)
         packet[i] = rx_buf_aa[i] ^ 0xaa;
@@ -137,13 +142,31 @@ void pw_ir_setup() {
     pw_ir_init();
 }
 
+void pw_ir_print_packet(uint8_t *buf, size_t len) {
+    size_t i;
+    size_t t = (len<8)?len:8;
+    for(i = 0; i < t; i++) {
+        printf("%02x", buf[i]);
+    }
+    printf(" ");
+    for(; i < len; i++) {
+        printf("%02x", buf[i]);
+    }
+    printf("\n");
+
+}
+
 ir_err_t pw_ir_listen_for_handshake() {
     uint8_t *tx = tx_buf;
     uint8_t *rx = rx_buf;
     ir_err_t err;
 
+    printf("\nHandshake start");
     err = pw_ir_recv_packet(rx, 1);
     //usleep(5*1000);
+
+    printf("\ngot packet: ");
+    pw_ir_print_packet(rx, 1);
 
     if(err != IR_OK && err != IR_ERR_BAD_SESSID && err != IR_ERR_BAD_CHECKSUM) {
         return err;
@@ -152,6 +175,7 @@ ir_err_t pw_ir_listen_for_handshake() {
     if(rx[0] != CMD_ADVERTISING)
         return IR_ERR_UNEXPECTED_PACKET;
 
+    printf("Asserting master\n");
     tx[0] = CMD_ASSERT_MASTER;
     tx[1] = EXTRA_BYTE_FROM_WALKER;
     for(size_t i = 0; i < 4; i++) {
@@ -161,24 +185,12 @@ ir_err_t pw_ir_listen_for_handshake() {
     err = pw_ir_send_packet(tx, 8);
     if(err != IR_OK) return err;
 
-    //usleep(5000);
-    size_t i = 0;
-    do {
-        err = pw_ir_recv_packet(rx, 8);
-        printf("%d ", i);
-        i++;
-    } while(rx[0] == 0xfc && i<10); // debug to clear rxbuf
+    sleep_ms(5);    // NEED to sleep for a while to give remote time to respond
+    err = pw_ir_recv_packet(rx, 8);
 
-    //usleep(5000);
-
-    if(err != IR_OK) {
+    if(err != IR_OK && err != IR_ERR_BAD_SESSID) {
         printf("Error recv packet: %02x: %s\n", err, PW_IR_ERR_NAMES[err]);
-        printf("Packet header: ");
-        for(size_t i = 0; i < 8; i++) {
-            printf("0x%02x ", rx[i]);
-        }
-        printf("\n");
-
+        pw_ir_print_packet(rx, 8);
         return err;
     }
 
@@ -204,6 +216,7 @@ ir_err_t pw_ir_listen_for_handshake() {
     }
     printf("\n");
 
+    sleep_ms(3);    // NEED to sleep for a while to give remote time to respond
 
     return IR_OK;
 }
