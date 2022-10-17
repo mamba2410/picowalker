@@ -31,6 +31,11 @@
 #define OLED_DISPLAY_ALL_OFF	0x02
 #define OLED_DISPLAY_INVERT	0x03
 
+//#define OLED_SDA    8   // GP8, phys 11
+//#define OLED_SCL    9   // GP9, phys 12
+#define OLED_SDA    4   // GP4, phys 6
+#define OLED_SCL    5   // GP5, phys 7
+
 
 typedef struct {
 	i2c_inst_t* i2c;

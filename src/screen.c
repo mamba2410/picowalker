@@ -16,8 +16,8 @@ int pw_screen_init() {
 	ssd1327_t oled = {
 			i2c: i2c_default,
 			speed: 400*1000,
-			sda: PICO_DEFAULT_I2C_SDA_PIN, // GP4
-			scl: PICO_DEFAULT_I2C_SCL_PIN, // GP5
+			sda: OLED_SDA,
+			scl: OLED_SCL,
             width: OLED_WIDTH,
             height: OLED_HEIGHT,
 	};

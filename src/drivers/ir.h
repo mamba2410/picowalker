@@ -8,8 +8,10 @@
 
 
 #define IR_UART_ID			uart1
-#define IR_UART_TX_PIN		11
-#define IR_UART_RX_PIN		12
+//#define IR_UART_TX_PIN		4   // GP4, phys 6
+//#define IR_UART_RX_PIN	    5	// GP5, phys 7
+#define IR_UART_TX_PIN		8  // GP8, phys 11
+#define IR_UART_RX_PIN	    9  // GP9, phys 12
 #define IR_UART_BAUD_RATE	115200
 #define IR_UART_DATA_BITS	8
 #define IR_UART_STOP_BITS	1
