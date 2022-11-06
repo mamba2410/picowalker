@@ -8,11 +8,12 @@
 #include "../utils.h"
 #include "../trainer_info.h"
 #include "../eeprom_map.h"
+#include "../eeprom.h"
 
 static int8_t cursor = 0;
 static int8_t prev_drawn = 0;
 
-static uint32_t const *prev_step_counts = 0;
+static uint32_t prev_step_counts[7] = {0,};
 
 void pw_trainer_card_init() {
     cursor = 0;
@@ -75,34 +76,47 @@ void pw_trainer_card_init_display() {
 void pw_trainer_card_draw_dayview(uint8_t day, uint32_t day_steps,
         uint32_t total_steps, uint16_t total_days) {
 
+    uint8_t x=0, y=0;
     pw_screen_draw_from_eeprom(
-            0, 0,
+            x, y,
             8, 16,
             PW_EEPROM_ADDR_IMG_MENU_ARROW_LEFT,
             PW_EEPROM_SIZE_IMG_MENU_ARROW_LEFT
     );
+    x+=8;
+
+    pw_screen_clear_area(x, y, 12, 16);
+    x+=12;
+
+    pw_screen_draw_from_eeprom(
+            x, y,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_CHAR_DASH,
+            PW_EEPROM_SIZE_IMG_CHAR
+    );
+    x+=8;
+
+    x+=8;
+    pw_screen_draw_integer(day, x, y);
+
+    pw_screen_draw_from_eeprom(
+            x, y,
+            40, 16,
+            PW_EEPROM_ADDR_IMG_DAYS_FRAME,
+            PW_EEPROM_SIZE_IMG_DAYS_FRAME
+    );
+    x+=40;
+
+    pw_screen_clear_area(x, y, 12, 16);
+    x+=12;
+
     pw_screen_draw_from_eeprom(
             SCREEN_WIDTH-8, 0,
             8, 16,
             PW_EEPROM_ADDR_IMG_MENU_ARROW_RIGHT,
             PW_EEPROM_SIZE_IMG_MENU_ARROW_RIGHT
     );
-
-    pw_screen_draw_from_eeprom(
-            0, 48,
-            40, 16,
-            PW_EEPROM_ADDR_IMG_DAYS_FRAME,
-            PW_EEPROM_SIZE_IMG_DAYS_FRAME
-    );
-    pw_screen_clear_area(8, 0, 8, 16);
-    pw_screen_clear_area(40+30, 0, 20, 16);
-    pw_screen_draw_integer(day, 30, 0);
-    pw_screen_draw_from_eeprom(
-            30-16, 0,
-            8, 16,
-            PW_EEPROM_ADDR_IMG_CHAR_DASH,
-            PW_EEPROM_SIZE_IMG_CHAR
-    );
+    x+=8;
 
     pw_screen_draw_from_eeprom(
             SCREEN_WIDTH-40, 16,
@@ -166,9 +180,16 @@ void pw_trainer_card_draw_update() {
         if(cursor <= 0) {
             pw_trainer_card_init_display();
         } else {
-            uint32_t const total_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_total_steps);
-            uint32_t const today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
-            uint16_t const total_days = swap_bytes_u16(g_reliable_data_1->health_data.be_total_days);
+            health_data_t health_data;
+            int err = pw_eeprom_reliable_read(
+                PW_EEPROM_ADDR_HEALTH_DATA_1,
+                PW_EEPROM_ADDR_HEALTH_DATA_2,
+                (uint8_t*)(&health_data),
+                PW_EEPROM_SIZE_HEALTH_DATA_1
+            );
+            uint32_t const total_steps = swap_bytes_u32(health_data.be_total_steps);
+            uint32_t const today_steps = swap_bytes_u32(health_data.be_today_steps);
+            uint16_t const total_days  = swap_bytes_u16(health_data.be_total_days);
             pw_trainer_card_draw_dayview(
                     cursor,
                     swap_bytes_u32(prev_step_counts[cursor-1]),
