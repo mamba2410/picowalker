@@ -46,7 +46,7 @@ void pw_trainer_card_init_display() {
             PW_EEPROM_SIZE_IMG_PERSON
     );
     pw_screen_draw_from_eeprom(
-            16, 16
+            16, 16,
             80, 16,
             PW_EEPROM_ADDR_IMG_TRAINER_NAME,
             PW_EEPROM_SIZE_IMG_TRAINER_NAME

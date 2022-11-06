@@ -7,6 +7,7 @@
 #include "screen.h"
 #include "utils.h"
 #include "trainer_info.h"
+#include "eeprom_map.h"
 
 #include "apps/app_trainer_card.h"
 
@@ -197,19 +198,41 @@ void pw_splash_handle_input(uint8_t b) {
 }
 
 void pw_splash_init_display() {
-    pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
-    pw_screen_draw_img(&img_route, 0, SCREEN_HEIGHT-img_route.height-16);
+    pw_screen_draw_from_eeprom(
+        SCREEN_WIDTH-64, 0,
+        64, 48,
+        PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME2,
+        PW_EEPROM_SIZE_IMG_POKEMON_LARGE_ANIMATED_FRAME
+    );
+
+    pw_screen_draw_from_eeprom(
+        0, SCREEN_HEIGHT-42-16,
+        32, 24,
+        PW_EEPROM_ADDR_IMG_ROUTE_LARGE,
+        PW_EEPROM_SIZE_IMG_ROUTE_LARGE
+    );
+
     uint32_t today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
     pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
 }
 
 void pw_splash_update_display() {
+
+    uint16_t frame_addr;
     if(splash_anim_frame) {
-        pw_screen_draw_img(&img_pokemon_large_frame2, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
+        frame_addr = PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME1;
     } else {
-        pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
+        frame_addr = PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME2;
     }
     splash_anim_frame = !splash_anim_frame;
+
+    pw_screen_draw_from_eeprom(
+        SCREEN_WIDTH-64, 0,
+        64, 48,
+        frame_addr,
+        PW_EEPROM_SIZE_IMG_POKEMON_LARGE_ANIMATED_FRAME
+    );
+
     uint32_t today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
     pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
 }
