@@ -111,13 +111,29 @@ void pw_screen_draw_subtime(uint8_t n, size_t x, size_t y, bool draw_colon) {
     uint8_t idx;
 
     idx = n/10;
-    pw_screen_draw_from_eeprom(PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx, PW_EEPROM_SIZE_IMG_CHAR, 8, 16, x, y);
+    pw_screen_draw_from_eeprom(
+        x, y,
+        8, 16,
+        PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx,
+        PW_EEPROM_SIZE_IMG_CHAR
+    );
+
     x += 8;
     idx = n%10;
-    pw_screen_draw_from_eeprom(PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx, PW_EEPROM_SIZE_IMG_CHAR, 8, 16, x, y);
+    pw_screen_draw_from_eeprom(
+        x, y,
+        8, 16,
+        PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx,
+        PW_EEPROM_SIZE_IMG_CHAR
+    );
     if(draw_colon) {
         x += 8;
-        pw_screen_draw_from_eeprom(PW_EEPROM_ADDR_IMG_CHAR_COLON, PW_EEPROM_SIZE_IMG_CHAR, 8, 16, x, y);
+        pw_screen_draw_from_eeprom(
+            x, y,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_CHAR_COLON,
+            PW_EEPROM_SIZE_IMG_CHAR
+        );
     }
 }
 
