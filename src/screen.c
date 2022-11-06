@@ -3,15 +3,20 @@
 
 #include "drivers/ssd1327.h"
 #include "screen.h"
+#include "eeprom.h"
+#include "eeprom_map.h"
 
 static screen_t screen;
 
 static uint8_t *screen_buf = 0;
+static uint8_t *eeprom_buf = 0;
 
 int pw_screen_init() {
 
     if(!screen_buf)
         screen_buf = malloc(SCREEN_BUF_SIZE);
+    if(!eeprom_buf)
+        eeprom_buf = malloc(SCREEN_BUF_SIZE);
 
 	ssd1327_t oled = {
 			i2c: i2c_default,
@@ -38,6 +43,12 @@ int pw_screen_init() {
 
 }
 
+//int pw_screen_draw_from_eeprom(uint16_t addr, size_t len, uint8_t w, uint8_t h, uint8_t x, uint8_t y) {
+int pw_screen_draw_from_eeprom(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint16_t addr, size_t len) {
+    pw_img_t img = {.height=h, .width=w, .data=screen_buf, .size=len};
+    pw_eeprom_read(addr, eeprom_buf, len);
+    pw_screen_draw_img(&img, x, y);
+}
 
 int pw_screen_draw_img(pw_img_t *img, size_t x, size_t y) {
     oled_img_t oled_img;
@@ -84,7 +95,7 @@ void pw_screen_draw_integer(uint32_t n, size_t right_x, size_t y) {
         size_t idx = m%10;
         m = m/10;
         x -= 8;
-        pw_screen_draw_img(&text_characters[idx], x, y);
+        pw_screen_draw_from_eeprom(PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx, PW_EEPROM_SIZE_IMG_CHAR, 8, 16, x, y);
     } while(m>0);
 }
 
@@ -100,13 +111,13 @@ void pw_screen_draw_subtime(uint8_t n, size_t x, size_t y, bool draw_colon) {
     uint8_t idx;
 
     idx = n/10;
-    pw_screen_draw_img(&text_characters[idx], x, y);
+    pw_screen_draw_from_eeprom(PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx, PW_EEPROM_SIZE_IMG_CHAR, 8, 16, x, y);
     x += 8;
     idx = n%10;
-    pw_screen_draw_img(&text_characters[idx], x, y);
+    pw_screen_draw_from_eeprom(PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx, PW_EEPROM_SIZE_IMG_CHAR, 8, 16, x, y);
     if(draw_colon) {
         x += 8;
-        pw_screen_draw_img(&text_character_colon, x, y);
+        pw_screen_draw_from_eeprom(PW_EEPROM_ADDR_IMG_CHAR_COLON, PW_EEPROM_SIZE_IMG_CHAR, 8, 16, x, y);
     }
 }
 
