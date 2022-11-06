@@ -5,8 +5,8 @@
 #include "route_info.h"
 #include "pwroms.h"
 
-reliable_data_t const *g_reliable_data_1 = (reliable_data_t*)&(eeprom[0x0080]);
-reliable_data_t const *g_reliable_data_2 = (reliable_data_t*)&(eeprom[0x0180]);
+reliable_data_t const *g_reliable_data_1 = 0;
+reliable_data_t const *g_reliable_data_2 = 0;
 
 
 
