@@ -9,6 +9,7 @@
 #include "screen.h"
 #include "utils.h"
 #include "trainer_info.h"
+#include "eeprom_map.h"
 
 static pw_state_t const MENU_ENTRIES[] = {
 	STATE_POKE_RADAR,
@@ -20,48 +21,77 @@ static pw_state_t const MENU_ENTRIES[] = {
 };
 const int8_t MENU_SIZE = sizeof(MENU_ENTRIES);
 
-static pw_img_t* const MENU_TITLES[] = {
-    &text_mm_pokeradar,
-    &text_mm_dowsing,
-    &text_mm_connect,
-    &text_mm_trainer,
-    &text_mm_inventory,
-    &text_mm_settings,
+static uint16_t const MENU_TITLES[] = {
+    PW_EEPROM_ADDR_IMG_MENU_TITLE_POKERADAR,
+    PW_EEPROM_ADDR_IMG_MENU_TITLE_DOWSING,
+    PW_EEPROM_ADDR_IMG_MENU_TITLE_CONNECT,
+    PW_EEPROM_ADDR_IMG_MENU_TITLE_TRAINER_CARD,
+    PW_EEPROM_ADDR_IMG_MENU_TITLE_INVENTORY,
+    PW_EEPROM_ADDR_IMG_MENU_TITLE_SETTINGS,
 };
 
-static pw_img_t* const MENU_ICONS[] = {
-    &icon_mm_pokeradar,
-    &icon_mm_dowsing,
-    &icon_mm_connect,
-    &icon_mm_trainer,
-    &icon_mm_inventory,
-    &icon_mm_settings,
+static uint16_t const MENU_ICONS[] = {
+    PW_EEPROM_ADDR_IMG_MENU_ICON_POKERADAR,
+    PW_EEPROM_ADDR_IMG_MENU_ICON_DOWSING,
+    PW_EEPROM_ADDR_IMG_MENU_ICON_CONNECT,
+    PW_EEPROM_ADDR_IMG_MENU_ICON_TRAINER_CARD,
+    PW_EEPROM_ADDR_IMG_MENU_ICON_INVENTORY,
+    PW_EEPROM_ADDR_IMG_MENU_ICON_SETTINGS,
 };
 
 static int8_t cursor = 0;
 
 void pw_menu_init_display() {
-    pw_screen_draw_img(MENU_TITLES[cursor], 8, 0);
 
-    pw_screen_draw_img(&icon_mm_larrow, 0, 0);
-    pw_screen_draw_img(&icon_mm_rarrow, SCREEN_WIDTH-8, 0);
+    pw_screen_draw_from_eeprom(
+        8, 0,
+        80, 16,
+        MENU_TITLES[cursor],
+        PW_EEPROM_SIZE_IMG_MENU_TITLE_CONNECT,
+    );
+    pw_screen_draw_from_eeprom(
+        0, 0,
+        8, 16,
+        PW_EEPROM_ADDR_IMG_MENU_ARROW_LEFT,
+        PW_EEPROM_SIZE_IMG_MENU_ARROW_LEFT,
+    );
+    pw_screen_draw_from_eeprom(
+        SCREEN_WIDTH-8, 0,
+        8, 16,
+        PW_EEPROM_ADDR_IMG_MENU_ARROW_RIGHT,
+        PW_EEPROM_SIZE_IMG_MENU_ARROW_RIGHT,
+    );
 
     size_t y_values[] = {24, 26, 28, 30, 26, 24};
     for(size_t i = 0; i < MENU_SIZE; i++) {
-        pw_screen_draw_img(MENU_ICONS[i], i*16, y_values[i]);
+        pw_screen_draw_from_eeprom(
+            i*16, y_values[i],
+            16, 16,
+            MENU_ICONS[i],
+            PW_EEPROM_SIZE_IMG_MENU_ICON_CONNECT,
+        );
+
         if(cursor == i) {
-            pw_screen_draw_img(&icon_arrow_down_normal, i*16, y_values[i]-8);
+            pw_screen_draw_from_eeprom(
+                i*16, y_values[i]-8,
+                16, 16,
+                PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL,
+                PW_EEPROM_SIZE_IMG_ARROW,
+            );
         } else {
             pw_screen_clear_area(i*16, y_values[i]-8, 8, 8);
         }
     }
 
     const uint16_t current_watts = swap_bytes_u16(g_reliable_data_1->health_data.be_current_watts);;
-    pw_screen_draw_img(&icon_watt_symbol, SCREEN_WIDTH-icon_watt_symbol.width,
-            SCREEN_HEIGHT-icon_watt_symbol.height);
-    pw_screen_draw_integer(current_watts, SCREEN_WIDTH-icon_watt_symbol.width,
-            SCREEN_HEIGHT-icon_watt_symbol.height);
 
+    pw_screen_draw_from_eeprom(
+        SCREEN_WIDTH-16, SCREEN_HEIGHT-16,
+        16, 16,
+        PW_EEPROM_ADDR_IMG_WATTS,
+        PW_EEPROM_SIZE_IMG_WATTS,
+    );
+    pw_screen_draw_integer(current_watts, SCREEN_WIDTH-16, SCREEN_HEIGHT-16);
 
 }
 
@@ -85,7 +115,13 @@ void pw_menu_update_display() {
     size_t y_values[] = {24, 26, 28, 30, 26, 24};
     for(size_t i = 0; i < MENU_SIZE; i++) {
         if(cursor == i) {
-            pw_screen_draw_img(&icon_arrow_down_normal, i*16, y_values[i]-8);
+            pw_screen_draw_from_eeprom(
+                i*16, y_values[i]-8,
+                8, 8,
+                PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL,
+                PW_EEPROM_SIZE_IMG_ARROW,
+            );
+
         } else {
             pw_screen_clear_area(i*16, y_values[i]-8, 8, 8);
         }

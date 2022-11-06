@@ -136,8 +136,8 @@
 #define PW_EEPROM_SIZE_IMG_MENU_TITLE_DOWSING 320
 #define PW_EEPROM_ADDR_IMG_MENU_TITLE_CONNECT 0x0b90  // "connect" menu heading in a box. 80x16
 #define PW_EEPROM_SIZE_IMG_MENU_TITLE_CONNECT 320
-#define PW_EEPROM_ADDR_IMG_MENU_TITLE_TRAINERCARD 0x0cd0  // "trainer card" menu heading in a box. 80x16
-#define PW_EEPROM_SIZE_IMG_MENU_TITLE_TRAINERCARD 320
+#define PW_EEPROM_ADDR_IMG_MENU_TITLE_TRAINER_CARD 0x0cd0  // "trainer card" menu heading in a box. 80x16
+#define PW_EEPROM_SIZE_IMG_MENU_TITLE_TRAINER_CARD 320
 #define PW_EEPROM_ADDR_IMG_MENU_TITLE_INVENTORY 0x0e10  // "pok&eacute;mon &amp; items" menu heading in a box. 80x16
 #define PW_EEPROM_SIZE_IMG_MENU_TITLE_INVENTORY 320
 #define PW_EEPROM_ADDR_IMG_MENU_TITLE_SETTINGS 0x0f50  // "settings" menu heading in a box. 80x16
@@ -148,8 +148,8 @@
 #define PW_EEPROM_SIZE_IMG_MENU_ICON_DOWSING 64
 #define PW_EEPROM_ADDR_IMG_MENU_ICON_CONNECT 0x1110  // "connect" icon for main menu 16x16
 #define PW_EEPROM_SIZE_IMG_MENU_ICON_CONNECT 64
-#define PW_EEPROM_ADDR_IMG_MENU_ICON_TRAINERCARD 0x1150  // "trainer card" icon for main menu 16x16
-#define PW_EEPROM_SIZE_IMG_MENU_ICON_TRAINERCARD 64
+#define PW_EEPROM_ADDR_IMG_MENU_ICON_TRAINER_CARD 0x1150  // "trainer card" icon for main menu 16x16
+#define PW_EEPROM_SIZE_IMG_MENU_ICON_TRAINER_CARD 64
 #define PW_EEPROM_ADDR_IMG_MENU_ICON_INVENTORY 0x1190  // "pokemon & items" icon for main menu 16x16
 #define PW_EEPROM_SIZE_IMG_MENU_ICON_INVENTORY 64
 #define PW_EEPROM_ADDR_IMG_MENU_ICON_SETTINGS 0x11d0  // "settings" icon for main menu 16x16

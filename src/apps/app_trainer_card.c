@@ -5,10 +5,9 @@
 #include "../states.h"
 #include "../buttons.h"
 #include "../screen.h"
-#include "../pw_images.h"
-#include "../pwroms.h"
 #include "../utils.h"
 #include "../trainer_info.h"
+#include "../eeprom_map.h"
 
 static int8_t cursor = 0;
 static int8_t prev_drawn = 0;
@@ -21,41 +20,116 @@ void pw_trainer_card_init() {
 }
 
 void pw_trainer_card_init_display() {
-    pw_screen_draw_img(&text_mm_trainer, 8, 0);
-    pw_screen_draw_img(&icon_mm_return, 0, 0);
-    pw_screen_draw_img(&icon_mm_rarrow, SCREEN_WIDTH-icon_mm_rarrow.width, 0);
+    pw_screen_draw_from_eeprom(
+            8, 0,
+            80, 16,
+            PW_EEPROM_ADDR_IMG_MENU_TITLE_TRAINER_CARD,
+            PW_EEPROM_SIZE_IMG_MENU_TITLE_TRAINER_CARD
+    );
+    pw_screen_draw_from_eeprom(
+            0, 0,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_MENU_ARROW_RETURN,
+            PW_EEPROM_SIZE_IMG_MENU_ARROW_RETURN
+    );
+    pw_screen_draw_from_eeprom(
+            SCREEN_WIDTH-8, 0,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_MENU_ARROW_RIGHT,
+            PW_EEPROM_SIZE_IMG_MENU_ARROW_RIGHT
+    );
 
-    pw_screen_draw_img(&icon_generic_person, 0, 16);
-    pw_screen_draw_img(&text_trainer_name, 16, 16);
-    pw_screen_draw_img(&icon_small_route, 0, 32);
-    pw_screen_draw_img(&text_route_name, 16, 32);
-    pw_screen_draw_img(&text_time, 0, 48);
+    pw_screen_draw_from_eeprom(
+            0, 16,
+            16, 16,
+            PW_EEPROM_ADDR_IMG_PERSON,
+            PW_EEPROM_SIZE_IMG_PERSON
+    );
+    pw_screen_draw_from_eeprom(
+            16, 16
+            80, 16,
+            PW_EEPROM_ADDR_IMG_TRAINER_NAME,
+            PW_EEPROM_SIZE_IMG_TRAINER_NAME
+    );
+    pw_screen_draw_from_eeprom(
+            0, 32,
+            16, 16,
+            PW_EEPROM_ADDR_IMG_ROUTE_SMALL,
+            PW_EEPROM_SIZE_IMG_ROUTE_SMALL
+    );
+    pw_screen_draw_from_eeprom(
+            16, 32,
+            80, 16,
+            PW_EEPROM_ADDR_TEXT_ROUTE_NAME,
+            PW_EEPROM_SIZE_TEXT_ROUTE_NAME
+    );
+    pw_screen_draw_from_eeprom(
+            0, 48,
+            32, 16,
+            PW_EEPROM_ADDR_IMG_TIME_FRAME,
+            PW_EEPROM_SIZE_IMG_TIME_FRAME
+    );
     pw_screen_draw_time(23, 59, 59, 32, 48);
 }
 
 void pw_trainer_card_draw_dayview(uint8_t day, uint32_t day_steps,
         uint32_t total_steps, uint16_t total_days) {
 
-    pw_screen_draw_img(&icon_mm_larrow, 0, 0);
-    pw_screen_draw_img(&icon_mm_rarrow, SCREEN_WIDTH-icon_mm_rarrow.width, 0);
+    pw_screen_draw_from_eeprom(
+            0, 0,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_MENU_ARROW_LEFT,
+            PW_EEPROM_SIZE_IMG_MENU_ARROW_LEFT
+    );
+    pw_screen_draw_from_eeprom(
+            SCREEN_WIDTH-8, 0,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_MENU_ARROW_RIGHT,
+            PW_EEPROM_SIZE_IMG_MENU_ARROW_RIGHT
+    );
 
-    pw_screen_draw_img(&text_days, 30, 0);
-    pw_screen_clear_area(icon_mm_larrow.width, 0, 8, 16);
-    pw_screen_clear_area(text_days.width+30, 0, 20, 16);
+    pw_screen_draw_from_eeprom(
+            0, 48,
+            40, 16,
+            PW_EEPROM_ADDR_IMG_DAYS_FRAME,
+            PW_EEPROM_SIZE_IMG_DAYS_FRAME
+    );
+    pw_screen_clear_area(8, 0, 8, 16);
+    pw_screen_clear_area(40+30, 0, 20, 16);
     pw_screen_draw_integer(day, 30, 0);
-    pw_screen_draw_img(&text_character_dash, 30-16, 0);
+    pw_screen_draw_from_eeprom(
+            30-16, 0,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_CHAR_DASH,
+            PW_EEPROM_SIZE_IMG_CHAR
+    );
 
-    pw_screen_draw_img(&text_steps, SCREEN_WIDTH-text_steps.width, 16);
-    pw_screen_clear_area(0, 16, SCREEN_WIDTH-text_steps.width, 16);
-    pw_screen_draw_integer(day_steps, SCREEN_WIDTH-text_steps.width, 16);
+    pw_screen_draw_from_eeprom(
+            SCREEN_WIDTH-40, 16,
+            40, 16,
+            PW_EEPROM_ADDR_IMG_STEPS_FRAME,
+            PW_EEPROM_SIZE_IMG_STEPS_FRAME
+    );
+    pw_screen_clear_area(0, 16, SCREEN_WIDTH-40, 16);
+    pw_screen_draw_integer(day_steps, SCREEN_WIDTH-40, 16);
 
-    pw_screen_draw_img(&text_total_days, 0, 32);
-    pw_screen_clear_area(text_total_days.width, 32, SCREEN_WIDTH-text_total_days.width, 16);
-    pw_screen_draw_integer(total_days, SCREEN_WIDTH-1, 32);
+    pw_screen_draw_from_eeprom(
+            0, 32,
+            64, 16,
+            PW_EEPROM_ADDR_IMG_TOTAL_DAYS_FRAME,
+            PW_EEPROM_SIZE_IMG_TOTAL_DAYS_FRAME
+    );
+    pw_screen_clear_area(64, 32, SCREEN_WIDTH-64, 16);
+    pw_screen_draw_integer(total_days, SCREEN_WIDTH, 32); // shift x by -1?
 
-    pw_screen_draw_img(&text_steps, SCREEN_WIDTH-text_steps.width, SCREEN_HEIGHT-16);
-    pw_screen_clear_area(0, 48, SCREEN_WIDTH-text_steps.width, 16);
-    pw_screen_draw_integer(total_steps, SCREEN_WIDTH-text_steps.width, SCREEN_HEIGHT-16);
+    pw_screen_draw_from_eeprom(
+            SCREEN_WIDTH-40, 48,
+            40, 16,
+            PW_EEPROM_ADDR_IMG_STEPS_FRAME,
+            PW_EEPROM_SIZE_IMG_STEPS_FRAME
+    );
+    pw_screen_clear_area(0, 48, SCREEN_WIDTH-40, 16);
+    pw_screen_draw_integer(total_steps, SCREEN_WIDTH-40, 48);
 
 }
 
