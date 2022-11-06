@@ -95,7 +95,12 @@ void pw_screen_draw_integer(uint32_t n, size_t right_x, size_t y) {
         size_t idx = m%10;
         m = m/10;
         x -= 8;
-        pw_screen_draw_from_eeprom(PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx, PW_EEPROM_SIZE_IMG_CHAR, 8, 16, x, y);
+        pw_screen_draw_from_eeprom(
+            x, y,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx,
+            PW_EEPROM_SIZE_IMG_CHAR
+        );
     } while(m>0);
 }
 
