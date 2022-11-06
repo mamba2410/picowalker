@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "trainer_info.h"
 #include "eeprom_map.h"
+#include "eeprom.h"
 
 #include "apps/app_trainer_card.h"
 
@@ -212,7 +213,15 @@ void pw_splash_init_display() {
         PW_EEPROM_SIZE_IMG_ROUTE_LARGE
     );
 
-    uint32_t today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
+    health_data_t health_data;
+    int err = pw_eeprom_reliable_read(
+        PW_EEPROM_ADDR_HEALTH_DATA_1,
+        PW_EEPROM_ADDR_HEALTH_DATA_2,
+        (uint8_t*)(&health_data),
+        PW_EEPROM_SIZE_HEALTH_DATA_1
+    );
+    if(err != 0) printf("%d\n", err);
+    uint32_t today_steps = swap_bytes_u32(health_data.be_today_steps);
     pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
 }
 
@@ -233,7 +242,15 @@ void pw_splash_update_display() {
         PW_EEPROM_SIZE_IMG_POKEMON_LARGE_ANIMATED_FRAME
     );
 
-    uint32_t today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
+    health_data_t health_data;
+    int err = pw_eeprom_reliable_read(
+        PW_EEPROM_ADDR_HEALTH_DATA_1,
+        PW_EEPROM_ADDR_HEALTH_DATA_2,
+        (uint8_t*)(&health_data),
+        PW_EEPROM_SIZE_HEALTH_DATA_1
+    );
+    if(err != 0) printf("%d\n", err);
+    uint32_t today_steps = swap_bytes_u32(health_data.be_today_steps);
     pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
 }
 
