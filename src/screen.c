@@ -45,7 +45,7 @@ int pw_screen_init() {
 
 //int pw_screen_draw_from_eeprom(uint16_t addr, size_t len, uint8_t w, uint8_t h, uint8_t x, uint8_t y) {
 int pw_screen_draw_from_eeprom(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint16_t addr, size_t len) {
-    pw_img_t img = {.height=h, .width=w, .data=screen_buf, .size=len};
+    pw_img_t img = {.height=h, .width=w, .data=eeprom_buf, .size=len};
     pw_eeprom_read(addr, eeprom_buf, len);
     pw_screen_draw_img(&img, x, y);
 }

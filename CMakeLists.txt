@@ -33,8 +33,11 @@ add_executable(picowalker
     src/route_info.h
     src/utils.c
     src/utils.h
+    src/eeprom.c
+    src/eeprom.h
     src/drivers/ssd1327.c
     src/drivers/ssd1327.h
+    src/drivers/eeprom_pico_ram.S
     src/drivers/eeprom_pico_ram.c
     src/drivers/eeprom_pico_ram.h
     src/apps/app_trainer_card.c
