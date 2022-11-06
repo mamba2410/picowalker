@@ -74,7 +74,7 @@ void pw_menu_init_display() {
         if(cursor == i) {
             pw_screen_draw_from_eeprom(
                 i*16, y_values[i]-8,
-                16, 16,
+                8, 8,
                 PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL,
                 PW_EEPROM_SIZE_IMG_ARROW
             );

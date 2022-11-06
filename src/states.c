@@ -220,7 +220,6 @@ void pw_splash_init_display() {
         (uint8_t*)(&health_data),
         PW_EEPROM_SIZE_HEALTH_DATA_1
     );
-    if(err != 0) printf("%d\n", err);
     uint32_t today_steps = swap_bytes_u32(health_data.be_today_steps);
     pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
 }
@@ -249,7 +248,6 @@ void pw_splash_update_display() {
         (uint8_t*)(&health_data),
         PW_EEPROM_SIZE_HEALTH_DATA_1
     );
-    if(err != 0) printf("%d\n", err);
     uint32_t today_steps = swap_bytes_u32(health_data.be_today_steps);
     pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
 }
