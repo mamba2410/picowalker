@@ -11,8 +11,11 @@
 
 #include <stdint.h>
 
-extern uint8_t eeprom[EEPROM_SIZE];
-extern uint8_t flashrom[FLASHROM_SIZE];
+/*
+ *  These are stored in ram (for now)
+ */
+//extern uint8_t eeprom[EEPROM_SIZE];
+//extern uint8_t flashrom[FLASHROM_SIZE];
 extern uint8_t sad_pokewalker[SAD_POKEWALKER_SIZE];
 
 #endif /* __ASSEMBLER__ */
