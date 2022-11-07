@@ -163,3 +163,10 @@ void pw_img_to_oled(pw_img_t *pw_img, oled_img_t *oled_img) {
 }
 
 
+uint8_t oled_convert_colour(uint8_t c) {
+    if(c < 4)
+        return greyscale_map[c];
+    else
+        return 0xff;
+}
+
