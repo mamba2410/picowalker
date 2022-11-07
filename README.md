@@ -3,11 +3,10 @@
 ## About
 
 This project aims to recreate a Pokewalker from Pokemon HeartGold/SoulSilver using custom hardware based around the Raspberry Pi Pico.
-People should be able to build their own fully functioning device which can interact with the original HG/SS games as the pokewalker did.
-This project does *NOT* aim to create a device used to hack/manipulate the HG/SS games and it is *NOT* aimed at creating a product to sell. This is purely for hobby and educational purposes.
-We will try to stay faithful to the original use and intent of the pokewalker, but on a new, relatively easily buildable device, since working, original Pokewalkers are becoming more and more rare.
+People should be able to build their own fully functioning device which can interact with the original HG/SS games as the Pokewalker did.
+We will try to stay faithful to the original use and intent of the Pokewalker, but on a new, relatively easily buildable device, since working, original Pokewalkers are becoming more and more rare.
 
-There are other projects based around emulating the code that is on the pokewalker, however this project aims to create a new device which is capable of emulating all of the features of the original pokewalker, with room for improvement.
+There are other projects based around emulating the code that is on the Pokewalker, however this project aims to create a new device which is capable of emulating all of the features of the original Pokewalker, with room for improvement.
 
 The project is written in C, aimed at the [Raspberry Pi Pico](https://www.raspberrypi.org/documentation/rp2040/getting-started/#getting-started-with-c) and will try to remain faithful to the original pokewalker code, with some more modern and high level approaches.
 
@@ -16,17 +15,19 @@ The project is written in C, aimed at the [Raspberry Pi Pico](https://www.raspbe
 
 Currently nowhere near playable but I have:
 
-- Basic OLED functionality
+- SSD1327 OLED display with on-the-fly image transcoding
 - Basic IR functionality
 - Buttons
-- Menu states
+- Splash screen
+- Main menu
+- Trainer card micro-app
+- Eeprom template code
 
 The OLED can draw original Pokewalker-encoded images and convert them on-the-fly.
 The new images are 4-bpp so are twice as large in file size unfortunately.
 
 Next steps:
 
-- Implement graphical versions of the menus
 - Add player data/route data/pokemon data
 - Add micro-apps
 

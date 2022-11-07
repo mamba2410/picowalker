@@ -1,15 +1,19 @@
 # TODO
 
-## Bug Fixes
+## Frontburner
 
-- Do not draw inside interrupts, instead have some sort of request flags to request redraw
-  before/after an event loop iteration.
-- Similar thing for changing states, request a state change, then fulfil it after event loop
-  ends.
+- Render everything on the splash screen correctly
+- Add IR code from `pw-ir-linux`
+- Add IR error messages
+- Speed up screen I2C speed?
+- Speed up draw update interval
+- Move button code to driver
+- Change button code to polling instead of interrupts?
 
+## Backburner
 
-## Features
-
+- General refactor/clean up
+- Add pico eeprom driver
 - Pokewalker data
 - Minigames
 - Proper IR functionality
