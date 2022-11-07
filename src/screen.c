@@ -142,3 +142,22 @@ void pw_screen_draw_subtime(uint8_t n, size_t x, size_t y, bool draw_colon) {
     }
 }
 
+void pw_screen_draw_horiz_line(uint8_t x, uint8_t y, uint8_t len, uint8_t colour) {
+    oled_img_t img = {
+        x: x + screen.offset_x,
+        y: y + screen.offset_y,
+        width: len,
+        height: 1,
+        size: len/2,
+        data: screen_buf
+    };
+
+    colour = oled_convert_colour(colour);
+
+    for(uint8_t i = 0; i < len/2; i++) {
+        screen_buf[i] = colour | (colour<<4);   // 2 pixels per byte
+    }
+
+    oled_draw(&(screen.chip), &img);
+}
+
