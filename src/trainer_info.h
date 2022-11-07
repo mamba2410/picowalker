@@ -116,10 +116,6 @@ typedef struct __attribute__((__packed__)) {
     uint8_t padding[16];
 } reliable_data_t;
 
-void pw_check_struct_sizes();
-
-extern reliable_data_t const *g_reliable_data_1;
-extern reliable_data_t const *g_reliable_data_2;
 
 
 #endif /* PW_TRAINER_INFO_H */

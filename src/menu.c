@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "trainer_info.h"
 #include "eeprom_map.h"
+#include "eeprom.h"
 
 static pw_state_t const MENU_ENTRIES[] = {
 	STATE_POKE_RADAR,
@@ -83,7 +84,14 @@ void pw_menu_init_display() {
         }
     }
 
-    const uint16_t current_watts = swap_bytes_u16(g_reliable_data_1->health_data.be_current_watts);;
+    health_data_t health_data;
+    int err = pw_eeprom_reliable_read(
+        PW_EEPROM_ADDR_HEALTH_DATA_1,
+        PW_EEPROM_ADDR_HEALTH_DATA_2,
+        (uint8_t*)(&health_data),
+        PW_EEPROM_SIZE_HEALTH_DATA_1
+    );
+    const uint16_t current_watts = swap_bytes_u16(health_data.be_current_watts);;
 
     pw_screen_draw_from_eeprom(
         SCREEN_WIDTH-16, SCREEN_HEIGHT-16,
