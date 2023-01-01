@@ -29,7 +29,7 @@ typedef struct {
     uint8_t padding_2;
     uint16_t le_special_item;
     uint16_t le_special_item_steps;
-    uint8_t le_special_item_percent;
+    uint8_t special_item_percent;
     uint8_t padding_3[3];
     uint16_t route_name[21];
     uint8_t pokemon_event_number;
@@ -38,7 +38,7 @@ typedef struct {
     uint8_t special_pokemon_name_image[0x140];
     uint8_t special_area_icon[0xc0];
     uint8_t special_area_name_image[0x140];
-    uint8_t item_name_image[0x180];
+    uint8_t special_item_name_image[0x180];
 } special_route_info_t;
 
 extern route_info_t const *g_route_info;
