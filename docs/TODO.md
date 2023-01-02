@@ -24,3 +24,31 @@
 - Change buttons to general input?
 
 
+## Apps
+
+- PokeRadar
+- Dowsing
+    - Read route items
+    - Write to inventory
+    - Choose item override if full
+    - Choose bush
+    - RNG
+    - Read min item steps?
+    - Read current steps
+- Connect
+    - IR handshake
+    - Master peer play
+    - Slave actions
+- Pokemon and Items
+    - 2 screens + cursor
+    - Read caught pokemon
+    - Read obtained items
+    - Read peer-play items
+        - eeprom read
+- Settings
+    - Sound
+    - Shade
+- Splash
+- Menu
+- Sleep
+
