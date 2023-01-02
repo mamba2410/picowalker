@@ -235,7 +235,8 @@ void pw_splash_init_display() {
     uint16_t items[6];
     pw_eeprom_read(
         PW_EEPROM_ADDR_OBTAINED_ITEMS,
-        (uint8_t*)(&caught_pokemon),
+        //(uint8_t*)(&caught_pokemon),
+        (uint8_t*)(items),
         PW_EEPROM_SIZE_OBTAINED_ITEMS
     );
     for(uint8_t i = 0; i < 3; i++) {
