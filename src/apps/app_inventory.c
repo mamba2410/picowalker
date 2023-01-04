@@ -34,6 +34,14 @@ static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m);
 static uint8_t pw_inventory_find_index(state_vars_t *sv, uint16_t data, enum search_type type);
 static void pw_inventory_index_to_data(state_vars_t *sv, uint8_t *buf, uint8_t idx, enum search_type type);
 
+
+/*
+ *  TODO: optimisation
+ *  chance owned_items to match cursor position
+ *  so that we don't need too much logic to separate drawing items and pokemon
+ *  will need padding for the empty item slot
+ *  Do all the sorting in `init` and the rest follows
+ */
 void pw_inventory_init(state_vars_t *sv) {
     inv_state = 1;
     n_presents = 0;
@@ -51,6 +59,12 @@ void pw_inventory_init(state_vars_t *sv) {
         PW_EEPROM_SIZE_CAUGHT_POKEMON_SUMMARY_SINGLE*3
     );
 
+    /*
+     *  Check for pokemon
+     *  3x caught inventory [1..3]
+     *  1x special/event    [4]
+     *  1x walking mon      [0]
+     */
     for(uint8_t i = 0; i < 3; i++) {
         owned_things.le_species[i] = test_pokemon[i].le_species;
         if(test_pokemon[i].le_species != 0) inv_state |= 1<<(1+i);
@@ -71,6 +85,12 @@ void pw_inventory_init(state_vars_t *sv) {
     owned_things.le_current = test_pokemon[0].le_species;
 
 
+    /*
+     *  Check for items
+     *  1x empty            (5)
+     *  3x dowsed items     [0..3] (6..8)
+     *  1x special/event    [4] (9)
+     */
     struct {
         uint16_t le_item;
         uint16_t pad;
@@ -82,7 +102,6 @@ void pw_inventory_init(state_vars_t *sv) {
         PW_EEPROM_SIZE_OBTAINED_ITEMS_SINGLE*3
     );
 
-    // get num items
     for(uint8_t i = 0; i < 3; i++) {
         owned_things.le_item[i] = test_item[i].le_item;
         if(test_item[i].le_item != 0) inv_state |= 1<<(6+i);
@@ -102,22 +121,27 @@ void pw_inventory_init(state_vars_t *sv) {
         PW_EEPROM_SIZE_PEER_PLAY_ITEM_SINGLE*10
     );
 
-    // get num peer play items
+
+    /*
+     *  Check for presents
+     *  10x peer-play presents [0..9]
+     */
     for(uint8_t i = 0; i < 10; i++) {
         owned_things.le_presents[i] = test_item[i].le_item;
     }
 
+    // count presents
     for(n_presents = 0; owned_things.le_presents[n_presents] != 0 && n_presents < 10; n_presents++) ;
 
-    //printf("presents: %d\n", n_presents);
-    //inv_state = 0x03df; // all items unlocked
+    //inv_state = 0x03df; // all pokemon/items unlocked
     //n_presents = 10;    // we have 10 presents :D
-
-    //inv_state = 0x0183;
-    //n_presents = 6;
 }
 
 
+
+
+// TODO: make this a jump table
+// TODO: make subscreen static enum
 void pw_inventory_init_display(state_vars_t *sv) {
     if(sv->subscreen == 0) {
         pw_inventory_draw_screen1(sv);
@@ -130,6 +154,7 @@ void pw_inventory_init_display(state_vars_t *sv) {
 void pw_inventory_update_display(state_vars_t *sv) {
     if(sv->prev_subscreen != sv->subscreen) {
         pw_screen_clear();
+        // TODO: make this a jump table
         if(sv->subscreen == 0)
             pw_inventory_draw_screen1(sv);
         else
@@ -184,7 +209,7 @@ static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m) {
             pw_request_state(STATE_MAIN_MENU); // back to main menu
         }
         if(sv->cursor > 9) {
-            sv->subscreen = 1;
+            sv->subscreen = 1;  // change to presents screen
             sv->cursor = 0;
         }
 
@@ -202,8 +227,10 @@ static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m) {
     pw_request_redraw();
 }
 
+// TODO: separate into smaller functions to share with update
 static void pw_inventory_draw_screen1(state_vars_t *sv) {
 
+    // Header
     pw_screen_draw_from_eeprom(
         0, 0,
         8, 16,
@@ -225,6 +252,7 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
         PW_EEPROM_SIZE_IMG_MENU_TITLE_INVENTORY
     );
 
+    // Draw icons
     uint8_t buf_pokeball[PW_EEPROM_SIZE_IMG_BALL];
     uint8_t buf_item[PW_EEPROM_SIZE_IMG_ITEM];
 
@@ -270,6 +298,7 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
         );
     }
 
+    // Draw cursor
     uint8_t cx = xs[ (sv->cursor)%5 ];
     uint8_t cy = (sv->cursor>5)?yi:yp;
     cy -= 8;
@@ -283,10 +312,8 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
         PW_EEPROM_SIZE_IMG_ARROW
     );
 
-    /*
-     *  Special pokemon is route template
-     *  event pokemon is dowsed or gifted
-     */
+
+    // Draw selected name and sprite
 
     // 96x16 = 32x24x2 = 384 bytes
     uint8_t buf[PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED];
@@ -300,6 +327,8 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
      *  Draw name
      *  cursor < 5 -> pokemon
      *  cursor > 4 -> item
+     *  TODO: simplify index with `owned_things` restructure
+     *  TODO: make this a function
      */
     if(is_pokemon) {
         type = SEARCH_POKEMON_NAME;
@@ -324,6 +353,8 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
      *  Draw icon
      *  cursor < 5 -> pokemon
      *  cursor > 4 -> item
+     *  TODO: simplify index with `owned_things` restructure
+     *  TODO: make this a function
      */
     if(is_pokemon) {
         type = SEARCH_POKEMON_SPRITE;
@@ -339,7 +370,7 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
     sprite = (pw_img_t){.data=buf, .width=32, .height=24, .size=size};
     pw_screen_draw_img(&sprite, SCREEN_WIDTH-32, SCREEN_HEIGHT-16-24);
 
-    // draw box
+    // Draw text box
 
 }
 

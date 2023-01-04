@@ -2,6 +2,9 @@
 
 ## Frontburner
 
+- Sort and add a key to the eeeprom map.
+    - Make names consistent.
+    - Identify what things are route-specific and what are inventory
 - Render everything on the splash screen correctly
 - Add IR code from `pw-ir-linux`
 - Add IR error messages
@@ -9,7 +12,7 @@
 - Speed up draw update interval
 - Move button code to driver
 - Change button code to polling instead of interrupts?
-- `anim_frame` updated in main loop and passed to draw funcs
+- Debounce buttons with `last_pressed` global/static variable
 
 ## Backburner
 
@@ -40,12 +43,6 @@
     - IR handshake
     - Master peer play
     - Slave actions
-- Pokemon and Items
-    - 2 screens + cursor
-    - Read caught pokemon
-    - Read obtained items
-    - Read peer-play items
-        - eeprom read
 - Settings
     - Sound
     - Shade
