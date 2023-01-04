@@ -96,8 +96,6 @@ static pw_state_t pw_current_state = STATE_SCREENSAVER;
 static pw_state_t pw_requested_state = 0;
 static uint32_t pw_requests = 0;
 
-static uint8_t splash_anim_frame = 0;
-
 static state_vars_t global_statevars = {0,};
 
 
@@ -310,12 +308,12 @@ void pw_splash_init_display(state_vars_t *sv) {
 void pw_splash_update_display(state_vars_t *sv) {
 
     uint16_t frame_addr;
-    if(splash_anim_frame) {
+    if(sv->anim_frame) {
         frame_addr = PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME1;
     } else {
         frame_addr = PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME2;
     }
-    splash_anim_frame = !splash_anim_frame;
+    sv->anim_frame = !sv->anim_frame;
 
     pw_screen_draw_from_eeprom(
         SCREEN_WIDTH-64, 0,

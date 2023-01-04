@@ -40,14 +40,12 @@ static uint16_t const MENU_ICONS[] = {
     PW_EEPROM_ADDR_IMG_MENU_ICON_SETTINGS,
 };
 
-static int8_t cursor = 0;
-
 void pw_menu_init_display(state_vars_t *sv) {
 
     pw_screen_draw_from_eeprom(
         8, 0,
         80, 16,
-        MENU_TITLES[cursor],
+        MENU_TITLES[sv->cursor],
         PW_EEPROM_SIZE_IMG_MENU_TITLE_CONNECT
     );
     pw_screen_draw_from_eeprom(
@@ -72,7 +70,7 @@ void pw_menu_init_display(state_vars_t *sv) {
             PW_EEPROM_SIZE_IMG_MENU_ICON_CONNECT
         );
 
-        if(cursor == i) {
+        if(sv->cursor == i) {
             pw_screen_draw_from_eeprom(
                 i*16, y_values[i]-8,
                 8, 8,
@@ -106,9 +104,9 @@ void pw_menu_init_display(state_vars_t *sv) {
 void pw_menu_handle_input(state_vars_t *sv, uint8_t b) {
 
 	switch(b) {
-		case BUTTON_L: { move_cursor(sv, -1); break; };
-		case BUTTON_M: { pw_request_state(MENU_ENTRIES[cursor]); break; };
-		case BUTTON_R: { move_cursor(sv, +1); break; };
+		case BUTTON_L: { pw_menu_move_cursor(sv, -1); break; };
+		case BUTTON_M: { pw_request_state(MENU_ENTRIES[sv->cursor]); break; };
+		case BUTTON_R: { pw_menu_move_cursor(sv, +1); break; };
 		default: break;
 	}
 
@@ -121,13 +119,13 @@ void pw_menu_update_display(state_vars_t *sv) {
     pw_screen_draw_from_eeprom(
         8, 0,
         80, 16,
-        MENU_TITLES[cursor],
+        MENU_TITLES[sv->cursor],
         PW_EEPROM_SIZE_IMG_MENU_TITLE_CONNECT
     );
 
     size_t y_values[] = {24, 26, 28, 30, 26, 24};
     for(size_t i = 0; i < MENU_SIZE; i++) {
-        if(cursor == i) {
+        if(sv->cursor == i) {
             pw_screen_draw_from_eeprom(
                 i*16, y_values[i]-8,
                 8, 8,
@@ -143,10 +141,10 @@ void pw_menu_update_display(state_vars_t *sv) {
 }
 
 void pw_menu_set_cursor(state_vars_t *sv, int8_t c) {
-	if( cursor < 0 || cursor >= MENU_SIZE ) {
-		cursor = 0;
+	if( c < 0 || c >= MENU_SIZE ) {
+		sv->cursor = 0;
 	} else {
-		cursor = c;
+		sv->cursor = c;
 	}
     //pw_request_redraw();
 
@@ -155,16 +153,16 @@ void pw_menu_set_cursor(state_vars_t *sv, int8_t c) {
 
 // + = right
 // - = left
-bool move_cursor(state_vars_t *sv, int8_t move) {
-	cursor += move;
+bool pw_menu_move_cursor(state_vars_t *sv, int8_t move) {
+	sv->cursor += move;
 
-	if( cursor < 0 || cursor >= MENU_SIZE ) {
-        cursor = 0;
+	if( sv->cursor < 0 || sv->cursor >= MENU_SIZE ) {
+        sv->cursor = 0;
 		pw_request_state(STATE_SPLASH);
 		return true;
 	}
 
-	cursor %= MENU_SIZE;
+	sv->cursor %= MENU_SIZE;
     pw_request_redraw();
 
 	return false;

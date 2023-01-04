@@ -12,7 +12,7 @@ void pw_menu_handle_input(state_vars_t *sv, uint8_t b);
 void pw_menu_set_cursor(state_vars_t *sv, int8_t c);
 
 
-bool move_cursor(state_vars_t *sv, int8_t move);
+bool pw_menu_move_cursor(state_vars_t *sv, int8_t move);
 
 extern const int8_t MENU_SIZE;
 
