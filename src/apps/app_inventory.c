@@ -25,8 +25,11 @@ static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m);
 
 void pw_inventory_init(state_vars_t *sv) {
     inv_state = 0;
+    n_presents = 0;
     sv->cursor = 0;
+    sv->prev_cursor = 0;
     sv->subscreen = 0;
+    sv->prev_subscreen = 0;
 
     // get num pokemon
     pokemon_summary_t test_pokemon[3];
@@ -73,8 +76,11 @@ void pw_inventory_init(state_vars_t *sv) {
         }
     }
 
-    inv_state = 0x03df; // all items unlocked
+    //inv_state = 0x03df; // all items unlocked
+    //n_presents = 10;    // we have 10 presents :D
 
+    //inv_state = 0x0183;
+    //n_presents = 6;
 }
 
 
@@ -88,19 +94,33 @@ void pw_inventory_init_display(state_vars_t *sv) {
 
 
 void pw_inventory_update_display(state_vars_t *sv) {
-    if(sv->subscreen == 0) {
-        pw_inventory_update_screen1(sv);
+    if(sv->prev_subscreen != sv->subscreen) {
+        pw_screen_clear();
+        if(sv->subscreen == 0)
+            pw_inventory_draw_screen1(sv);
+        else
+            pw_inventory_draw_screen2(sv);
     } else {
-        pw_inventory_update_screen2(sv);
+        if(sv->subscreen == 0)
+            pw_inventory_update_screen1(sv);
+        else
+            pw_inventory_update_screen2(sv);
     }
 
+    sv->prev_subscreen = sv->subscreen;
 }
 
 
 void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
     switch(b) {
         case BUTTON_L: { pw_inventory_move_cursor(sv, -1); break; };
-        case BUTTON_M: { pw_inventory_move_cursor(sv,  0); break; };
+        case BUTTON_M: {
+                           if(sv->subscreen == 0) {
+                               sv->subscreen = 1;
+                           } else {
+                               pw_request_state(STATE_SPLASH);
+                           }
+        };
         case BUTTON_R: { pw_inventory_move_cursor(sv, +1); break; };
     };
 
@@ -115,28 +135,37 @@ void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
  *
  */
 static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m) {
-    int8_t c = sv->cursor;
 
-    uint16_t is_filled = 0;
     if(sv->subscreen == 0) {
+        // pokemon and items screen
+        uint16_t is_filled = 0;
+        // move cursor by `m` until it hits a nonzero bit, cursor<0 or cursor>=10
         do {
-            c += m;
-            is_filled = inv_state & (1<<c);
-        } while( (!is_filled) && (c>=0) && (c<=9) );
+            sv->cursor += m;
+            is_filled = inv_state & (1<<sv->cursor);
+        } while( (!is_filled) && (sv->cursor>=0) && (sv->cursor<=9) );
 
-        if(c < 0) {
+        if(sv->cursor < 0) {
+            sv->cursor = 4;
             pw_request_state(STATE_MAIN_MENU); // back to main menu
         }
-        if(c > 9) {
+        if(sv->cursor > 9) {
             sv->subscreen = 1;
-            pw_request_redraw();
+            sv->cursor = 0;
         }
 
     } else {
-
+        // presents screen
+        sv->cursor += m;
+        if(sv->cursor < 0) {
+            sv->subscreen = 0;
+            sv->cursor = 10;
+            pw_inventory_move_cursor(sv, -1);   // laziest way of setting cursor to last non-empty slot
+        }
+        if(sv->cursor>n_presents) sv->cursor = n_presents;
     }
 
-    sv->cursor = c;
+    pw_request_redraw();
 }
 
 static void pw_inventory_draw_screen1(state_vars_t *sv) {
@@ -239,7 +268,7 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
     // IMG_EVENT_POKEMON_SMALL_ANIMATED
     // IMG_POKEMON_SMALL_ANIMATED
     // TREASURE_LARGE
-    addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED + sv->anim_frame*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
+    addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED_FRAME1:PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED_FRAME2;
     pw_screen_draw_from_eeprom(
         SCREEN_WIDTH-8-32, SCREEN_HEIGHT-16-24,
         32, 24,
@@ -269,14 +298,127 @@ static void pw_inventory_draw_screen2(state_vars_t *sv) {
     // PEER_PLAY_ITEMS {u16 item, u16 pad}[10]
     // PRESENT_LARGE
 
+    pw_screen_draw_from_eeprom(
+        0, 0,
+        8, 16,
+        PW_EEPROM_ADDR_IMG_MENU_ARROW_LEFT,
+        PW_EEPROM_SIZE_IMG_MENU_ARROW_LEFT
+    );
+
+    pw_screen_draw_from_eeprom(
+        8, 0,
+        80, 16,
+        PW_EEPROM_ADDR_IMG_MENU_TITLE_INVENTORY,
+        PW_EEPROM_SIZE_IMG_MENU_TITLE_INVENTORY
+    );
+
+
+    uint8_t buf_item[PW_EEPROM_SIZE_IMG_ITEM];
+    pw_img_t item = {.height=8, .width=8, .data=buf_item, .size=PW_EEPROM_SIZE_IMG_ITEM};
+    pw_eeprom_read(PW_EEPROM_ADDR_IMG_ITEM, buf_item, PW_EEPROM_SIZE_IMG_ITEM);
+
+    uint8_t x0 = 16, y0 = 24;
+    for(uint8_t i = 0; i < n_presents; i++) {
+        pw_screen_draw_img(&item,
+            x0 + 8*(i%5),
+            y0 + 16*(i/5)
+        );
+    }
+
+    // don't draw this if we don't have presents
+    if(n_presents > 0) {
+        uint8_t cx = x0 + 8*(sv->cursor%5);
+        uint8_t cy = y0 + 16*(sv->cursor/5) - 8;
+
+        uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
+
+        pw_screen_draw_from_eeprom(
+            cx, cy,
+            8, 8,
+            addr,
+            PW_EEPROM_SIZE_IMG_ARROW
+        );
+
+        pw_screen_draw_from_eeprom(
+            SCREEN_WIDTH-8-32, SCREEN_HEIGHT-16-24,
+            32, 24,
+            PW_EEPROM_ADDR_IMG_PRESENT_LARGE,
+            PW_EEPROM_SIZE_IMG_PRESENT_LARGE
+        );
+
+        pw_screen_draw_from_eeprom(
+            0, SCREEN_HEIGHT-16,
+            80, 16,
+            PW_EEPROM_ADDR_TEXT_ITEM_NAMES+sv->cursor*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
+            PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
+        );
+
+    }
+
+
 }
 
 
 static void pw_inventory_update_screen1(state_vars_t *sv) {
+    pw_screen_clear_area(0, 16, 56, 8);
+    pw_screen_clear_area(0, 32, 56, 8);
+
+    uint8_t xs[] = {8, 24, 32, 40, 48};
+    const uint8_t yp = 24, yi = 40;
+
+    uint8_t cx = xs[ (sv->cursor)%5 ];
+    uint8_t cy = (sv->cursor>5)?yi:yp;
+    cy -= 8;
+
+    uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
+
+    pw_screen_draw_from_eeprom(
+        cx, cy,
+        8, 8,
+        addr,
+        PW_EEPROM_SIZE_IMG_ARROW
+    );
+
+
+    addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED_FRAME1:PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED_FRAME2;
+    pw_screen_draw_from_eeprom(
+        SCREEN_WIDTH-8-32, SCREEN_HEIGHT-16-24,
+        32, 24,
+        addr,
+        PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
+    );
 
 }
 
 
 static void pw_inventory_update_screen2(state_vars_t *sv) {
 
+    uint8_t x0 = 16, y0 = 24;
+    pw_screen_clear_area(x0, y0-8, 40, 8);
+    pw_screen_clear_area(x0, y0-8+16, 40, 8);
+
+
+    // don't draw this if we don't have presents
+    if(n_presents > 0) {
+        uint8_t cx = x0 + 8*(sv->cursor%5);
+        uint8_t cy = y0 + 16*(sv->cursor/5) - 8;
+
+        uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
+
+        pw_screen_draw_from_eeprom(
+            cx, cy,
+            8, 8,
+            addr,
+            PW_EEPROM_SIZE_IMG_ARROW
+        );
+
+        pw_screen_draw_from_eeprom(
+            0, SCREEN_HEIGHT-16,
+            80, 16,
+            PW_EEPROM_ADDR_TEXT_ITEM_NAMES+sv->cursor*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
+            PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
+        );
+
+    }
 }
+
