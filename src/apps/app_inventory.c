@@ -13,18 +13,29 @@ uint16_t inv_state = 0;;
 uint8_t n_presents = 0;
 
 struct owned_things_s {
-    uint16_t le_species[3];
-    uint16_t le_item[3];
+    uint16_t le_current;
+    uint16_t le_species[4];
+    uint16_t le_item[4];
+    uint16_t le_presents[10];
 } owned_things;
+
+enum search_type {
+    SEARCH_POKEMON_NAME,
+    SEARCH_POKEMON_SPRITE,
+    SEARCH_ITEM_NAME,
+    SEARCH_ITEM_SPRITE,
+};
 
 static void pw_inventory_draw_screen1();
 static void pw_inventory_draw_screen2();
 static void pw_inventory_update_screen1();
 static void pw_inventory_update_screen2();
 static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m);
+static uint8_t pw_inventory_find_index(state_vars_t *sv, uint16_t data, enum search_type type);
+static void pw_inventory_index_to_data(state_vars_t *sv, uint8_t *buf, uint8_t idx, enum search_type type);
 
 void pw_inventory_init(state_vars_t *sv) {
-    inv_state = 0;
+    inv_state = 1;
     n_presents = 0;
     sv->cursor = 0;
     sv->prev_cursor = 0;
@@ -45,6 +56,21 @@ void pw_inventory_init(state_vars_t *sv) {
         if(test_pokemon[i].le_species != 0) inv_state |= 1<<(1+i);
     }
 
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_EVENT_POKEMON_BASIC_DATA,
+        (uint8_t*)(test_pokemon),
+        PW_EEPROM_SIZE_EVENT_POKEMON_BASIC_DATA
+    );
+    owned_things.le_species[3] = test_pokemon[0].le_species;
+
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_ROUTE_INFO+0x00,
+        (uint8_t*)(test_pokemon),
+        sizeof(pokemon_summary_t)
+    );
+    owned_things.le_current = test_pokemon[0].le_species;
+
+
     struct {
         uint16_t le_item;
         uint16_t pad;
@@ -62,6 +88,14 @@ void pw_inventory_init(state_vars_t *sv) {
         if(test_item[i].le_item != 0) inv_state |= 1<<(6+i);
     }
 
+    uint16_t *buf = (uint16_t*)test_item;
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_EVENT_ITEM,
+        (uint8_t*)buf,
+        PW_EEPROM_SIZE_EVENT_ITEM
+    );
+    owned_things.le_item[4] = buf[3]; // 6 bytes zero then u16 le_item
+
     pw_eeprom_read(
         PW_EEPROM_ADDR_PEER_PLAY_ITEMS,
         (uint8_t*)(test_item),
@@ -70,12 +104,12 @@ void pw_inventory_init(state_vars_t *sv) {
 
     // get num peer play items
     for(uint8_t i = 0; i < 10; i++) {
-        if(test_item[i].le_item == 0) {
-            n_presents = i;
-            break;
-        }
+        owned_things.le_presents[i] = test_item[i].le_item;
     }
 
+    for(n_presents = 0; owned_things.le_presents[n_presents] != 0 && n_presents < 10; n_presents++) ;
+
+    //printf("presents: %d\n", n_presents);
     //inv_state = 0x03df; // all items unlocked
     //n_presents = 10;    // we have 10 presents :D
 
@@ -162,7 +196,7 @@ static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m) {
             sv->cursor = 10;
             pw_inventory_move_cursor(sv, -1);   // laziest way of setting cursor to last non-empty slot
         }
-        if(sv->cursor>n_presents) sv->cursor = n_presents;
+        if(sv->cursor>=n_presents) sv->cursor = n_presents-1;
     }
 
     pw_request_redraw();
@@ -254,42 +288,58 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
      *  event pokemon is dowsed or gifted
      */
 
+    // 96x16 = 32x24x2 = 384 bytes
+    uint8_t buf[PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED];
+    uint8_t is_pokemon = (sv->cursor < 5);
+    uint8_t idx, w;
+    size_t size;
+    enum search_type type;
+
+
     /*
-     *  For pokemon index (A, B, C) need to compare CAUGHT_POKEMON_SUMMARY.le_species
-     *  to ROUTE_INFO.route_pokemon[i].le_species
-     *  Probably same index order in all the stuff like small_anim and text_name
-     *  Do similar stuff for item index with ROUTE_INFO.le_route_items and OBTAINED_ITEMS.le_item
-     *  Can hardcode cursor for walk mon and special pokemon/items since there's only one option
+     *  Draw name
+     *  cursor < 5 -> pokemon
+     *  cursor > 4 -> item
      */
-    route_info_t route_info;
-    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&route_info), PW_EEPROM_SIZE_ROUTE_INFO);
+    if(is_pokemon) {
+        type = SEARCH_POKEMON_NAME;
+        uint16_t species;
+        // relies on le_cpecies[-1] = le_current
+        idx = pw_inventory_find_index(sv, owned_things.le_species[sv->cursor-1], type);
+        w = 80;
+        size = PW_EEPROM_SIZE_TEXT_POKEMON_NAME;
+    } else {
+        type = SEARCH_ITEM_NAME;
+        idx = pw_inventory_find_index(sv, owned_things.le_item[sv->cursor - 6], type);
+        w = 96;
+        size = PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE;
+    }
+
+    pw_inventory_index_to_data(sv, buf, idx, type);
+    pw_img_t sprite = {.data=buf, .width=w, .height=16, .size=size};
+    pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
 
 
-    // IMG_EVENT_POKEMON_SMALL_ANIMATED
-    // IMG_POKEMON_SMALL_ANIMATED
-    // TREASURE_LARGE
-    addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED_FRAME1:PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED_FRAME2;
-    pw_screen_draw_from_eeprom(
-        SCREEN_WIDTH-8-32, SCREEN_HEIGHT-16-24,
-        32, 24,
-        addr,
-        PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
-    );
+    /*
+     *  Draw icon
+     *  cursor < 5 -> pokemon
+     *  cursor > 4 -> item
+     */
+    if(is_pokemon) {
+        type = SEARCH_POKEMON_SPRITE;
+        idx = pw_inventory_find_index(sv, owned_things.le_species[sv->cursor-1], type);
+        size = PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED;
+    } else {
+        type = SEARCH_ITEM_SPRITE;
+        idx = 0;
+        size = PW_EEPROM_SIZE_IMG_TREASURE_LARGE;;
+    }
 
-    // TEXT_EVENT_ITEM_NAME
-    // TEXT_EVENT_POKEMON_NAME
-    pw_screen_draw_from_eeprom(
-        0, SCREEN_HEIGHT-16,
-        80, 16,
-        PW_EEPROM_ADDR_TEXT_POKEMON_NAME,
-        PW_EEPROM_SIZE_TEXT_POKEMON_NAME
-    );
+    pw_inventory_index_to_data(sv, buf, idx, type);
+    sprite = (pw_img_t){.data=buf, .width=32, .height=24, .size=size};
+    pw_screen_draw_img(&sprite, SCREEN_WIDTH-32, SCREEN_HEIGHT-16-24);
 
     // draw box
-
-
-    // TREASURE_LARGE for item view
-    // IMG_EVENT_PoKEMON_SMALL_ANIMATED
 
 }
 
@@ -379,14 +429,53 @@ static void pw_inventory_update_screen1(state_vars_t *sv) {
         PW_EEPROM_SIZE_IMG_ARROW
     );
 
+    // 96x16 = 32x24x2 = 384 bytes
+    uint8_t buf[PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED];
+    uint8_t is_pokemon = (sv->cursor < 5);
+    uint8_t idx, w;
+    size_t size;
+    enum search_type type;
 
-    addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED_FRAME1:PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED_FRAME2;
-    pw_screen_draw_from_eeprom(
-        SCREEN_WIDTH-8-32, SCREEN_HEIGHT-16-24,
-        32, 24,
-        addr,
-        PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
-    );
+    /*
+     *  Draw name
+     *  cursor < 5 -> pokemon
+     *  cursor > 4 -> item
+     */
+    if(is_pokemon) {
+        type = SEARCH_POKEMON_NAME;
+        idx = pw_inventory_find_index(sv, owned_things.le_species[sv->cursor-1], type);
+        w = 80;
+        size = PW_EEPROM_SIZE_TEXT_POKEMON_NAME;
+    } else {
+        type = SEARCH_ITEM_NAME;
+        idx = pw_inventory_find_index(sv, owned_things.le_item[sv->cursor - 6], type);
+        w = 96;
+        size = PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE;
+    }
+
+    pw_inventory_index_to_data(sv, buf, idx, type);
+    pw_img_t sprite = {.data=buf, .width=w, .height=16, .size=size};
+    pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
+
+
+    /*
+     *  Draw icon
+     *  cursor < 5 -> pokemon
+     *  cursor > 4 -> item
+     */
+    if(is_pokemon) {
+        type = SEARCH_POKEMON_SPRITE;
+        idx = pw_inventory_find_index(sv, owned_things.le_species[sv->cursor-1], type);
+        size = PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED;
+    } else {
+        type = SEARCH_ITEM_SPRITE;
+        idx = 0;
+        size = PW_EEPROM_SIZE_IMG_TREASURE_LARGE;;
+    }
+
+    pw_inventory_index_to_data(sv, buf, idx, type);
+    sprite = (pw_img_t){.data=buf, .width=32, .height=24, .size=size};
+    pw_screen_draw_img(&sprite, SCREEN_WIDTH-32, SCREEN_HEIGHT-16-24);
 
 }
 
@@ -412,13 +501,153 @@ static void pw_inventory_update_screen2(state_vars_t *sv) {
             PW_EEPROM_SIZE_IMG_ARROW
         );
 
-        pw_screen_draw_from_eeprom(
-            0, SCREEN_HEIGHT-16,
-            80, 16,
-            PW_EEPROM_ADDR_TEXT_ITEM_NAMES+sv->cursor*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
-            PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
-        );
+        uint8_t buf[PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE];
+        pw_img_t sprite = {.width=96, .height=16, .data=buf, .size=PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE};
+
+        uint8_t idx = pw_inventory_find_index(sv, owned_things.le_presents[sv->cursor], SEARCH_ITEM_NAME);
+        pw_inventory_index_to_data(sv, buf, idx, SEARCH_ITEM_NAME);
+
+        pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
+
 
     }
+}
+
+
+static uint8_t pw_inventory_find_index(state_vars_t *sv, uint16_t data, enum search_type type) {
+    uint8_t idx;
+
+    switch(type) {
+        case SEARCH_POKEMON_SPRITE:
+        case SEARCH_POKEMON_NAME: {
+            // pokemon name
+            uint16_t le_species = data;
+
+            pokemon_summary_t route_pokemon[3];
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_ROUTE_INFO+0x52, // get route available pokemon
+                (uint8_t*)(route_pokemon),
+                3*sizeof(pokemon_summary_t)
+            );
+
+            for(idx = 0; idx < 3; idx++)
+                if(route_pokemon[idx].le_species == le_species) break;
+
+            if(idx == 3) {
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_ROUTE_INFO+0x00,
+                    (uint8_t*)route_pokemon,
+                    sizeof(pokemon_summary_t)
+                );
+                if(route_pokemon[0].le_species == le_species)
+                    idx = 4;
+            }
+
+            // idx == 3 means special pokemon
+            break;
+        }
+        case SEARCH_ITEM_NAME: {
+            // item name
+            uint16_t le_item = data;
+
+            struct {
+                uint16_t le_item;
+            } items[10];
+
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_ROUTE_INFO+0x8c,
+                (uint8_t*)(items),
+                sizeof(items)
+            );
+
+            for(idx = 0; idx < 10; idx++) {
+                if(items[idx].le_item == le_item) break;
+            }
+
+            break;
+            // idx == 11 means special item
+        }
+        case SEARCH_ITEM_SPRITE:
+        default: {
+            idx = 0;
+            break;
+        }
+    }
+    return idx;
+}
+
+static void pw_inventory_index_to_data(state_vars_t *sv, uint8_t *buf, uint8_t idx, enum search_type type) {
+    switch(type) {
+        case SEARCH_POKEMON_SPRITE: {
+            if(idx < 3) {
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED+(2*idx+sv->anim_frame)*PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME,
+                    buf,
+                    PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
+                );
+            } else if (idx == 3){
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_IMG_EVENT_POKEMON_SMALL_ANIMATED,
+                    buf,
+                    PW_EEPROM_SIZE_IMG_EVENT_POKEMON_SMALL_ANIMATED_FRAME
+                );
+            } else {
+                // walk pokemon
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED+sv->anim_frame*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME,
+                    buf,
+                    PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
+                );
+            }
+            break;
+        }
+        case SEARCH_ITEM_NAME: {
+            if(idx < 10) {
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_TEXT_ITEM_NAMES+idx*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
+                    buf,
+                    PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
+                );
+            } else {
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_TEXT_EVENT_ITEM_NAME,
+                    buf,
+                    PW_EEPROM_SIZE_TEXT_EVENT_ITEM_NAME
+                );
+            }
+
+            break;
+        }
+        case SEARCH_POKEMON_NAME: {
+            if(idx < 3) {
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_TEXT_POKEMON_NAMES+idx*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
+                    buf,
+                    PW_EEPROM_SIZE_TEXT_POKEMON_NAME
+                );
+            } else if(idx == 3) {
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_TEXT_EVENT_POKEMON_NAME,
+                    buf,
+                    PW_EEPROM_SIZE_TEXT_EVENT_POKEMON_NAME
+                );
+            } else {
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_TEXT_POKEMON_NAME,
+                    buf,
+                    PW_EEPROM_SIZE_TEXT_POKEMON_NAME
+                );
+            }
+            break;
+        }
+        case SEARCH_ITEM_SPRITE: {
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_IMG_TREASURE_LARGE,
+                buf,
+                PW_EEPROM_SIZE_IMG_TREASURE_LARGE
+            );
+            break;
+        }
+    }   // switch
 }
 
