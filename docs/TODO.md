@@ -9,6 +9,7 @@
 - Speed up draw update interval
 - Move button code to driver
 - Change button code to polling instead of interrupts?
+- `anim_frame` updated in main loop and passed to draw funcs
 
 ## Backburner
 
