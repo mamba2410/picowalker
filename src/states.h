@@ -25,9 +25,21 @@ typedef enum {
 	N_STATES,
 } pw_state_t;
 
-typedef void (state_draw_func_t)();
-typedef void (state_event_func_t)();
-typedef void (state_input_func_t)(uint8_t);
+/*
+ *  Struct to keep all state variables the same across states
+ */
+typedef struct {
+    int8_t cursor;
+    uint8_t anim_frame;
+    uint8_t substate_a;
+    uint8_t substate_b;
+    uint8_t substate_c;
+    uint8_t substate_d;
+} state_vars_t;
+
+typedef void (state_draw_func_t)(state_vars_t*);
+typedef void (state_event_func_t)(state_vars_t*);
+typedef void (state_input_func_t)(state_vars_t*, uint8_t);
 
 
 /*
@@ -47,8 +59,8 @@ extern state_input_func_t* const state_input_funcs[];
 extern state_draw_func_t* const state_draw_init_funcs[];
 extern state_draw_func_t* const state_draw_update_funcs[];
 
-void pw_send_to_error(uint8_t b);
-void pw_send_to_splash(uint8_t b);
+void pw_send_to_error(state_vars_t *sv, uint8_t b);
+void pw_send_to_splash(state_vars_t *sv, uint8_t b);
 
 void pw_request_redraw();
 void pw_request_state(pw_state_t s);
@@ -65,16 +77,16 @@ void pw_state_draw_update();
 /*
  *  State functions
  */
-void pw_empty_event();
-void pw_empty_input(uint8_t b);
+void pw_empty_event(state_vars_t *sv);
+void pw_empty_input(state_vars_t *sv, uint8_t b);
 
 // STATE_SPLASH
-void pw_splash_init_display();
-void pw_splash_update_display();
-void pw_splash_handle_input(uint8_t b);
+void pw_splash_init_display(state_vars_t *sv);
+void pw_splash_update_display(state_vars_t *sv);
+void pw_splash_handle_input(state_vars_t *sv, uint8_t b);
 
 // STATE_ERROR
-void pw_error_init_display();
+void pw_error_init_display(state_vars_t *sv);
 
 #endif /* PW_STATES_H */
 

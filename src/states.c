@@ -98,6 +98,8 @@ static uint32_t pw_requests = 0;
 
 static uint8_t splash_anim_frame = 0;
 
+static state_vars_t global_statevars = {0,};
+
 
 void pw_request_state(pw_state_t s_to) {
     PW_SET_REQUEST(pw_requests, PW_REQUEST_STATE_CHANGE);
@@ -119,8 +121,8 @@ bool pw_set_state(pw_state_t s) {
 	if(s != pw_current_state) {
 		pw_current_state = s;
         pw_screen_clear();
-        state_init_funcs[s]();
-        state_draw_init_funcs[s]();
+        state_init_funcs[s](&global_statevars);
+        state_draw_init_funcs[s](&global_statevars);
 		// TODO: Notify when changed to and from state
 		return true;
 	} else {
@@ -137,7 +139,7 @@ pw_state_t pw_get_state() {
 
 //may not be needed/used
 void pw_state_init() {
-    state_init_funcs[pw_current_state]();
+    state_init_funcs[pw_current_state](&global_statevars);
 }
 
 void pw_state_run_event_loop() {
@@ -147,10 +149,10 @@ void pw_state_run_event_loop() {
         PW_CLR_REQUEST(pw_requests, PW_REQUEST_REDRAW);
     }
 
-    state_event_loop_funcs[pw_current_state]();
+    state_event_loop_funcs[pw_current_state](&global_statevars);
 
     if(PW_GET_REQUEST(pw_requests, PW_REQUEST_REDRAW)) {
-        state_draw_update_funcs[pw_current_state]();
+        state_draw_update_funcs[pw_current_state](&global_statevars);
         PW_CLR_REQUEST(pw_requests, PW_REQUEST_REDRAW);
     }
 }
@@ -160,22 +162,22 @@ void pw_state_run_event_loop() {
  *	Want to spend as little time as possible in here
  */
 void pw_state_handle_input(uint8_t b) {
-    state_input_funcs[pw_current_state](b);
+    state_input_funcs[pw_current_state](&global_statevars, b);
 }
 
 void pw_state_draw_init() {
-    state_draw_init_funcs[pw_current_state]();
+    state_draw_init_funcs[pw_current_state](&global_statevars);
 }
 
 void pw_state_draw_update() {
-    state_draw_update_funcs[pw_current_state]();
+    state_draw_update_funcs[pw_current_state](&global_statevars);
 }
 
-void pw_send_to_error(uint8_t b) {
+void pw_send_to_error(state_vars_t *sv, uint8_t b) {
     pw_request_state(STATE_ERROR);
 }
 
-void pw_send_to_splash(uint8_t b) {
+void pw_send_to_splash(state_vars_t *sv, uint8_t b) {
     pw_request_state(STATE_SPLASH);
 }
 
@@ -185,10 +187,10 @@ void pw_send_to_splash(uint8_t b) {
  *  State functions
  *  ========================================
  */
-void pw_empty_event() {}
-void pw_empty_input(uint8_t b) {}
+void pw_empty_event(state_vars_t *sv) {}
+void pw_empty_input(state_vars_t *sv, uint8_t b) {}
 
-void pw_splash_handle_input(uint8_t b) {
+void pw_splash_handle_input(state_vars_t *sv, uint8_t b) {
 	switch(b) {
 		case BUTTON_M: { pw_menu_set_cursor((MENU_SIZE-1)/2); break; }
 		case BUTTON_L: { pw_menu_set_cursor(MENU_SIZE-1); break; }
@@ -198,7 +200,7 @@ void pw_splash_handle_input(uint8_t b) {
 	pw_request_state(STATE_MAIN_MENU);
 }
 
-void pw_splash_init_display() {
+void pw_splash_init_display(state_vars_t *sv) {
 
     pw_screen_draw_from_eeprom(
         SCREEN_WIDTH-64, 0,
@@ -260,7 +262,7 @@ void pw_splash_init_display() {
     for(uint8_t i = 0; i < 4; i++) {
         if( (special_inventory&(1<<i)) ) {
             pw_screen_draw_from_eeprom(
-                16+i*8, SCREEN_HEIGHT-16
+                16+i*8, SCREEN_HEIGHT-16,
                 8, 8,
                 PW_EEPROM_ADDR_IMG_CARD_SUITS+i*PW_EEPROM_SIZE_IMG_CARD_SUIT_SYMBOL,
                 PW_EEPROM_SIZE_IMG_CARD_SUIT_SYMBOL
@@ -305,7 +307,7 @@ void pw_splash_init_display() {
     pw_screen_draw_horiz_line(0, SCREEN_HEIGHT-16, SCREEN_WIDTH, SCREEN_BLACK);
 }
 
-void pw_splash_update_display() {
+void pw_splash_update_display(state_vars_t *sv) {
 
     uint16_t frame_addr;
     if(splash_anim_frame) {
@@ -335,7 +337,7 @@ void pw_splash_update_display() {
 
 }
 
-void pw_error_init_display() {
+void pw_error_init_display(state_vars_t *sv) {
     pw_img_t sad_pokewalker_img   = {.height=48, .width=48, .data=sad_pokewalker, .size=576};
     pw_screen_draw_img(&sad_pokewalker_img, 0, 0);
 
