@@ -11,6 +11,7 @@
 #include "eeprom.h"
 
 #include "apps/app_trainer_card.h"
+#include "apps/app_inventory.h"
 
 #include "pwroms.h"
 
@@ -35,7 +36,7 @@ state_event_func_t* const state_init_funcs[N_STATES] = {
 	[STATE_DOWSING]         = pw_empty_event,
 	[STATE_CONNECT]         = pw_empty_event,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_init,
-	[STATE_INVENTORY]       = pw_empty_event,
+	[STATE_INVENTORY]       = pw_inventory_init,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
 };
@@ -61,7 +62,7 @@ state_input_func_t* const state_input_funcs[N_STATES] = {
 	[STATE_DOWSING]         = pw_send_to_error,
 	[STATE_CONNECT]         = pw_send_to_error,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_handle_input,
-	[STATE_INVENTORY]       = pw_send_to_error,
+	[STATE_INVENTORY]       = pw_inventory_handle_input,
 	[STATE_SETTINGS]        = pw_send_to_error,
     [STATE_ERROR]           = pw_send_to_splash,
 };
@@ -74,7 +75,7 @@ state_draw_func_t* const state_draw_init_funcs[] = {
 	[STATE_DOWSING]         = pw_screen_clear,
 	[STATE_CONNECT]         = pw_screen_clear,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_init_display,
-	[STATE_INVENTORY]       = pw_screen_clear,
+	[STATE_INVENTORY]       = pw_inventory_init_display,
 	[STATE_SETTINGS]        = pw_screen_clear,
     [STATE_ERROR]           = pw_error_init_display,
 };
@@ -87,7 +88,7 @@ state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
 	[STATE_DOWSING]         = pw_empty_event,
 	[STATE_CONNECT]         = pw_empty_event,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_draw_update,
-	[STATE_INVENTORY]       = pw_empty_event,
+	[STATE_INVENTORY]       = pw_inventory_update_display,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
 };
@@ -150,7 +151,7 @@ void pw_state_run_event_loop() {
     state_event_loop_funcs[pw_current_state](&global_statevars);
 
     if(PW_GET_REQUEST(pw_requests, PW_REQUEST_REDRAW)) {
-        state_draw_update_funcs[pw_current_state](&global_statevars);
+        pw_state_draw_update();
         PW_CLR_REQUEST(pw_requests, PW_REQUEST_REDRAW);
     }
 }
@@ -168,6 +169,7 @@ void pw_state_draw_init() {
 }
 
 void pw_state_draw_update() {
+    global_statevars.anim_frame = !global_statevars.anim_frame;
     state_draw_update_funcs[pw_current_state](&global_statevars);
 }
 
