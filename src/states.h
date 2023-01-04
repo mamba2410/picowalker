@@ -30,6 +30,7 @@ typedef enum {
  */
 typedef struct {
     int8_t cursor;
+    uint8_t subscreen;
     uint8_t anim_frame;
     uint8_t substate_a;
     uint8_t substate_b;

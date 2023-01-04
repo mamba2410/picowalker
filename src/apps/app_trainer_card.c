@@ -15,12 +15,12 @@ static int8_t prev_drawn = 0;
 
 static uint32_t prev_step_counts[7] = {0,};
 
-void pw_trainer_card_init() {
+void pw_trainer_card_init(state_vars_t *sv) {
     cursor = 0;
     prev_drawn = -1;
 }
 
-void pw_trainer_card_init_display() {
+void pw_trainer_card_init_display(state_vars_t *sv) {
     pw_screen_draw_from_eeprom(
             8, 0,
             80, 16,
@@ -154,7 +154,7 @@ void pw_move_tc_cursor(int8_t m) {
     pw_request_redraw();
 }
 
-void pw_trainer_card_handle_input(uint8_t b) {
+void pw_trainer_card_handle_input(state_vars_t *sv, uint8_t b) {
     switch(b) {
         case BUTTON_L:
             if(cursor <= 0) {
@@ -175,10 +175,10 @@ void pw_trainer_card_handle_input(uint8_t b) {
     }
 }
 
-void pw_trainer_card_draw_update() {
+void pw_trainer_card_draw_update(state_vars_t *sv) {
     if(prev_drawn != cursor) {
         if(cursor <= 0) {
-            pw_trainer_card_init_display();
+            pw_trainer_card_init_display(sv);
         } else {
             health_data_t health_data;
             int err = pw_eeprom_reliable_read(

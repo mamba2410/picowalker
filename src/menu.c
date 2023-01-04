@@ -42,7 +42,7 @@ static uint16_t const MENU_ICONS[] = {
 
 static int8_t cursor = 0;
 
-void pw_menu_init_display() {
+void pw_menu_init_display(state_vars_t *sv) {
 
     pw_screen_draw_from_eeprom(
         8, 0,
@@ -103,18 +103,18 @@ void pw_menu_init_display() {
 
 }
 
-void pw_menu_handle_input(uint8_t b) {
+void pw_menu_handle_input(state_vars_t *sv, uint8_t b) {
 
 	switch(b) {
-		case BUTTON_L: { move_cursor(-1); break; };
+		case BUTTON_L: { move_cursor(sv, -1); break; };
 		case BUTTON_M: { pw_request_state(MENU_ENTRIES[cursor]); break; };
-		case BUTTON_R: { move_cursor(+1); break; };
+		case BUTTON_R: { move_cursor(sv, +1); break; };
 		default: break;
 	}
 
 }
 
-void pw_menu_update_display() {
+void pw_menu_update_display(state_vars_t *sv) {
     /*
      *  Redraw title, arrows
      */
@@ -142,7 +142,7 @@ void pw_menu_update_display() {
 
 }
 
-void pw_menu_set_cursor(int8_t c) {
+void pw_menu_set_cursor(state_vars_t *sv, int8_t c) {
 	if( cursor < 0 || cursor >= MENU_SIZE ) {
 		cursor = 0;
 	} else {
@@ -155,7 +155,7 @@ void pw_menu_set_cursor(int8_t c) {
 
 // + = right
 // - = left
-bool move_cursor(int8_t move) {
+bool move_cursor(state_vars_t *sv, int8_t move) {
 	cursor += move;
 
 	if( cursor < 0 || cursor >= MENU_SIZE ) {

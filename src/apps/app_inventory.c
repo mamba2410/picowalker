@@ -27,7 +27,7 @@ static void pw_inventory_draw_screen2();
 static void pw_inventory_update_screen1();
 static void pw_inventory_update_screen2();
 
-void pw_inventory_init() {
+void pw_inventory_init(state_vars_t *sv) {
     cursor = 0;
     screen_state = 0;
 
@@ -86,25 +86,25 @@ void pw_inventory_init() {
 }
 
 
-void pw_inventory_init_display() {
+void pw_inventory_init_display(state_vars_t *sv) {
 
 }
 
 
-void pw_inventory_update_display() {
+void pw_inventory_update_display(state_vars_t *sv) {
 
 }
 
 
-void pw_inventory_handle_input(uint8_t b) {
+void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
 
 }
 
-void pw_inventory_move_cursor(int8_t m) {
+void pw_inventory_move_cursor(state_vars_t *sv, int8_t m) {
 }
 
 
-static void pw_inventory_draw_screen1() {
+static void pw_inventory_draw_screen1(state_vars_t *sv) {
     uint8_t buf_pokeball[PW_EEPROM_SIZE_IMG_BALL];
     uint8_t buf_item[PW_EEPROM_SIZE_IMG_ITEM];
 
@@ -197,7 +197,7 @@ static void pw_inventory_draw_screen1() {
 }
 
 
-static void pw_inventory_draw_screen2() {
+static void pw_inventory_draw_screen2(state_vars_t *sv) {
     // PEER_PLAY_ITEMS {u16 item, u16 pad}[10]
     // PRESENT_LARGE
 

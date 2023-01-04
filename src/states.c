@@ -192,10 +192,10 @@ void pw_empty_input(state_vars_t *sv, uint8_t b) {}
 
 void pw_splash_handle_input(state_vars_t *sv, uint8_t b) {
 	switch(b) {
-		case BUTTON_M: { pw_menu_set_cursor((MENU_SIZE-1)/2); break; }
-		case BUTTON_L: { pw_menu_set_cursor(MENU_SIZE-1); break; }
+		case BUTTON_M: { pw_menu_set_cursor(sv, (MENU_SIZE-1)/2); break; }
+		case BUTTON_L: { pw_menu_set_cursor(sv, MENU_SIZE-1); break; }
 		case BUTTON_R:
-		default: { pw_menu_set_cursor(0); break; }
+		default: { pw_menu_set_cursor(sv, 0); break; }
 	}
 	pw_request_state(STATE_MAIN_MENU);
 }
