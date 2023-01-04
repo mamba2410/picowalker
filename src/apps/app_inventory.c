@@ -5,10 +5,6 @@
 #include "../eeprom.h"
 #include "../screen.h"
 
-static int8_t cursor = 0;
-static int8_t screen_state = 0;
-static uint8_t anim_frame = 0;
-
 struct inventory_state_s {
     uint8_t n_pokemon: 2;       // range 0-3
     uint8_t n_items: 2;         // range 0-3
@@ -28,8 +24,8 @@ static void pw_inventory_update_screen1();
 static void pw_inventory_update_screen2();
 
 void pw_inventory_init(state_vars_t *sv) {
-    cursor = 0;
-    screen_state = 0;
+    sv->cursor = 0;
+    sv->subscreen = 0;
 
     // get num pokemon
     pokemon_summary_t test_pokemon;
@@ -117,15 +113,15 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
     uint8_t xs[] = {8, 24, 32, 40, 48};
     const uint8_t yp = 24, yi = 40;
 
-    for(uint8_t i = 0; i < inv_status.n_pokemon+1; i++) {
+    for(uint8_t i = 0; i < inv_state.n_pokemon+1; i++) {
         pw_screen_draw_img(&pokeball, xs[i], yp);
     }
 
-    for(uint8_t i = 0; i < inv_status.n_items; i++) {
+    for(uint8_t i = 0; i < inv_state.n_items; i++) {
         pw_screen_draw_img(&item, xs[i+1], yi);
     }
 
-    if(inv_status.special_pokemon) {
+    if(inv_state.special_pokemon) {
         pw_screen_draw_from_eeprom(
             xs[4], yp,
             8, 8,
@@ -134,7 +130,7 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
         );
     }
 
-    if(inv_status.special_item) {
+    if(inv_state.special_item) {
         pw_screen_draw_from_eeprom(
             xs[4], yi,
             8, 8,
@@ -143,10 +139,10 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
         );
     }
 
-    cx = xs[ (cursor)%4 ];
-    cy = (cursor>5)?yi:yp;
+    cx = xs[ (sv->cursor)%4 ];
+    cy = (sv->cursor>5)?yi:yp;
 
-    const uint16_t addr = (anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
+    const uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
 
     pw_screen_draw_from_eeprom(
         cx, cy,
@@ -174,7 +170,7 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
     // IMG_EVENT_POKEMON_SMALL_ANIMATED
     // IMG_POKEMON_SMALL_ANIMATED
     // TREASURE_LARGE
-    addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED + anim_frame*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
+    addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED + sv->anim_frame*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
     pw_screen_draw_from_eeprom(
         SCREEN_WIDTH-8-32, SCREEN_HEIGHT-16-24,
         32, 24,

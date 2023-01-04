@@ -10,14 +10,13 @@
 #include "../eeprom_map.h"
 #include "../eeprom.h"
 
-static int8_t cursor = 0;
-static int8_t prev_drawn = 0;
-
 static uint32_t prev_step_counts[7] = {0,};
 
+void pw_trainer_card_move_cursor(state_vars_t *sv, int8_t m);
+
 void pw_trainer_card_init(state_vars_t *sv) {
-    cursor = 0;
-    prev_drawn = -1;
+    sv->cursor = 0;
+    sv->prev_cursor = -1;
 }
 
 void pw_trainer_card_init_display(state_vars_t *sv) {
@@ -147,27 +146,27 @@ void pw_trainer_card_draw_dayview(uint8_t day, uint32_t day_steps,
 
 }
 
-void pw_move_tc_cursor(int8_t m) {
-    cursor += m;
-    if(cursor < 0) cursor = 0;
-    if(cursor > TRAINER_CARD_MAX_DAYS) cursor = TRAINER_CARD_MAX_DAYS;
+void pw_trainer_card_move_cursor(state_vars_t *sv, int8_t m) {
+    sv->cursor += m;
+    if(sv->cursor < 0) sv->cursor = 0;
+    if(sv->cursor > TRAINER_CARD_MAX_DAYS) sv->cursor = TRAINER_CARD_MAX_DAYS;
     pw_request_redraw();
 }
 
 void pw_trainer_card_handle_input(state_vars_t *sv, uint8_t b) {
     switch(b) {
         case BUTTON_L:
-            if(cursor <= 0) {
+            if(sv->cursor <= 0) {
                 pw_request_state(STATE_MAIN_MENU);
             } else {
-                pw_move_tc_cursor(-1);
+                pw_trainer_card_move_cursor(sv, -1);
             }
             break;
         case BUTTON_M:
             pw_request_state(STATE_SPLASH);
             break;
         case BUTTON_R:
-            pw_move_tc_cursor(+1);
+            pw_trainer_card_move_cursor(sv, +1);
             break;
         default:
             pw_request_state(STATE_ERROR);
@@ -176,8 +175,8 @@ void pw_trainer_card_handle_input(state_vars_t *sv, uint8_t b) {
 }
 
 void pw_trainer_card_draw_update(state_vars_t *sv) {
-    if(prev_drawn != cursor) {
-        if(cursor <= 0) {
+    if(sv->prev_cursor != sv->cursor) {
+        if(sv->cursor <= 0) {
             pw_trainer_card_init_display(sv);
         } else {
             health_data_t health_data;
@@ -191,14 +190,14 @@ void pw_trainer_card_draw_update(state_vars_t *sv) {
             uint32_t const today_steps = swap_bytes_u32(health_data.be_today_steps);
             uint16_t const total_days  = swap_bytes_u16(health_data.be_total_days);
             pw_trainer_card_draw_dayview(
-                    cursor,
-                    swap_bytes_u32(prev_step_counts[cursor-1]),
+                    sv->cursor,
+                    swap_bytes_u32(prev_step_counts[sv->cursor-1]),
                     total_steps,
                     //total_steps+today_steps,
                     total_days
             );
         }
-        prev_drawn = cursor;
+        sv->prev_cursor = sv->cursor;
     }
 }
 
