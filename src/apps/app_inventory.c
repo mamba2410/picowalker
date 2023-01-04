@@ -396,12 +396,13 @@ static void pw_inventory_draw_screen2(state_vars_t *sv) {
             PW_EEPROM_SIZE_IMG_PRESENT_LARGE
         );
 
-        pw_screen_draw_from_eeprom(
-            0, SCREEN_HEIGHT-16,
-            80, 16,
-            PW_EEPROM_ADDR_TEXT_ITEM_NAMES+sv->cursor*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
-            PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
-        );
+        uint8_t buf[PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE];
+        pw_img_t sprite = {.width=96, .height=16, .data=buf, .size=PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE};
+
+        uint8_t idx = pw_inventory_find_index(sv, owned_things.le_presents[sv->cursor], SEARCH_ITEM_NAME);
+        pw_inventory_index_to_data(sv, buf, idx, SEARCH_ITEM_NAME);
+
+        pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
 
     }
 
