@@ -234,7 +234,10 @@ void pw_splash_init_display(state_vars_t *sv) {
     }
 
     //uint16_t *items = (uint16_t*)(&caught_pokemon); // re-use the memory
-    uint16_t items[6];
+    struct {
+        uint16_t le_item;
+        uint16_t pad;
+    } items[3];
     pw_eeprom_read(
         PW_EEPROM_ADDR_OBTAINED_ITEMS,
         //(uint8_t*)(&caught_pokemon),
@@ -242,9 +245,9 @@ void pw_splash_init_display(state_vars_t *sv) {
         PW_EEPROM_SIZE_OBTAINED_ITEMS
     );
     for(uint8_t i = 0; i < 3; i++) {
-        if(items[2*i+1] != 0) {
+        if(items[i].le_item != 0) {
             pw_screen_draw_from_eeprom(
-                16+i*8, SCREEN_HEIGHT-8,
+                24+i*8, SCREEN_HEIGHT-8,
                 8, 8,
                 PW_EEPROM_ADDR_IMG_ITEM,
                 PW_EEPROM_SIZE_IMG_ITEM
@@ -285,7 +288,7 @@ void pw_splash_init_display(state_vars_t *sv) {
         (uint8_t*)items,
         PW_EEPROM_SIZE_EVENT_ITEM
     );
-    if( items[3] != 0) {     // Check third word because first 6 bytes are useless
+    if( ((uint16_t*)(items))[3] != 0) {     // Check fourth word because first 6 bytes are useless
         pw_screen_draw_from_eeprom(
             8, SCREEN_HEIGHT-16,
             8, 8,
