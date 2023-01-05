@@ -9,15 +9,13 @@
 #include "../screen.h"
 #include "../buttons.h"
 
-uint16_t inv_state = 0;;
-uint8_t n_presents = 0;
-
 struct owned_things_s {
-    uint16_t le_current;
-    uint16_t le_species[4];
-    uint16_t le_item[4];
+    uint16_t le_found[10];
     uint16_t le_presents[10];
-} owned_things;
+    uint8_t n_presents;
+} inventory;
+
+static uint8_t eeprom_buf[PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED];
 
 enum search_type {
     SEARCH_POKEMON_NAME,
@@ -26,32 +24,60 @@ enum search_type {
     SEARCH_ITEM_SPRITE,
 };
 
-static void pw_inventory_draw_screen1();
-static void pw_inventory_draw_screen2();
-static void pw_inventory_update_screen1();
-static void pw_inventory_update_screen2();
+enum subscreen_type {
+    SUBSCREEN_FOUND,
+    SUBSCREEN_PRESENTS,
+    N_SUBSCREENS,
+};
+
+typedef void (draw_func_t)(state_vars_t*);
+
+static void pw_inventory_draw_screen1(state_vars_t *sv);
+static void pw_inventory_draw_screen2(state_vars_t *sv);
+static void pw_inventory_update_screen1(state_vars_t *sv);
+static void pw_inventory_update_screen2(state_vars_t *sv);
+
 static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m);
 static uint8_t pw_inventory_find_index(state_vars_t *sv, uint16_t data, enum search_type type);
 static void pw_inventory_index_to_data(state_vars_t *sv, uint8_t *buf, uint8_t idx, enum search_type type);
 
+draw_func_t* const draw_funcs[N_SUBSCREENS] = {
+    [SUBSCREEN_FOUND]       = pw_inventory_draw_screen1,
+    [SUBSCREEN_PRESENTS]    = pw_inventory_draw_screen2,
+};
 
-/*
- *  TODO: optimisation
- *  chance owned_items to match cursor position
- *  so that we don't need too much logic to separate drawing items and pokemon
- *  will need padding for the empty item slot
- *  Do all the sorting in `init` and the rest follows
- */
+draw_func_t* const update_funcs[N_SUBSCREENS] = {
+    [SUBSCREEN_FOUND]       = pw_inventory_update_screen1,
+    [SUBSCREEN_PRESENTS]    = pw_inventory_update_screen2,
+};
+
+
 void pw_inventory_init(state_vars_t *sv) {
-    inv_state = 1;
-    n_presents = 0;
+    inventory.n_presents = 0;
+    for(uint8_t i = 0; i < 10; i++) {
+        inventory.le_found[i] = 0;
+        inventory.le_presents[i] = 0;
+    }
     sv->cursor = 0;
     sv->prev_cursor = 0;
-    sv->subscreen = 0;
-    sv->prev_subscreen = 0;
+    sv->subscreen = SUBSCREEN_FOUND;
+    sv->prev_subscreen = SUBSCREEN_FOUND;
 
-    // get num pokemon
+
+    /*
+     *  Check for pokemon
+     *  1x walking mon      [0]
+     *  3x caught inventory [1..3]
+     *  1x special/event    [4]
+     */
     pokemon_summary_t test_pokemon[3];
+
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_ROUTE_INFO+0x00,
+        (uint8_t*)(test_pokemon),
+        sizeof(pokemon_summary_t)
+    );
+    inventory.le_found[0] = test_pokemon[0].le_species;
 
     pw_eeprom_read(
         PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY,
@@ -59,15 +85,8 @@ void pw_inventory_init(state_vars_t *sv) {
         PW_EEPROM_SIZE_CAUGHT_POKEMON_SUMMARY_SINGLE*3
     );
 
-    /*
-     *  Check for pokemon
-     *  3x caught inventory [1..3]
-     *  1x special/event    [4]
-     *  1x walking mon      [0]
-     */
     for(uint8_t i = 0; i < 3; i++) {
-        owned_things.le_species[i] = test_pokemon[i].le_species;
-        if(test_pokemon[i].le_species != 0) inv_state |= 1<<(1+i);
+        inventory.le_found[i+1] = test_pokemon[i].le_species;
     }
 
     pw_eeprom_read(
@@ -75,21 +94,15 @@ void pw_inventory_init(state_vars_t *sv) {
         (uint8_t*)(test_pokemon),
         PW_EEPROM_SIZE_EVENT_POKEMON_BASIC_DATA
     );
-    owned_things.le_species[3] = test_pokemon[0].le_species;
+    inventory.le_found[4] = test_pokemon[0].le_species;
 
-    pw_eeprom_read(
-        PW_EEPROM_ADDR_ROUTE_INFO+0x00,
-        (uint8_t*)(test_pokemon),
-        sizeof(pokemon_summary_t)
-    );
-    owned_things.le_current = test_pokemon[0].le_species;
 
 
     /*
      *  Check for items
-     *  1x empty            (5)
-     *  3x dowsed items     [0..3] (6..8)
-     *  1x special/event    [4] (9)
+     *  1x empty            [5]
+     *  3x dowsed items     [6..8]
+     *  1x special/event    [9]
      */
     struct {
         uint16_t le_item;
@@ -103,8 +116,7 @@ void pw_inventory_init(state_vars_t *sv) {
     );
 
     for(uint8_t i = 0; i < 3; i++) {
-        owned_things.le_item[i] = test_item[i].le_item;
-        if(test_item[i].le_item != 0) inv_state |= 1<<(6+i);
+        inventory.le_found[i+6] = test_item[i].le_item;
     }
 
     uint16_t *buf = (uint16_t*)test_item;
@@ -113,57 +125,46 @@ void pw_inventory_init(state_vars_t *sv) {
         (uint8_t*)buf,
         PW_EEPROM_SIZE_EVENT_ITEM
     );
-    owned_things.le_item[4] = buf[3]; // 6 bytes zero then u16 le_item
+    inventory.le_found[9] = buf[3]; // 6 bytes zero then u16 le_item
 
-    pw_eeprom_read(
-        PW_EEPROM_ADDR_PEER_PLAY_ITEMS,
-        (uint8_t*)(test_item),
-        PW_EEPROM_SIZE_PEER_PLAY_ITEM_SINGLE*10
-    );
 
 
     /*
      *  Check for presents
      *  10x peer-play presents [0..9]
      */
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_PEER_PLAY_ITEMS,
+        (uint8_t*)(test_item),
+        PW_EEPROM_SIZE_PEER_PLAY_ITEM_SINGLE*10
+    );
     for(uint8_t i = 0; i < 10; i++) {
-        owned_things.le_presents[i] = test_item[i].le_item;
+        inventory.le_presents[i] = test_item[i].le_item;
     }
 
     // count presents
-    for(n_presents = 0; owned_things.le_presents[n_presents] != 0 && n_presents < 10; n_presents++) ;
+    for(
+            inventory.n_presents = 0;
+            inventory.le_presents[inventory.n_presents] != 0 && inventory.n_presents < 10;
+            inventory.n_presents++
+        ) ;
 
     //inv_state = 0x03df; // all pokemon/items unlocked
     //n_presents = 10;    // we have 10 presents :D
 }
 
 
-
-
-// TODO: make this a jump table
-// TODO: make subscreen static enum
 void pw_inventory_init_display(state_vars_t *sv) {
-    if(sv->subscreen == 0) {
-        pw_inventory_draw_screen1(sv);
-    } else {
-        pw_inventory_draw_screen2(sv);
-    }
+    draw_funcs[sv->subscreen](sv);
 }
 
 
 void pw_inventory_update_display(state_vars_t *sv) {
     if(sv->prev_subscreen != sv->subscreen) {
         pw_screen_clear();
-        // TODO: make this a jump table
-        if(sv->subscreen == 0)
-            pw_inventory_draw_screen1(sv);
-        else
-            pw_inventory_draw_screen2(sv);
+        draw_funcs[sv->subscreen](sv);
     } else {
-        if(sv->subscreen == 0)
-            pw_inventory_update_screen1(sv);
-        else
-            pw_inventory_update_screen2(sv);
+        update_funcs[sv->subscreen](sv);
     }
 
     sv->prev_subscreen = sv->subscreen;
@@ -174,8 +175,8 @@ void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
     switch(b) {
         case BUTTON_L: { pw_inventory_move_cursor(sv, -1); break; };
         case BUTTON_M: {
-                           if(sv->subscreen == 0) {
-                               sv->subscreen = 1;
+                           if(sv->subscreen == SUBSCREEN_FOUND) {
+                               sv->subscreen = SUBSCREEN_PRESENTS;
                            } else {
                                pw_request_state(STATE_SPLASH);
                            }
@@ -186,51 +187,158 @@ void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
 }
 
 /*
- *  cursor:
+ *  cursor found screen:
  *
- *  0  1 2 3 4
- *  5  6 7 8 9
+ *  0  1 2 3 4  // pokemon
+ *  5  6 7 8 9  // items
  *
- *
+ *  0 = walking mon
+ *  1-3 = caught mon
+ *  4 = special/gifted mon
+ *  5 = always empty
+ *  6-8 = dowsed items
+ *  9 = special/gifted item
  */
 static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m) {
 
-    if(sv->subscreen == 0) {
-        // pokemon and items screen
-        uint16_t is_filled = 0;
-        // move cursor by `m` until it hits a nonzero bit, cursor<0 or cursor>=10
-        do {
+    switch(sv->subscreen) {
+        case SUBSCREEN_FOUND: {
+            uint16_t is_filled = 0;
+
+            // move cursor by `m` until it hits a nonzero bit, cursor<0 or cursor>=10
+            do {
+                sv->cursor += m;
+                is_filled = inventory.le_found[sv->cursor] != 0;
+            } while( (!is_filled) && (sv->cursor>=0) && (sv->cursor<=9) );
+
+            if(sv->cursor < 0) {
+                sv->cursor = 4;
+                pw_request_state(STATE_MAIN_MENU); // back to main menu
+            }
+            if(sv->cursor > 9) {
+                sv->subscreen = SUBSCREEN_PRESENTS;  // change to presents screen
+                sv->cursor = 0;
+            }
+            break;
+        }
+        case SUBSCREEN_PRESENTS: {
             sv->cursor += m;
-            is_filled = inv_state & (1<<sv->cursor);
-        } while( (!is_filled) && (sv->cursor>=0) && (sv->cursor<=9) );
+            if(sv->cursor < 0) {
+                sv->subscreen = SUBSCREEN_FOUND;
+                sv->cursor = 10;
+                pw_inventory_move_cursor(sv, -1);   // laziest way of setting cursor to last non-empty slot
+            }
 
-        if(sv->cursor < 0) {
-            sv->cursor = 4;
-            pw_request_state(STATE_MAIN_MENU); // back to main menu
-        }
-        if(sv->cursor > 9) {
-            sv->subscreen = 1;  // change to presents screen
-            sv->cursor = 0;
-        }
+            if(sv->cursor >= inventory.n_presents)
+                sv->cursor = inventory.n_presents-1;
 
-    } else {
-        // presents screen
-        sv->cursor += m;
-        if(sv->cursor < 0) {
-            sv->subscreen = 0;
-            sv->cursor = 10;
-            pw_inventory_move_cursor(sv, -1);   // laziest way of setting cursor to last non-empty slot
+            break;
         }
-        if(sv->cursor>=n_presents) sv->cursor = n_presents-1;
+        default: break;
     }
 
     pw_request_redraw();
 }
 
-// TODO: separate into smaller functions to share with update
+static void draw_cursor(state_vars_t *sv) {
+    uint8_t cx=0, cy=0;
+    uint8_t xs[] = {8, 24, 32, 40, 48};
+    const uint8_t yp = 24, yi = 40;
+    uint8_t x0 = 16, y0 = 24;
+
+    switch(sv->subscreen) {
+        case SUBSCREEN_FOUND: {
+            cx = xs[ (sv->cursor)%5 ];
+            cy = (sv->cursor>5)?yi:yp;
+            cy -= 8;
+
+            break;
+        }
+        case SUBSCREEN_PRESENTS: {
+            cx = x0 + 8*(sv->cursor%5);
+            cy = y0 + 16*(sv->cursor/5) - 8;
+
+            break;
+        }
+        default: break;
+    }
+
+    uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
+
+    pw_screen_draw_from_eeprom(
+        cx, cy,
+        8, 8,
+        addr,
+        PW_EEPROM_SIZE_IMG_ARROW
+    );
+}
+
+
+static void draw_animated_sprite(state_vars_t *sv) {
+
+    uint8_t *buf = eeprom_buf;
+    uint8_t idx, w;
+    size_t size;
+    pw_img_t sprite;
+    enum search_type type;
+
+
+    /*
+     *  Draw icon
+     *  cursor < 5 -> pokemon
+     *  cursor > 4 -> item
+     */
+    if(sv->cursor < 5) {
+        type = SEARCH_POKEMON_SPRITE;
+        idx = pw_inventory_find_index(sv, inventory.le_found[sv->cursor], type);
+        size = PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED;
+    } else {
+        type = SEARCH_ITEM_SPRITE;
+        idx = 0;
+        size = PW_EEPROM_SIZE_IMG_TREASURE_LARGE;;
+    }
+
+    pw_inventory_index_to_data(sv, buf, idx, type);
+    sprite = (pw_img_t){.data=buf, .width=32, .height=24, .size=size};
+    pw_screen_draw_img(&sprite, SCREEN_WIDTH-32-4, SCREEN_HEIGHT-16-24);
+
+}
+
+
+static void draw_name(state_vars_t *sv) {
+
+    uint8_t *buf = eeprom_buf;
+    uint8_t idx, w;
+    size_t size;
+    enum search_type type;
+
+
+    /*
+     *  cursor < 5 -> pokemon
+     *  cursor > 4 -> item
+     */
+    if(sv->cursor < 5 && sv->subscreen == SUBSCREEN_FOUND) {
+        type = SEARCH_POKEMON_NAME;
+        w = 80;
+        size = PW_EEPROM_SIZE_TEXT_POKEMON_NAME;
+    } else {
+        type = SEARCH_ITEM_NAME;
+        w = 96;
+        size = PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE;
+    }
+
+    uint16_t data = (sv->subscreen==SUBSCREEN_FOUND)?
+        inventory.le_found[sv->cursor]:inventory.le_presents[sv->cursor];
+
+    idx = pw_inventory_find_index(sv, data, type);
+    pw_inventory_index_to_data(sv, buf, idx, type);
+    pw_img_t sprite = {.data=buf, .width=w, .height=16, .size=size};
+    pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
+
+}
+
 static void pw_inventory_draw_screen1(state_vars_t *sv) {
 
-    // Header
     pw_screen_draw_from_eeprom(
         0, 0,
         8, 16,
@@ -267,20 +375,21 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
 
     // draw normal pokeballs
     for(uint8_t i = 0; i < 4; i++) {
-        if( inv_state & (1<<i) ) {
+        if( inventory.le_found[i] != 0 ) {
             pw_screen_draw_img(&pokeball, xs[i], yp);
         }
     }
 
     // draw normal items
     for(uint8_t i = 5; i < 9; i++) {
-        if( inv_state & (1<<i) ) {
+        if( inventory.le_found[i] != 0 ) {
             pw_screen_draw_img(&item, xs[i%5], yi);
         }
     }
 
 
-    if(inv_state & (1<<4)) {
+    // draw special pokeball
+    if( inventory.le_found[4] != 0 ) {
         pw_screen_draw_from_eeprom(
             xs[4], yp,
             8, 8,
@@ -289,7 +398,8 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
         );
     }
 
-    if(inv_state & 1<<9) {
+    // draw special item
+    if(inventory.le_found[9] != 0) {
         pw_screen_draw_from_eeprom(
             xs[4], yi,
             8, 8,
@@ -298,77 +408,10 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
         );
     }
 
-    // Draw cursor
-    uint8_t cx = xs[ (sv->cursor)%5 ];
-    uint8_t cy = (sv->cursor>5)?yi:yp;
-    cy -= 8;
 
-    uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
-
-    pw_screen_draw_from_eeprom(
-        cx, cy,
-        8, 8,
-        addr,
-        PW_EEPROM_SIZE_IMG_ARROW
-    );
-
-
-    // Draw selected name and sprite
-
-    // 96x16 = 32x24x2 = 384 bytes
-    uint8_t buf[PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED];
-    uint8_t is_pokemon = (sv->cursor < 5);
-    uint8_t idx, w;
-    size_t size;
-    enum search_type type;
-
-
-    /*
-     *  Draw name
-     *  cursor < 5 -> pokemon
-     *  cursor > 4 -> item
-     *  TODO: simplify index with `owned_things` restructure
-     *  TODO: make this a function
-     */
-    if(is_pokemon) {
-        type = SEARCH_POKEMON_NAME;
-        uint16_t species;
-        // relies on le_cpecies[-1] = le_current
-        idx = pw_inventory_find_index(sv, owned_things.le_species[sv->cursor-1], type);
-        w = 80;
-        size = PW_EEPROM_SIZE_TEXT_POKEMON_NAME;
-    } else {
-        type = SEARCH_ITEM_NAME;
-        idx = pw_inventory_find_index(sv, owned_things.le_item[sv->cursor - 6], type);
-        w = 96;
-        size = PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE;
-    }
-
-    pw_inventory_index_to_data(sv, buf, idx, type);
-    pw_img_t sprite = {.data=buf, .width=w, .height=16, .size=size};
-    pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
-
-
-    /*
-     *  Draw icon
-     *  cursor < 5 -> pokemon
-     *  cursor > 4 -> item
-     *  TODO: simplify index with `owned_things` restructure
-     *  TODO: make this a function
-     */
-    if(is_pokemon) {
-        type = SEARCH_POKEMON_SPRITE;
-        idx = pw_inventory_find_index(sv, owned_things.le_species[sv->cursor-1], type);
-        size = PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED;
-    } else {
-        type = SEARCH_ITEM_SPRITE;
-        idx = 0;
-        size = PW_EEPROM_SIZE_IMG_TREASURE_LARGE;;
-    }
-
-    pw_inventory_index_to_data(sv, buf, idx, type);
-    sprite = (pw_img_t){.data=buf, .width=32, .height=24, .size=size};
-    pw_screen_draw_img(&sprite, SCREEN_WIDTH-32, SCREEN_HEIGHT-16-24);
+    draw_cursor(sv);
+    draw_name(sv);
+    draw_animated_sprite(sv);
 
     // Draw text box
 
@@ -399,7 +442,7 @@ static void pw_inventory_draw_screen2(state_vars_t *sv) {
     pw_eeprom_read(PW_EEPROM_ADDR_IMG_ITEM, buf_item, PW_EEPROM_SIZE_IMG_ITEM);
 
     uint8_t x0 = 16, y0 = 24;
-    for(uint8_t i = 0; i < n_presents; i++) {
+    for(uint8_t i = 0; i < inventory.n_presents; i++) {
         pw_screen_draw_img(&item,
             x0 + 8*(i%5),
             y0 + 16*(i/5)
@@ -407,26 +450,18 @@ static void pw_inventory_draw_screen2(state_vars_t *sv) {
     }
 
     // don't draw this if we don't have presents
-    if(n_presents > 0) {
-        uint8_t cx = x0 + 8*(sv->cursor%5);
-        uint8_t cy = y0 + 16*(sv->cursor/5) - 8;
+    if(inventory.n_presents > 0) {
 
-        uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
+        draw_cursor(sv);
 
         pw_screen_draw_from_eeprom(
-            cx, cy,
-            8, 8,
-            addr,
-            PW_EEPROM_SIZE_IMG_ARROW
-        );
-
-        pw_screen_draw_from_eeprom(
-            SCREEN_WIDTH-8-32, SCREEN_HEIGHT-16-24,
+            SCREEN_WIDTH-32-4, SCREEN_HEIGHT-16-24,
             32, 24,
             PW_EEPROM_ADDR_IMG_PRESENT_LARGE,
             PW_EEPROM_SIZE_IMG_PRESENT_LARGE
         );
 
+        /*
         uint8_t buf[PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE];
         pw_img_t sprite = {.width=96, .height=16, .data=buf, .size=PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE};
 
@@ -434,6 +469,8 @@ static void pw_inventory_draw_screen2(state_vars_t *sv) {
         pw_inventory_index_to_data(sv, buf, idx, SEARCH_ITEM_NAME);
 
         pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
+        */
+        draw_name(sv);
 
     }
 
@@ -445,69 +482,9 @@ static void pw_inventory_update_screen1(state_vars_t *sv) {
     pw_screen_clear_area(0, 16, 56, 8);
     pw_screen_clear_area(0, 32, 56, 8);
 
-    uint8_t xs[] = {8, 24, 32, 40, 48};
-    const uint8_t yp = 24, yi = 40;
-
-    uint8_t cx = xs[ (sv->cursor)%5 ];
-    uint8_t cy = (sv->cursor>5)?yi:yp;
-    cy -= 8;
-
-    uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
-
-    pw_screen_draw_from_eeprom(
-        cx, cy,
-        8, 8,
-        addr,
-        PW_EEPROM_SIZE_IMG_ARROW
-    );
-
-    // 96x16 = 32x24x2 = 384 bytes
-    uint8_t buf[PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED];
-    uint8_t is_pokemon = (sv->cursor < 5);
-    uint8_t idx, w;
-    size_t size;
-    enum search_type type;
-
-    /*
-     *  Draw name
-     *  cursor < 5 -> pokemon
-     *  cursor > 4 -> item
-     */
-    if(is_pokemon) {
-        type = SEARCH_POKEMON_NAME;
-        idx = pw_inventory_find_index(sv, owned_things.le_species[sv->cursor-1], type);
-        w = 80;
-        size = PW_EEPROM_SIZE_TEXT_POKEMON_NAME;
-    } else {
-        type = SEARCH_ITEM_NAME;
-        idx = pw_inventory_find_index(sv, owned_things.le_item[sv->cursor - 6], type);
-        w = 96;
-        size = PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE;
-    }
-
-    pw_inventory_index_to_data(sv, buf, idx, type);
-    pw_img_t sprite = {.data=buf, .width=w, .height=16, .size=size};
-    pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
-
-
-    /*
-     *  Draw icon
-     *  cursor < 5 -> pokemon
-     *  cursor > 4 -> item
-     */
-    if(is_pokemon) {
-        type = SEARCH_POKEMON_SPRITE;
-        idx = pw_inventory_find_index(sv, owned_things.le_species[sv->cursor-1], type);
-        size = PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED;
-    } else {
-        type = SEARCH_ITEM_SPRITE;
-        idx = 0;
-        size = PW_EEPROM_SIZE_IMG_TREASURE_LARGE;;
-    }
-
-    pw_inventory_index_to_data(sv, buf, idx, type);
-    sprite = (pw_img_t){.data=buf, .width=32, .height=24, .size=size};
-    pw_screen_draw_img(&sprite, SCREEN_WIDTH-32, SCREEN_HEIGHT-16-24);
+    draw_cursor(sv);
+    draw_name(sv);
+    draw_animated_sprite(sv);
 
 }
 
@@ -520,19 +497,11 @@ static void pw_inventory_update_screen2(state_vars_t *sv) {
 
 
     // don't draw this if we don't have presents
-    if(n_presents > 0) {
-        uint8_t cx = x0 + 8*(sv->cursor%5);
-        uint8_t cy = y0 + 16*(sv->cursor/5) - 8;
+    if(inventory.n_presents > 0) {
 
-        uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
+        draw_cursor(sv);
 
-        pw_screen_draw_from_eeprom(
-            cx, cy,
-            8, 8,
-            addr,
-            PW_EEPROM_SIZE_IMG_ARROW
-        );
-
+        /*
         uint8_t buf[PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE];
         pw_img_t sprite = {.width=96, .height=16, .data=buf, .size=PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE};
 
@@ -540,6 +509,8 @@ static void pw_inventory_update_screen2(state_vars_t *sv) {
         pw_inventory_index_to_data(sv, buf, idx, SEARCH_ITEM_NAME);
 
         pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
+        */
+        draw_name(sv);
 
 
     }
