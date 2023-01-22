@@ -37,6 +37,8 @@ add_executable(picowalker
     src/eeprom.h
     src/drivers/ssd1327.c
     src/drivers/ssd1327.h
+    src/drivers/pico_buttons.c
+    src/drivers/pico_buttons.h
     src/drivers/eeprom_pico_ram.S
     src/drivers/eeprom_pico_ram.c
     src/drivers/eeprom_pico_ram.h
