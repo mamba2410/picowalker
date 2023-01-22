@@ -14,7 +14,8 @@
 
 #include "trainer_info.h"
 
-#define SCREEN_REDRAW_DELAY_US  1000000 // 1 second
+//#define SCREEN_REDRAW_DELAY_US  1000000 // 1 second
+#define SCREEN_REDRAW_DELAY_US  500000 // 500ms
 
 void walker_entry();
 
