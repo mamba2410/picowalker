@@ -318,7 +318,6 @@ void pw_splash_update_display(state_vars_t *sv) {
     } else {
         frame_addr = PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME2;
     }
-    sv->anim_frame = !sv->anim_frame;
 
     pw_screen_draw_from_eeprom(
         SCREEN_WIDTH-64, 0,
