@@ -10,9 +10,6 @@
 - Add IR error messages
 - Speed up screen I2C speed?
 - Speed up draw update interval
-- Move button code to driver
-- Change button code to polling instead of interrupts?
-- Debounce buttons with `last_pressed` global/static variable
 
 ## Backburner
 
@@ -26,11 +23,13 @@
 - Watchdog reset
 - Screensaver after time limit
 - Change buttons to general input?
+- Change button code to polling instead of interrupts?
 
 
 ## Apps
 
 - PokeRadar
+    - Countdown timer/alarm
 - Dowsing
     - Read route items
     - Write to inventory
