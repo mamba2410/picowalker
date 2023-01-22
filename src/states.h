@@ -83,11 +83,6 @@ void pw_state_draw_update();
 void pw_empty_event(state_vars_t *sv);
 void pw_empty_input(state_vars_t *sv, uint8_t b);
 
-// STATE_SPLASH
-void pw_splash_init_display(state_vars_t *sv);
-void pw_splash_update_display(state_vars_t *sv);
-void pw_splash_handle_input(state_vars_t *sv, uint8_t b);
-
 // STATE_ERROR
 void pw_error_init_display(state_vars_t *sv);
 
