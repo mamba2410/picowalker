@@ -9,6 +9,7 @@
 #include "apps/app_splash.h"
 #include "apps/app_trainer_card.h"
 #include "apps/app_inventory.h"
+#include "apps/app_dowsing.h"
 
 #include "pwroms.h"
 
@@ -30,7 +31,7 @@ state_event_func_t* const state_init_funcs[N_STATES] = {
 	[STATE_SPLASH]          = pw_empty_event,
 	[STATE_MAIN_MENU]       = pw_empty_event,
 	[STATE_POKE_RADAR]      = pw_empty_event,
-	[STATE_DOWSING]         = pw_empty_event,
+	[STATE_DOWSING]         = pw_dowsing_init,
 	[STATE_CONNECT]         = pw_empty_event,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_init,
 	[STATE_INVENTORY]       = pw_inventory_init,
@@ -43,7 +44,7 @@ state_event_func_t* const state_event_loop_funcs[N_STATES] = {
 	[STATE_SPLASH]          = pw_empty_event,
 	[STATE_MAIN_MENU]       = pw_empty_event,
 	[STATE_POKE_RADAR]      = pw_empty_event,
-	[STATE_DOWSING]         = pw_empty_event,
+	[STATE_DOWSING]         = pw_dowsing_event_loop,
 	[STATE_CONNECT]         = pw_empty_event,
 	[STATE_TRAINER_CARD]    = pw_empty_event,
 	[STATE_INVENTORY]       = pw_empty_event,
@@ -56,7 +57,7 @@ state_input_func_t* const state_input_funcs[N_STATES] = {
 	[STATE_SPLASH]          = pw_splash_handle_input,
 	[STATE_MAIN_MENU]       = pw_menu_handle_input,
 	[STATE_POKE_RADAR]      = pw_send_to_error,
-	[STATE_DOWSING]         = pw_send_to_error,
+	[STATE_DOWSING]         = pw_dowsing_handle_input,
 	[STATE_CONNECT]         = pw_send_to_error,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_handle_input,
 	[STATE_INVENTORY]       = pw_inventory_handle_input,
@@ -69,7 +70,7 @@ state_draw_func_t* const state_draw_init_funcs[] = {
 	[STATE_SPLASH]          = pw_splash_init_display,
 	[STATE_MAIN_MENU]       = pw_menu_init_display,
 	[STATE_POKE_RADAR]      = pw_screen_clear,
-	[STATE_DOWSING]         = pw_screen_clear,
+	[STATE_DOWSING]         = pw_dowsing_init_display,
 	[STATE_CONNECT]         = pw_screen_clear,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_init_display,
 	[STATE_INVENTORY]       = pw_inventory_init_display,
@@ -82,7 +83,7 @@ state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
 	[STATE_SPLASH]          = pw_splash_update_display,
 	[STATE_MAIN_MENU]       = pw_menu_update_display,
 	[STATE_POKE_RADAR]      = pw_empty_event,
-	[STATE_DOWSING]         = pw_empty_event,
+	[STATE_DOWSING]         = pw_dowsing_update_display,
 	[STATE_CONNECT]         = pw_empty_event,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_draw_update,
 	[STATE_INVENTORY]       = pw_inventory_update_display,

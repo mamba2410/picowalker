@@ -27,7 +27,6 @@ loop:
     choosing: nothing
     selected:
         after 4 frames, set substate check correct
-    intermediate: nothing
     substate check correct:
         decrement choices left
         if item is in chosen:

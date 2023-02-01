@@ -190,8 +190,8 @@
 #define PW_EEPROM_SIZE_IMG_DOWSING_BUSH_DARK 64
 #define PW_EEPROM_ADDR_IMG_DOWSING_BUSH_LIGHT 0x1b90  // small bush light-colored, for dowsing 16x16
 #define PW_EEPROM_SIZE_IMG_DOWSING_BUSH_LIGHT 64
-//#define PW_EEPROM_ADDR_0x1bd0 0x1bd0  // "left: "string on white background. seems unreferenced 32x16
-//#define PW_EEPROM_SIZE_0x1bd0 128
+#define PW_EEPROM_ADDR_TEXT_LEFT 0x1bd0  // "left: "string on white background. seems unreferenced 32x16
+#define PW_EEPROM_SIZE_TEXT_LEFT 128
 //#define PW_EEPROM_ADDR_0x1c50 0x1c50  // blank image 16x24
 //#define PW_EEPROM_SIZE_0x1c50 96
 #define PW_EEPROM_ADDR_IMG_RADAR_BUSH 0x1cb0  // bush dark 32x24
