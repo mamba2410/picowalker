@@ -52,6 +52,32 @@ static uint16_t get_item(route_info_t *ri, health_data_t *hd) {
     return ri->le_route_items[le_chosen_idx];
 }
 
+static void draw_switch_screen() {
+    pw_screen_clear();
+    pw_screen_draw_from_eeprom(
+        0, 0,
+        8, 16,
+        PW_EEPROM_ADDR_IMG_MENU_ARROW_RETURN,
+        PW_EEPROM_SIZE_IMG_MENU_ARROW_RETURN
+    );
+
+    pw_screen_draw_from_eeprom(
+        8, 0,
+        80, 16,
+        PW_EEPROM_ADDR_TEXT_SWITCH,
+        PW_EEPROM_SIZE_TEXT_SWITCH
+    );
+
+    for(uint8_t i = 0; i < 3; i++) {
+        pw_screen_draw_from_eeprom(
+            20+i*(16+8), SCREEN_HEIGHT-32-8,
+            8, 8,
+            PW_EEPROM_ADDR_IMG_ITEM,
+            PW_EEPROM_SIZE_IMG_ITEM
+        );
+    }
+}
+
 
 void pw_dowsing_init(state_vars_t *sv) {
     health_data_t hd;
@@ -185,10 +211,70 @@ void pw_dowsing_update_display(state_vars_t *sv) {
                 );
                 pw_screen_clear_area(16*sv->current_cursor, BUSH_HEIGHT+16-2, 16, 2);
             }
+            break;
+        }
+        case DOWSING_REPLACE_ITEM: {
+            for(uint8_t i = 0; i < 3; i++) {
+                pw_screen_clear_area(20+i*(8+16), SCREEN_HEIGHT-32, 8, 8);
+            }
+            if(sv->anim_frame) {
+                pw_screen_draw_from_eeprom(
+                    20+sv->current_cursor*(8+16), SCREEN_HEIGHT-32,
+                    8, 8,
+                    PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL,
+                    PW_EEPROM_SIZE_IMG_ARROW
+                );
+            } else {
+                pw_screen_draw_from_eeprom(
+                    20+sv->current_cursor*(8+16), SCREEN_HEIGHT-32,
+                    8, 8,
+                    PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET,
+                    PW_EEPROM_SIZE_IMG_ARROW
+                );
+            }
+
+
+            struct {
+                uint16_t le_item;
+                uint16_t pad;
+            } inv[3];
+
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_OBTAINED_ITEMS,
+                (uint8_t*)inv,
+                PW_EEPROM_SIZE_OBTAINED_ITEMS
+            );
+
+            uint16_t le_item = inv[sv->current_cursor].le_item;
+
+            uint8_t idx = 0;
+
+            struct {
+                uint16_t le_item;
+            } items[10];
+
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_ROUTE_INFO+0x8c,
+                (uint8_t*)(items),
+                sizeof(items)
+            );
+
+            for(idx = 0; idx < 10; idx++) {
+                if(items[idx].le_item == le_item) break;
+            }
+
+            pw_screen_draw_from_eeprom(
+                0, SCREEN_HEIGHT-16,
+                96, 16,
+                PW_EEPROM_ADDR_TEXT_ITEM_NAMES + idx*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
+                PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
+            );
         }
         default: break;
     }
 }
+
+
 
 void pw_dowsing_handle_input(state_vars_t *sv, uint8_t b) {
     switch(sv->current_substate) {
@@ -206,6 +292,27 @@ void pw_dowsing_handle_input(state_vars_t *sv, uint8_t b) {
             }
             break;
         }
+        case DOWSING_REPLACE_ITEM: {
+            switch(b) {
+                case BUTTON_R: {
+                    sv->current_cursor++;
+                    if(sv->current_cursor > 3)
+                        sv->current_cursor = 3;
+                    pw_request_redraw();
+                    break;
+                }
+                case BUTTON_L: {
+                    sv->current_cursor--;
+                    if(sv->current_cursor < 0)
+                        switch_substate(sv, DOWSING_QUITTING);
+                    pw_request_redraw();
+                    break;
+                }
+                case BUTTON_M: { break; }
+            }
+            break;
+        }
+
         case DOWSING_AWAIT_INPUT: {
             sv->reg_d = 1; // we have pressed a button
             break;
@@ -228,12 +335,12 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
         case DOWSING_SELECTED: {
             // after 4 frames, set substate check correct
             if(sv->reg_d >= 4) {
+                sv->reg_d = 0;  // shakes done
                 switch_substate(sv, DOWSING_CHECK_GUESS);
             }
             break;
         }
         case DOWSING_CHECK_GUESS: {
-            sv->reg_d = 0;  // no more shakes
             sv->reg_b |= 1<<(sv->current_cursor);   // add guess to guesses
             sv->reg_c--;
 
@@ -317,12 +424,19 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
                 uint8_t avail = 0;
                 for(avail = 0; (avail<3) && (inv[avail].le_item != 0); avail++);
 
-            if( 0 /*avail < 3*/ ) {
+            if( avail >= 3 ) {
+                sv->current_cursor = 0;
                 switch_substate(sv, DOWSING_REPLACE_ITEM);
+                draw_switch_screen();
+                pw_request_redraw();
             } else {
                 inv[avail].le_item = le_chosen;
 
-                // TODO: write it back
+                pw_eeprom_write(
+                    PW_EEPROM_ADDR_OBTAINED_ITEMS,
+                    (uint8_t*)inv,
+                    PW_EEPROM_SIZE_OBTAINED_ITEMS
+                );
 
                 pw_screen_draw_from_eeprom(
                     0, SCREEN_HEIGHT-16,
@@ -347,9 +461,9 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
         case DOWSING_REPLACE_ITEM: {
             // replace it idk
 
-            sv->reg_d = 0;
-            sv->current_substate = DOWSING_AWAIT_INPUT;
-            sv->substate_2 = DOWSING_QUITTING;
+            //sv->reg_d = 0;
+            //sv->current_substate = DOWSING_AWAIT_INPUT;
+            //sv->substate_2 = DOWSING_QUITTING;
             break;
         }
         case DOWSING_REVEAL_ITEM: {
