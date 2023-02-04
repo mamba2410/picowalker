@@ -35,6 +35,8 @@ add_executable(picowalker
     src/utils.h
     src/eeprom.c
     src/eeprom.h
+    src/rand.c
+    src/rand.h
     src/drivers/ssd1327.c
     src/drivers/ssd1327.h
     src/drivers/pico_buttons.c
