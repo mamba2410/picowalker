@@ -4,9 +4,10 @@
 #include <stdint.h>
 
 
-#define DEBOUNCE_TIME_US    50000   // 50ms
+//#define DEBOUNCE_TIME_US    50000   // 50ms
+#define DEBOUNCE_TIME_US    100000   // 100ms
 
-// Add an input type? For htings that aren't just buttons
+// Add an input type? For things that aren't just buttons
 enum {
 	BUTTON_L = 0x01,
 	BUTTON_M = 0x02,

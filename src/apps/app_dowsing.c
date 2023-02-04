@@ -6,6 +6,10 @@
 #include "../eeprom.h"
 #include "../screen.h"
 #include "../states.h"
+#include "../rand.h"
+#include "../trainer_info.h"
+#include "../route_info.h"
+#include "../utils.h"
 
 #define BUSH_HEIGHT (SCREEN_HEIGHT-16-8-16)
 #define ARROW_HEIGHT (SCREEN_HEIGHT-16-8)
@@ -19,6 +23,8 @@
  */
 
 static uint8_t img_buf[128];
+static uint16_t le_chosen;
+static uint8_t  le_chosen_idx;
 
 static void switch_subscreen(state_vars_t *sv, uint8_t new) {
     sv->prev_subscreen = sv->subscreen;
@@ -35,28 +41,33 @@ static void move_cursor(state_vars_t *sv, int8_t m) {
 
 static uint16_t get_item(route_info_t *ri, health_data_t *hd) {
     uint32_t today_steps = swap_bytes_u32(hd->be_today_steps);
-    uint8_t chosen = 0;
+
+    // TODO: checks for gift item
 
     do {
-        chosen = rand()%10;
-    } while(today_steps < ri->le_route_item_steps[chosen]);
+        le_chosen_idx = pw_rand()%10;
+    } while(today_steps < ri->le_route_item_steps[le_chosen_idx]);
 
-    return ri->le_route_items[chosen];
-
+    return ri->le_route_items[le_chosen_idx];
 }
 
-void pw_dowsing_init(state_vars_t *sv) {
-    // get steps
-    // get items
-    // choose item
 
+void pw_dowsing_init(state_vars_t *sv) {
     health_data_t hd;
     route_info_t ri;
 
-    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&ri), PW_EEPROM_ADDR_ROUTE_INFO);
+    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&ri), PW_EEPROM_SIZE_ROUTE_INFO);
+    pw_eeprom_reliable_read(
+        PW_EEPROM_ADDR_HEALTH_DATA_1,
+        PW_EEPROM_ADDR_HEALTH_DATA_2,
+        (uint8_t*)(&hd),
+        PW_EEPROM_SIZE_HEALTH_DATA_1
+    );
 
+    uint16_t le_chosen = get_item(&ri, &hd);
 
     sv->substate_a = 0b000001; // choose position
+    //sv->substate_a = 1<<(pw_rand()%6);
 
     sv->substate_c = 2; // set tries left
     sv->substate_d = 0;
@@ -186,6 +197,11 @@ void pw_dowsing_handle_input(state_vars_t *sv, uint8_t b) {
             }
             break;
         }
+        case DOWSING_INTERMEDIATE:
+        case DOWSING_CHECK_GUESS: {
+            sv->substate_d = 1; // we have pressed a button
+            break;
+        }
         default: break;
     }
 }
@@ -202,13 +218,31 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
             break;
         }
         case DOWSING_CHECK_GUESS: {
-            sv->substate_d = 0;
-            sv->substate_c--;
-            // TODO: draw new guesses left
-            if(sv->substate_a & sv->substate_b) {
-                switch_subscreen(sv, DOWSING_GIVE_ITEM);
+            // Hacky way to separategetting input
+            if(sv->substate_d == 4) {
+                sv->substate_d = 0;
+                sv->substate_c--;
+
+                pw_screen_draw_from_eeprom(
+                    76, 0,
+                    8, 16,
+                    PW_EEPROM_ADDR_IMG_DIGITS + PW_EEPROM_SIZE_IMG_CHAR*sv->substate_c,
+                    PW_EEPROM_SIZE_IMG_CHAR
+                );
+
+                if(sv->substate_a & sv->substate_b) {
+                    switch_subscreen(sv, DOWSING_GIVE_ITEM);
+                } else {
+                    pw_screen_draw_from_eeprom(
+                        0, SCREEN_HEIGHT-16,
+                        96, 16,
+                        PW_EEPROM_ADDR_TEXT_NOTHING_FOUND,
+                        PW_EEPROM_SIZE_TEXT_NOTHING_FOUND
+                    );
+                }
+
             } else {
-                // display nothing found in update_display
+                // wait for user input on substate_d before switching
                 if(sv->substate_d > 0) {
                     switch_subscreen(sv, DOWSING_INTERMEDIATE);
                     sv->substate_d = 0;
@@ -217,8 +251,19 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
             break;
         }
         case DOWSING_INTERMEDIATE: {
-            // display near/far
-            switch_subscreen(sv, DOWSING_CHOOSING);
+
+            // TODO: do this properly
+            pw_screen_draw_from_eeprom(
+                0, SCREEN_HEIGHT-16,
+                96, 16,
+                PW_EEPROM_ADDR_TEXT_ITS_NEAR,
+                PW_EEPROM_SIZE_TEXT_ITS_NEAR
+            );
+
+            if(sv->substate_d > 0) {
+                switch_subscreen(sv, DOWSING_CHOOSING);
+                sv->substate_d = 0;
+            }
             break;
         }
         case DOWSING_GIVE_ITEM: {

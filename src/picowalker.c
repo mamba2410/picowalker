@@ -11,6 +11,7 @@
 #include "buttons.h"
 #include "screen.h"
 #include "states.h"
+#include "rand.h"
 
 #include "trainer_info.h"
 
@@ -47,6 +48,7 @@ void walker_entry() {
 	setup_ir_uart();
 	pw_setup_buttons();
     pw_screen_init();
+    pw_srand(0x12345678);
 
     pw_set_state(STATE_SPLASH);
 
