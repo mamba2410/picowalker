@@ -37,6 +37,7 @@ static void move_cursor(state_vars_t *sv, int8_t m) {
 
     if(sv->current_cursor > 5) sv->current_cursor = 5;
     else if(sv->current_cursor < 0) sv->current_cursor = 0;
+    pw_request_redraw();
 }
 
 static uint16_t get_item(route_info_t *ri, health_data_t *hd) {
@@ -66,9 +67,11 @@ void pw_dowsing_init(state_vars_t *sv) {
 
     uint16_t le_chosen = get_item(&ri, &hd);
 
-    sv->reg_a = 0; // choose position
+    //sv->reg_a = 0; // choose position
+    sv->reg_a = pw_rand()%6;
 
-    sv->reg_c = 2; // set tries left
+    sv->reg_b = 0; // set no guesses
+    sv->reg_c = 5; // set tries left
     sv->reg_d = 0;
 
     sv->current_cursor = sv->cursor_2 = 0;
@@ -193,7 +196,13 @@ void pw_dowsing_handle_input(state_vars_t *sv, uint8_t b) {
             switch(b) {
                 case BUTTON_L: move_cursor(sv, -1); break;
                 case BUTTON_R: move_cursor(sv, +1); break;
-                case BUTTON_M: switch_substate(sv, DOWSING_SELECTED); break;
+                case BUTTON_M: {
+                    // If we haven't alreadt selected it
+                    if(!( (1<<sv->current_cursor) & sv->reg_b )) {
+                        switch_substate(sv, DOWSING_SELECTED); break;
+
+                    }
+                }
             }
             break;
         }
@@ -211,6 +220,7 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
         case DOWSING_ENTRY: switch_substate(sv, DOWSING_CHOOSING); break;
         case DOWSING_AWAIT_INPUT: {
             if(sv->reg_d > 0) {
+                pw_request_redraw();
                 switch_substate(sv, sv->substate_2);
             }
             break;
@@ -293,16 +303,53 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
             break;
         }
         case DOWSING_GIVE_ITEM: {
-            if( 0 /* inv full */ ) {
+                struct {
+                    uint16_t le_item;
+                    uint16_t pad;
+                } inv[3];
+
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_OBTAINED_ITEMS,
+                    (uint8_t*)inv,
+                    PW_EEPROM_SIZE_OBTAINED_ITEMS
+                );
+
+                uint8_t avail = 0;
+                for(avail = 0; (avail<3) && (inv[avail].le_item != 0); avail++);
+
+            if( 0 /*avail < 3*/ ) {
                 switch_substate(sv, DOWSING_REPLACE_ITEM);
             } else {
-                // give item
-                switch_substate(sv, DOWSING_QUITTING);
+                inv[avail].le_item = le_chosen;
+
+                // TODO: write it back
+
+                pw_screen_draw_from_eeprom(
+                    0, SCREEN_HEIGHT-16,
+                    96, 16,
+                    PW_EEPROM_ADDR_TEXT_FOUND,
+                    PW_EEPROM_SIZE_TEXT_FOUND
+                );
+
+                pw_screen_draw_from_eeprom(
+                    0, SCREEN_HEIGHT-32,
+                    96, 16,
+                    PW_EEPROM_ADDR_TEXT_ITEM_NAMES + PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE*le_chosen_idx,
+                    PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
+                );
+
+                sv->reg_d = 0;
+                sv->current_substate = DOWSING_AWAIT_INPUT;
+                sv->substate_2 = DOWSING_QUITTING;
             }
             break;
         }
         case DOWSING_REPLACE_ITEM: {
             // replace it idk
+
+            sv->reg_d = 0;
+            sv->current_substate = DOWSING_AWAIT_INPUT;
+            sv->substate_2 = DOWSING_QUITTING;
             break;
         }
         case DOWSING_REVEAL_ITEM: {
