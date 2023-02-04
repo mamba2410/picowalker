@@ -15,8 +15,8 @@ static uint32_t prev_step_counts[7] = {0,};
 void pw_trainer_card_move_cursor(state_vars_t *sv, int8_t m);
 
 void pw_trainer_card_init(state_vars_t *sv) {
-    sv->cursor = 0;
-    sv->prev_cursor = -1;
+    sv->current_cursor = 0;
+    sv->cursor_2 = -1;
 }
 
 void pw_trainer_card_init_display(state_vars_t *sv) {
@@ -147,16 +147,16 @@ void pw_trainer_card_draw_dayview(uint8_t day, uint32_t day_steps,
 }
 
 void pw_trainer_card_move_cursor(state_vars_t *sv, int8_t m) {
-    sv->cursor += m;
-    if(sv->cursor < 0) sv->cursor = 0;
-    if(sv->cursor > TRAINER_CARD_MAX_DAYS) sv->cursor = TRAINER_CARD_MAX_DAYS;
+    sv->current_cursor += m;
+    if(sv->current_cursor < 0) sv->current_cursor = 0;
+    if(sv->current_cursor > TRAINER_CARD_MAX_DAYS) sv->current_cursor = TRAINER_CARD_MAX_DAYS;
     pw_request_redraw();
 }
 
 void pw_trainer_card_handle_input(state_vars_t *sv, uint8_t b) {
     switch(b) {
         case BUTTON_L:
-            if(sv->cursor <= 0) {
+            if(sv->current_cursor <= 0) {
                 pw_request_state(STATE_MAIN_MENU);
             } else {
                 pw_trainer_card_move_cursor(sv, -1);
@@ -175,8 +175,8 @@ void pw_trainer_card_handle_input(state_vars_t *sv, uint8_t b) {
 }
 
 void pw_trainer_card_draw_update(state_vars_t *sv) {
-    if(sv->prev_cursor != sv->cursor) {
-        if(sv->cursor <= 0) {
+    if(sv->cursor_2 != sv->current_cursor) {
+        if(sv->current_cursor <= 0) {
             pw_trainer_card_init_display(sv);
         } else {
             health_data_t health_data;
@@ -190,14 +190,14 @@ void pw_trainer_card_draw_update(state_vars_t *sv) {
             uint32_t const today_steps = swap_bytes_u32(health_data.be_today_steps);
             uint16_t const total_days  = swap_bytes_u16(health_data.be_total_days);
             pw_trainer_card_draw_dayview(
-                    sv->cursor,
-                    swap_bytes_u32(prev_step_counts[sv->cursor-1]),
+                    sv->current_cursor,
+                    swap_bytes_u32(prev_step_counts[sv->current_cursor-1]),
                     total_steps,
                     //total_steps+today_steps,
                     total_days
             );
         }
-        sv->prev_cursor = sv->cursor;
+        sv->cursor_2 = sv->current_cursor;
     }
 }
 

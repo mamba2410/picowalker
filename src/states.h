@@ -29,15 +29,15 @@ typedef enum {
  *  Struct to keep all state variables the same across states
  */
 typedef struct {
-    int8_t cursor;
-    int8_t prev_cursor;
-    uint8_t subscreen;
-    uint8_t prev_subscreen;
+    int8_t  current_cursor;
+    int8_t  cursor_2;
+    uint8_t current_substate;
+    uint8_t substate_2;
     uint8_t anim_frame;
-    uint8_t substate_a;
-    uint8_t substate_b;
-    uint8_t substate_c;
-    uint8_t substate_d;
+    uint8_t reg_a;
+    uint8_t reg_b;
+    uint8_t reg_c;
+    uint8_t reg_d;
 } state_vars_t;
 
 typedef void (state_draw_func_t)(state_vars_t*);

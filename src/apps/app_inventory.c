@@ -58,10 +58,10 @@ void pw_inventory_init(state_vars_t *sv) {
         inventory.le_found[i] = 0;
         inventory.le_presents[i] = 0;
     }
-    sv->cursor = 0;
-    sv->prev_cursor = 0;
-    sv->subscreen = SUBSCREEN_FOUND;
-    sv->prev_subscreen = SUBSCREEN_FOUND;
+    sv->current_cursor = 0;
+    sv->cursor_2 = 0;
+    sv->current_substate = SUBSCREEN_FOUND;
+    sv->substate_2 = SUBSCREEN_FOUND;
 
 
     /*
@@ -155,19 +155,19 @@ void pw_inventory_init(state_vars_t *sv) {
 
 
 void pw_inventory_init_display(state_vars_t *sv) {
-    draw_funcs[sv->subscreen](sv);
+    draw_funcs[sv->current_substate](sv);
 }
 
 
 void pw_inventory_update_display(state_vars_t *sv) {
-    if(sv->prev_subscreen != sv->subscreen) {
+    if(sv->substate_2 != sv->current_substate) {
         pw_screen_clear();
-        draw_funcs[sv->subscreen](sv);
+        draw_funcs[sv->current_substate](sv);
     } else {
-        update_funcs[sv->subscreen](sv);
+        update_funcs[sv->current_substate](sv);
     }
 
-    sv->prev_subscreen = sv->subscreen;
+    sv->substate_2 = sv->current_substate;
 }
 
 
@@ -175,8 +175,8 @@ void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
     switch(b) {
         case BUTTON_L: { pw_inventory_move_cursor(sv, -1); break; };
         case BUTTON_M: {
-                           if(sv->subscreen == SUBSCREEN_FOUND) {
-                               sv->subscreen = SUBSCREEN_PRESENTS;
+                           if(sv->current_substate == SUBSCREEN_FOUND) {
+                               sv->current_substate = SUBSCREEN_PRESENTS;
                            } else {
                                pw_request_state(STATE_SPLASH);
                            }
@@ -201,36 +201,36 @@ void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
  */
 static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m) {
 
-    switch(sv->subscreen) {
+    switch(sv->current_substate) {
         case SUBSCREEN_FOUND: {
             uint16_t is_filled = 0;
 
             // move cursor by `m` until it hits a nonzero bit, cursor<0 or cursor>=10
             do {
-                sv->cursor += m;
-                is_filled = inventory.le_found[sv->cursor] != 0;
-            } while( (!is_filled) && (sv->cursor>=0) && (sv->cursor<=9) );
+                sv->current_cursor += m;
+                is_filled = inventory.le_found[sv->current_cursor] != 0;
+            } while( (!is_filled) && (sv->current_cursor>=0) && (sv->current_cursor<=9) );
 
-            if(sv->cursor < 0) {
-                sv->cursor = 4;
+            if(sv->current_cursor < 0) {
+                sv->current_cursor = 4;
                 pw_request_state(STATE_MAIN_MENU); // back to main menu
             }
-            if(sv->cursor > 9) {
-                sv->subscreen = SUBSCREEN_PRESENTS;  // change to presents screen
-                sv->cursor = 0;
+            if(sv->current_cursor > 9) {
+                sv->current_substate = SUBSCREEN_PRESENTS;  // change to presents screen
+                sv->current_cursor = 0;
             }
             break;
         }
         case SUBSCREEN_PRESENTS: {
-            sv->cursor += m;
-            if(sv->cursor < 0) {
-                sv->subscreen = SUBSCREEN_FOUND;
-                sv->cursor = 10;
+            sv->current_cursor += m;
+            if(sv->current_cursor < 0) {
+                sv->current_substate = SUBSCREEN_FOUND;
+                sv->current_cursor = 10;
                 pw_inventory_move_cursor(sv, -1);   // laziest way of setting cursor to last non-empty slot
             }
 
-            if(sv->cursor >= inventory.n_presents)
-                sv->cursor = inventory.n_presents-1;
+            if(sv->current_cursor >= inventory.n_presents)
+                sv->current_cursor = inventory.n_presents-1;
 
             break;
         }
@@ -246,17 +246,17 @@ static void draw_cursor(state_vars_t *sv) {
     const uint8_t yp = 24, yi = 40;
     uint8_t x0 = 16, y0 = 24;
 
-    switch(sv->subscreen) {
+    switch(sv->current_substate) {
         case SUBSCREEN_FOUND: {
-            cx = xs[ (sv->cursor)%5 ];
-            cy = (sv->cursor>5)?yi:yp;
+            cx = xs[ (sv->current_cursor)%5 ];
+            cy = (sv->current_cursor>5)?yi:yp;
             cy -= 8;
 
             break;
         }
         case SUBSCREEN_PRESENTS: {
-            cx = x0 + 8*(sv->cursor%5);
-            cy = y0 + 16*(sv->cursor/5) - 8;
+            cx = x0 + 8*(sv->current_cursor%5);
+            cy = y0 + 16*(sv->current_cursor/5) - 8;
 
             break;
         }
@@ -288,9 +288,9 @@ static void draw_animated_sprite(state_vars_t *sv) {
      *  cursor < 5 -> pokemon
      *  cursor > 4 -> item
      */
-    if(sv->cursor < 5) {
+    if(sv->current_cursor < 5) {
         type = SEARCH_POKEMON_SPRITE;
-        idx = pw_inventory_find_index(sv, inventory.le_found[sv->cursor], type);
+        idx = pw_inventory_find_index(sv, inventory.le_found[sv->current_cursor], type);
         size = PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED;
     } else {
         type = SEARCH_ITEM_SPRITE;
@@ -317,7 +317,7 @@ static void draw_name(state_vars_t *sv) {
      *  cursor < 5 -> pokemon
      *  cursor > 4 -> item
      */
-    if(sv->cursor < 5 && sv->subscreen == SUBSCREEN_FOUND) {
+    if(sv->current_cursor < 5 && sv->current_substate == SUBSCREEN_FOUND) {
         type = SEARCH_POKEMON_NAME;
         w = 80;
         size = PW_EEPROM_SIZE_TEXT_POKEMON_NAME;
@@ -327,8 +327,8 @@ static void draw_name(state_vars_t *sv) {
         size = PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE;
     }
 
-    uint16_t data = (sv->subscreen==SUBSCREEN_FOUND)?
-        inventory.le_found[sv->cursor]:inventory.le_presents[sv->cursor];
+    uint16_t data = (sv->current_substate==SUBSCREEN_FOUND)?
+        inventory.le_found[sv->current_cursor]:inventory.le_presents[sv->current_cursor];
 
     idx = pw_inventory_find_index(sv, data, type);
     pw_inventory_index_to_data(sv, buf, idx, type);
@@ -465,7 +465,7 @@ static void pw_inventory_draw_screen2(state_vars_t *sv) {
         uint8_t buf[PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE];
         pw_img_t sprite = {.width=96, .height=16, .data=buf, .size=PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE};
 
-        uint8_t idx = pw_inventory_find_index(sv, owned_things.le_presents[sv->cursor], SEARCH_ITEM_NAME);
+        uint8_t idx = pw_inventory_find_index(sv, owned_things.le_presents[sv->current_cursor], SEARCH_ITEM_NAME);
         pw_inventory_index_to_data(sv, buf, idx, SEARCH_ITEM_NAME);
 
         pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
@@ -505,7 +505,7 @@ static void pw_inventory_update_screen2(state_vars_t *sv) {
         uint8_t buf[PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE];
         pw_img_t sprite = {.width=96, .height=16, .data=buf, .size=PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE};
 
-        uint8_t idx = pw_inventory_find_index(sv, owned_things.le_presents[sv->cursor], SEARCH_ITEM_NAME);
+        uint8_t idx = pw_inventory_find_index(sv, owned_things.le_presents[sv->current_cursor], SEARCH_ITEM_NAME);
         pw_inventory_index_to_data(sv, buf, idx, SEARCH_ITEM_NAME);
 
         pw_screen_draw_img(&sprite, 0, SCREEN_HEIGHT-16);
