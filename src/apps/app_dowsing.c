@@ -66,13 +66,13 @@ void pw_dowsing_init(state_vars_t *sv) {
 
     uint16_t le_chosen = get_item(&ri, &hd);
 
-    sv->reg_a = 0b000001; // choose position
-    //sv->reg_a = 1<<(pw_rand()%6);
+    sv->reg_a = 0; // choose position
 
     sv->reg_c = 2; // set tries left
     sv->reg_d = 0;
 
     sv->current_cursor = sv->cursor_2 = 0;
+    sv->current_substate = DOWSING_ENTRY;
 
 }
 
@@ -164,7 +164,7 @@ void pw_dowsing_update_display(state_vars_t *sv) {
         }
         case DOWSING_SELECTED: {
             sv->reg_d++;
-            pw_screen_clear_area(16*sv->current_cursor, ARROW_HEIGHT, 8, 8);
+            pw_screen_clear_area(16*sv->current_cursor, ARROW_HEIGHT, 16, 8);
             if(sv->anim_frame) {
                 pw_screen_draw_from_eeprom(
                     16*sv->current_cursor, BUSH_HEIGHT+2,
@@ -197,8 +197,7 @@ void pw_dowsing_handle_input(state_vars_t *sv, uint8_t b) {
             }
             break;
         }
-        case DOWSING_INTERMEDIATE:
-        case DOWSING_CHECK_GUESS: {
+        case DOWSING_AWAIT_INPUT: {
             sv->reg_d = 1; // we have pressed a button
             break;
         }
@@ -210,6 +209,12 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
 
     switch(sv->current_substate) {
         case DOWSING_ENTRY: switch_substate(sv, DOWSING_CHOOSING); break;
+        case DOWSING_AWAIT_INPUT: {
+            if(sv->reg_d > 0) {
+                switch_substate(sv, sv->substate_2);
+            }
+            break;
+        }
         case DOWSING_SELECTED: {
             // after 4 frames, set substate check correct
             if(sv->reg_d >= 4) {
@@ -218,52 +223,73 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
             break;
         }
         case DOWSING_CHECK_GUESS: {
-            // Hacky way to separategetting input
-            if(sv->reg_d == 4) {
-                sv->reg_d = 0;
-                sv->reg_c--;
+            sv->reg_d = 0;  // no more shakes
+            sv->reg_b |= 1<<(sv->current_cursor);   // add guess to guesses
+            sv->reg_c--;
+
+            pw_screen_clear_area(16*sv->current_cursor, BUSH_HEIGHT, 16, 2);
+            pw_screen_clear_area(16*sv->current_cursor, BUSH_HEIGHT+16-2, 16, 2);
+            pw_screen_draw_from_eeprom(
+                16*sv->current_cursor, BUSH_HEIGHT,
+                16, 16,
+                PW_EEPROM_ADDR_IMG_DOWSING_BUSH_LIGHT,
+                PW_EEPROM_SIZE_IMG_DOWSING_BUSH_LIGHT
+            );
+
+            pw_screen_draw_from_eeprom(
+                76, 0,
+                8, 16,
+                PW_EEPROM_ADDR_IMG_DIGITS + PW_EEPROM_SIZE_IMG_CHAR*sv->reg_c,
+                PW_EEPROM_SIZE_IMG_CHAR
+            );
+
+            uint8_t item_pos = 1<<(sv->reg_a);
+            if(item_pos & sv->reg_b) {
+                sv->reg_c = 1;  // we got it right
+                switch_substate(sv, DOWSING_REVEAL_ITEM);
+            } else {
 
                 pw_screen_draw_from_eeprom(
-                    76, 0,
-                    8, 16,
-                    PW_EEPROM_ADDR_IMG_DIGITS + PW_EEPROM_SIZE_IMG_CHAR*sv->reg_c,
-                    PW_EEPROM_SIZE_IMG_CHAR
+                    0, SCREEN_HEIGHT-16,
+                    96, 16,
+                    PW_EEPROM_ADDR_TEXT_NOTHING_FOUND,
+                    PW_EEPROM_SIZE_TEXT_NOTHING_FOUND
                 );
 
-                if(sv->reg_a & sv->reg_b) {
-                    switch_substate(sv, DOWSING_GIVE_ITEM);
+                // do we still have guesses remaining?
+                if(sv->reg_c > 0) {
+                    sv->reg_d = 0;
+                    sv->current_substate = DOWSING_AWAIT_INPUT;
+                    sv->substate_2 = DOWSING_INTERMEDIATE;
                 } else {
-                    pw_screen_draw_from_eeprom(
-                        0, SCREEN_HEIGHT-16,
-                        96, 16,
-                        PW_EEPROM_ADDR_TEXT_NOTHING_FOUND,
-                        PW_EEPROM_SIZE_TEXT_NOTHING_FOUND
-                    );
+                    sv->reg_c = 0;  // we got it wrong
+                    switch_substate(sv, DOWSING_REVEAL_ITEM);
                 }
 
-            } else {
-                // wait for user input on reg_d before switching
-                if(sv->reg_d > 0) {
-                    switch_substate(sv, DOWSING_INTERMEDIATE);
-                    sv->reg_d = 0;
-                }
             }
+
             break;
         }
         case DOWSING_INTERMEDIATE: {
-
-            // TODO: do this properly
-            pw_screen_draw_from_eeprom(
-                0, SCREEN_HEIGHT-16,
-                96, 16,
-                PW_EEPROM_ADDR_TEXT_ITS_NEAR,
-                PW_EEPROM_SIZE_TEXT_ITS_NEAR
-            );
-
-            if(sv->reg_d > 0) {
-                switch_substate(sv, DOWSING_CHOOSING);
-                sv->reg_d = 0;
+            if(sv->current_cursor == sv->reg_a-1 || sv->current_cursor == sv->reg_a+1) {
+                pw_screen_draw_from_eeprom(
+                    0, SCREEN_HEIGHT-16,
+                    96, 16,
+                    PW_EEPROM_ADDR_TEXT_ITS_NEAR,
+                    PW_EEPROM_SIZE_TEXT_ITS_NEAR
+                );
+            } else {
+                pw_screen_draw_from_eeprom(
+                    0, SCREEN_HEIGHT-16,
+                    96, 16,
+                    PW_EEPROM_ADDR_TEXT_FAR_AWAY,
+                    PW_EEPROM_SIZE_TEXT_FAR_AWAY
+                );
             }
+
+            sv->reg_d = 0;
+            sv->current_substate = DOWSING_AWAIT_INPUT;
+            sv->substate_2 = DOWSING_CHOOSING;
             break;
         }
         case DOWSING_GIVE_ITEM: {
@@ -279,7 +305,29 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
             // replace it idk
             break;
         }
-        case DOWSING_CHOOSING: break;
+        case DOWSING_REVEAL_ITEM: {
+            pw_screen_clear_area(16*sv->reg_a, BUSH_HEIGHT-4, 16, 8);
+            pw_screen_draw_from_eeprom(
+                16*sv->reg_a+4, BUSH_HEIGHT,
+                8, 8,
+                PW_EEPROM_ADDR_IMG_ITEM,
+                PW_EEPROM_SIZE_IMG_ITEM
+            );
+
+            if(sv->reg_c > 0) {
+                switch_substate(sv, DOWSING_GIVE_ITEM);
+            } else {
+                sv->reg_d = 0;
+                sv->current_substate = DOWSING_AWAIT_INPUT;
+                sv->substate_2 = DOWSING_QUITTING;
+            }
+            break;
+        }
+        case DOWSING_QUITTING: {
+            sv->current_cursor = 1; // back on dowsing
+            pw_set_state(STATE_MAIN_MENU);
+            break;
+        }
         default:
             break;
     }
