@@ -14,6 +14,7 @@
  *  sv.substate_a = item_position
  *  sv.substate_b = chosen_positions
  *  sv.substate_c = choices_remaining
+ *  sv.substate_d = bush_shakes
  *
  */
 
@@ -32,10 +33,28 @@ static void move_cursor(state_vars_t *sv, int8_t m) {
     else if(sv->cursor < 0) sv->cursor = 0;
 }
 
+static uint16_t get_item(route_info_t *ri, health_data_t *hd) {
+    uint32_t today_steps = swap_bytes_u32(hd->be_today_steps);
+    uint8_t chosen = 0;
+
+    do {
+        chosen = rand()%10;
+    } while(today_steps < ri->le_route_item_steps[chosen]);
+
+    return ri->le_route_items[chosen];
+
+}
+
 void pw_dowsing_init(state_vars_t *sv) {
     // get steps
     // get items
     // choose item
+
+    health_data_t hd;
+    route_info_t ri;
+
+    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&ri), PW_EEPROM_ADDR_ROUTE_INFO);
+
 
     sv->substate_a = 0b000001; // choose position
 
