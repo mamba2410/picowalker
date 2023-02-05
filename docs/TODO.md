@@ -9,12 +9,12 @@
 - Add IR code from `pw-ir-linux`
 - Add IR error messages
 - Speed up screen I2C speed?
-- Speed up draw update interval
+- Add `substate_request_redraw` which calls `state_draw_init()` again
 
 ## Backburner
 
 - General refactor/clean up
-- Add pico eeprom driver
+- Fix pico eeprom driver
 - Pokewalker data
 - Minigames
 - Proper IR functionality

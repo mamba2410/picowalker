@@ -30,8 +30,6 @@ enum subscreen_type {
     N_SUBSCREENS,
 };
 
-typedef void (draw_func_t)(state_vars_t*);
-
 static void pw_inventory_draw_screen1(state_vars_t *sv);
 static void pw_inventory_draw_screen2(state_vars_t *sv);
 static void pw_inventory_update_screen1(state_vars_t *sv);

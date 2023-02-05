@@ -46,6 +46,7 @@ typedef struct {
 typedef void (state_draw_func_t)(state_vars_t*);
 typedef void (state_event_func_t)(state_vars_t*);
 typedef void (state_input_func_t)(state_vars_t*, uint8_t);
+typedef void (draw_func_t)(state_vars_t*);
 
 
 /*

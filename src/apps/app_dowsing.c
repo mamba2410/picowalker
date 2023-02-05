@@ -25,6 +25,43 @@
  */
 
 static uint8_t img_buf[128];
+static void check_guess_draw_init(state_vars_t *sv);
+static void replace_item_draw_update(state_vars_t *sv);
+static void replace_item_draw_init(state_vars_t *sv);
+static void selected_draw_update(state_vars_t *sv);
+static void choosing_draw_update(state_vars_t *sv);
+static void choosing_draw_init(state_vars_t *sv);
+
+static void match_substate_2(state_vars_t *sv) {
+    sv->substate_2 = sv->current_substate;
+}
+
+draw_func_t* const draw_init_funcs[N_DOWSING_STATES] = {
+    [DOWSING_ENTRY]         = match_substate_2,
+    [DOWSING_CHOOSING]      = choosing_draw_init,
+    [DOWSING_SELECTED]      = match_substate_2,
+    [DOWSING_INTERMEDIATE]  = match_substate_2,
+    [DOWSING_CHECK_GUESS]   = check_guess_draw_init,
+    [DOWSING_GIVE_ITEM]     = match_substate_2,
+    [DOWSING_REPLACE_ITEM]  = replace_item_draw_init,
+    [DOWSING_QUITTING]      = match_substate_2,
+    [DOWSING_AWAIT_INPUT]   = pw_empty_event,
+    [DOWSING_REVEAL_ITEM]   = match_substate_2,
+};
+
+draw_func_t* const draw_update_funcs[N_DOWSING_STATES] = {
+    [DOWSING_ENTRY]         = pw_empty_event,
+    [DOWSING_CHOOSING]      = choosing_draw_update,
+    [DOWSING_SELECTED]      = selected_draw_update,
+    [DOWSING_INTERMEDIATE]  = pw_empty_event,
+    [DOWSING_CHECK_GUESS]   = pw_empty_event,
+    [DOWSING_GIVE_ITEM]     = pw_empty_event,
+    [DOWSING_REPLACE_ITEM]  = replace_item_draw_update,
+    [DOWSING_QUITTING]      = pw_empty_event,
+    [DOWSING_AWAIT_INPUT]   = pw_empty_event,
+    [DOWSING_REVEAL_ITEM]   = pw_empty_event,
+
+};
 
 static void switch_substate(state_vars_t *sv, uint8_t new) {
     sv->substate_2 = sv->current_substate;
@@ -52,7 +89,7 @@ static uint16_t get_item(state_vars_t *sv, route_info_t *ri, health_data_t *hd) 
     return ri->le_route_items[sv->reg_y];
 }
 
-static void draw_switch_screen() {
+static void replace_item_draw_init(state_vars_t *sv) {
     pw_screen_clear();
     pw_screen_draw_from_eeprom(
         0, 0,
@@ -76,6 +113,7 @@ static void draw_switch_screen() {
             PW_EEPROM_SIZE_IMG_ITEM
         );
     }
+    sv->substate_2 = sv->current_substate;
 }
 
 
@@ -97,180 +135,196 @@ void pw_dowsing_init(state_vars_t *sv) {
     sv->reg_a = pw_rand()%6;
 
     sv->reg_b = 0; // set no guesses
-    sv->reg_c = 5; // set tries left
+    sv->reg_c = 2; // set tries left
     sv->reg_d = 0;
 
     sv->current_cursor = sv->cursor_2 = 0;
-    sv->current_substate = DOWSING_ENTRY;
+    sv->current_substate = sv->substate_2 = DOWSING_ENTRY;
 
 }
 
 void pw_dowsing_init_display(state_vars_t *sv) {
-    switch(sv->current_substate) {
-        case DOWSING_ENTRY: {
+     pw_img_t grass = {.data=img_buf, .width=16, .height=16, .size=PW_EEPROM_SIZE_IMG_DOWSING_BUSH_DARK};
+     pw_eeprom_read(
+         PW_EEPROM_ADDR_IMG_DOWSING_BUSH_DARK,
+         grass.data,
+         PW_EEPROM_SIZE_IMG_DOWSING_BUSH_DARK
+     );
 
-            pw_img_t grass = {.data=img_buf, .width=16, .height=16, .size=PW_EEPROM_SIZE_IMG_DOWSING_BUSH_DARK};
-            pw_eeprom_read(
-                PW_EEPROM_ADDR_IMG_DOWSING_BUSH_DARK,
-                grass.data,
-                PW_EEPROM_SIZE_IMG_DOWSING_BUSH_DARK
-            );
+     for(uint8_t i = 0; i < 6; i++) {
+         pw_screen_draw_img(&grass, 16*i, BUSH_HEIGHT);
+         if(i == sv->current_cursor) {
+             if(sv->anim_frame) {
+                 pw_screen_draw_from_eeprom(
+                     16*i+2, SCREEN_HEIGHT-16-8,
+                     8, 8,
+                     PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL,
+                     PW_EEPROM_SIZE_IMG_ARROW
+                 );
+             } else {
+                 pw_screen_draw_from_eeprom(
+                     16*i+2, SCREEN_HEIGHT-16-8,
+                     8, 8,
+                     PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET,
+                     PW_EEPROM_SIZE_IMG_ARROW
+                 );
+             }
+         }
+     }
 
-            for(uint8_t i = 0; i < 6; i++) {
-                pw_screen_draw_img(&grass, 16*i, BUSH_HEIGHT);
-                if(i == sv->current_cursor) {
-                    if(sv->anim_frame) {
-                        pw_screen_draw_from_eeprom(
-                            16*i+2, SCREEN_HEIGHT-16-8,
-                            8, 8,
-                            PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL,
-                            PW_EEPROM_SIZE_IMG_ARROW
-                        );
-                    } else {
-                        pw_screen_draw_from_eeprom(
-                            16*i+2, SCREEN_HEIGHT-16-8,
-                            8, 8,
-                            PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET,
-                            PW_EEPROM_SIZE_IMG_ARROW
-                        );
-                    }
-                }
-            }
+     pw_screen_draw_from_eeprom(
+         0, SCREEN_HEIGHT-16,
+         96, 16,
+         PW_EEPROM_ADDR_TEXT_DISCOVER_ITEM,
+         PW_EEPROM_SIZE_TEXT_DISCOVER_ITEM
+     );
+     pw_screen_draw_text_box(0, SCREEN_HEIGHT-16, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x3);
 
-            pw_screen_draw_from_eeprom(
-                0, SCREEN_HEIGHT-16,
-                96, 16,
-                PW_EEPROM_ADDR_TEXT_DISCOVER_ITEM,
-                PW_EEPROM_SIZE_TEXT_DISCOVER_ITEM
-            );
+     pw_screen_draw_from_eeprom(
+         0, 0,
+         32, 24,
+         PW_EEPROM_ADDR_IMG_ROUTE_LARGE,
+         PW_EEPROM_SIZE_IMG_ROUTE_LARGE
+     );
 
-            pw_screen_draw_from_eeprom(
-                0, 0,
-                32, 24,
-                PW_EEPROM_ADDR_IMG_ROUTE_LARGE,
-                PW_EEPROM_SIZE_IMG_ROUTE_LARGE
-            );
+     pw_screen_draw_from_eeprom(
+         36, 0,
+         32, 16,
+         PW_EEPROM_ADDR_TEXT_LEFT,
+         PW_EEPROM_SIZE_TEXT_LEFT
+     );
 
-            pw_screen_draw_from_eeprom(
-                36, 0,
-                32, 16,
-                PW_EEPROM_ADDR_TEXT_LEFT,
-                PW_EEPROM_SIZE_TEXT_LEFT
-            );
+     pw_screen_draw_from_eeprom(
+         76, 0,
+         8, 16,
+         PW_EEPROM_ADDR_IMG_DIGITS + PW_EEPROM_SIZE_IMG_CHAR*sv->reg_c,
+         PW_EEPROM_SIZE_IMG_CHAR
+     );
 
-            pw_screen_draw_from_eeprom(
-                76, 0,
-                8, 16,
-                PW_EEPROM_ADDR_IMG_DIGITS + PW_EEPROM_SIZE_IMG_CHAR*sv->reg_c,
-                PW_EEPROM_SIZE_IMG_CHAR
-            );
-        }
-        break;
+}
+
+static void choosing_draw_init(state_vars_t *sv) {
+     pw_screen_draw_from_eeprom(
+         0, SCREEN_HEIGHT-16,
+         96, 16,
+         PW_EEPROM_ADDR_TEXT_DISCOVER_ITEM,
+         PW_EEPROM_SIZE_TEXT_DISCOVER_ITEM
+     );
+     pw_screen_draw_text_box(0, SCREEN_HEIGHT-16, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x3);
+     sv->substate_2 = sv->current_substate;
+
+}
+
+static void choosing_draw_update(state_vars_t *sv) {
+    pw_screen_clear_area(0, SCREEN_HEIGHT-16-8, SCREEN_WIDTH, 8);
+    uint16_t addr = sv->anim_frame?PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET;
+    pw_screen_draw_from_eeprom(
+        16*sv->current_cursor+4, SCREEN_HEIGHT-16-8,
+        8, 8,
+        addr,
+        PW_EEPROM_SIZE_IMG_ARROW
+    );
+
+}
+
+static void selected_draw_update(state_vars_t *sv) {
+    sv->reg_d++;
+    uint8_t y = sv->anim_frame?BUSH_HEIGHT+2:BUSH_HEIGHT-2;
+    pw_screen_draw_from_eeprom(
+        16*sv->current_cursor, y,
+        16, 16,
+        PW_EEPROM_ADDR_IMG_DOWSING_BUSH_DARK,
+        PW_EEPROM_SIZE_IMG_DOWSING_BUSH_DARK
+    );
+    y = sv->anim_frame?BUSH_HEIGHT:BUSH_HEIGHT+16-2;
+    pw_screen_clear_area(16*sv->current_cursor, y, 16, 2);
+}
+
+static void replace_item_draw_update(state_vars_t *sv) {
+    for(uint8_t i = 0; i < 3; i++) {
+        pw_screen_clear_area(20+i*(8+16), SCREEN_HEIGHT-32, 8, 8);
     }
+    if(sv->anim_frame) {
+        pw_screen_draw_from_eeprom(
+            20+sv->current_cursor*(8+16), SCREEN_HEIGHT-32,
+            8, 8,
+            PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL,
+            PW_EEPROM_SIZE_IMG_ARROW
+        );
+    } else {
+        pw_screen_draw_from_eeprom(
+            20+sv->current_cursor*(8+16), SCREEN_HEIGHT-32,
+            8, 8,
+            PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET,
+            PW_EEPROM_SIZE_IMG_ARROW
+        );
+    }
+
+
+    struct {
+        uint16_t le_item;
+        uint16_t pad;
+    } inv[3];
+
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_OBTAINED_ITEMS,
+        (uint8_t*)inv,
+        PW_EEPROM_SIZE_OBTAINED_ITEMS
+    );
+
+    uint16_t le_item = inv[sv->current_cursor].le_item;
+
+    uint8_t idx = 0;
+
+    struct {
+        uint16_t le_item;
+    } items[10];
+
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_ROUTE_INFO+0x8c,
+        (uint8_t*)(items),
+        sizeof(items)
+    );
+
+    for(idx = 0; idx < 10; idx++) {
+        if(items[idx].le_item == le_item) break;
+    }
+
+    pw_screen_draw_from_eeprom(
+        0, SCREEN_HEIGHT-16,
+        96, 16,
+        PW_EEPROM_ADDR_TEXT_ITEM_NAMES + idx*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
+        PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
+    );
+    pw_screen_draw_text_box(0, SCREEN_HEIGHT-16, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x3);
+
+}
+
+static void check_guess_draw_init(state_vars_t *sv) {
+    pw_screen_clear_area(16*sv->current_cursor, BUSH_HEIGHT, 16, 2);
+    pw_screen_clear_area(16*sv->current_cursor, BUSH_HEIGHT+16-2, 16, 2);
+    pw_screen_draw_from_eeprom(
+        16*sv->current_cursor, BUSH_HEIGHT,
+        16, 16,
+        PW_EEPROM_ADDR_IMG_DOWSING_BUSH_LIGHT,
+        PW_EEPROM_SIZE_IMG_DOWSING_BUSH_LIGHT
+    );
+
+    pw_screen_draw_from_eeprom(
+        76, 0,
+        8, 16,
+        PW_EEPROM_ADDR_IMG_DIGITS + PW_EEPROM_SIZE_IMG_CHAR*sv->reg_c,
+        PW_EEPROM_SIZE_IMG_CHAR
+    );
+     sv->substate_2 = sv->current_substate;
 
 }
 
 void pw_dowsing_update_display(state_vars_t *sv) {
-    switch(sv->current_substate) {
-        case DOWSING_CHOOSING: {
-            pw_screen_clear_area(0, SCREEN_HEIGHT-16-8, SCREEN_WIDTH, 8);
-            if(sv->anim_frame) {
-                pw_screen_draw_from_eeprom(
-                    16*sv->current_cursor+4, SCREEN_HEIGHT-16-8,
-                    8, 8,
-                    PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL,
-                    PW_EEPROM_SIZE_IMG_ARROW
-                );
-            } else {
-                pw_screen_draw_from_eeprom(
-                    16*sv->current_cursor+4, SCREEN_HEIGHT-16-8,
-                    8, 8,
-                    PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET,
-                    PW_EEPROM_SIZE_IMG_ARROW
-                );
-            }
-            break;
-        }
-        case DOWSING_SELECTED: {
-            sv->reg_d++;
-            pw_screen_clear_area(16*sv->current_cursor, ARROW_HEIGHT, 16, 8);
-            if(sv->anim_frame) {
-                pw_screen_draw_from_eeprom(
-                    16*sv->current_cursor, BUSH_HEIGHT+2,
-                    16, 16,
-                    PW_EEPROM_ADDR_IMG_DOWSING_BUSH_DARK,
-                    PW_EEPROM_SIZE_IMG_DOWSING_BUSH_DARK
-                );
-                pw_screen_clear_area(16*sv->current_cursor, BUSH_HEIGHT, 16, 2);
-            } else {
-                pw_screen_draw_from_eeprom(
-                    16*sv->current_cursor, BUSH_HEIGHT-2,
-                    16, 16,
-                    PW_EEPROM_ADDR_IMG_DOWSING_BUSH_DARK,
-                    PW_EEPROM_SIZE_IMG_DOWSING_BUSH_DARK
-                );
-                pw_screen_clear_area(16*sv->current_cursor, BUSH_HEIGHT+16-2, 16, 2);
-            }
-            break;
-        }
-        case DOWSING_REPLACE_ITEM: {
-            for(uint8_t i = 0; i < 3; i++) {
-                pw_screen_clear_area(20+i*(8+16), SCREEN_HEIGHT-32, 8, 8);
-            }
-            if(sv->anim_frame) {
-                pw_screen_draw_from_eeprom(
-                    20+sv->current_cursor*(8+16), SCREEN_HEIGHT-32,
-                    8, 8,
-                    PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL,
-                    PW_EEPROM_SIZE_IMG_ARROW
-                );
-            } else {
-                pw_screen_draw_from_eeprom(
-                    20+sv->current_cursor*(8+16), SCREEN_HEIGHT-32,
-                    8, 8,
-                    PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET,
-                    PW_EEPROM_SIZE_IMG_ARROW
-                );
-            }
-
-
-            struct {
-                uint16_t le_item;
-                uint16_t pad;
-            } inv[3];
-
-            pw_eeprom_read(
-                PW_EEPROM_ADDR_OBTAINED_ITEMS,
-                (uint8_t*)inv,
-                PW_EEPROM_SIZE_OBTAINED_ITEMS
-            );
-
-            uint16_t le_item = inv[sv->current_cursor].le_item;
-
-            uint8_t idx = 0;
-
-            struct {
-                uint16_t le_item;
-            } items[10];
-
-            pw_eeprom_read(
-                PW_EEPROM_ADDR_ROUTE_INFO+0x8c,
-                (uint8_t*)(items),
-                sizeof(items)
-            );
-
-            for(idx = 0; idx < 10; idx++) {
-                if(items[idx].le_item == le_item) break;
-            }
-
-            pw_screen_draw_from_eeprom(
-                0, SCREEN_HEIGHT-16,
-                96, 16,
-                PW_EEPROM_ADDR_TEXT_ITEM_NAMES + idx*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
-                PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
-            );
-        }
-        default: break;
+    if(sv->substate_2 != sv->current_substate) {
+        draw_init_funcs[sv->current_substate](sv);
+    } else {
+        draw_update_funcs[sv->current_substate](sv);
     }
 }
 
@@ -285,6 +339,7 @@ void pw_dowsing_handle_input(state_vars_t *sv, uint8_t b) {
                 case BUTTON_M: {
                     // If we haven't alreadt selected it
                     if(!( (1<<sv->current_cursor) & sv->reg_b )) {
+                        pw_request_redraw();
                         switch_substate(sv, DOWSING_SELECTED); break;
 
                     }
@@ -356,8 +411,9 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
         }
         case DOWSING_SELECTED: {
             // after 4 frames, set substate check correct
-            if(sv->reg_d >= 4) {
+            if(sv->reg_d >= 6) {
                 sv->reg_d = 0;  // shakes done
+                pw_request_redraw();
                 switch_substate(sv, DOWSING_CHECK_GUESS);
             }
             break;
@@ -366,21 +422,7 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
             sv->reg_b |= 1<<(sv->current_cursor);   // add guess to guesses
             sv->reg_c--;
 
-            pw_screen_clear_area(16*sv->current_cursor, BUSH_HEIGHT, 16, 2);
-            pw_screen_clear_area(16*sv->current_cursor, BUSH_HEIGHT+16-2, 16, 2);
-            pw_screen_draw_from_eeprom(
-                16*sv->current_cursor, BUSH_HEIGHT,
-                16, 16,
-                PW_EEPROM_ADDR_IMG_DOWSING_BUSH_LIGHT,
-                PW_EEPROM_SIZE_IMG_DOWSING_BUSH_LIGHT
-            );
-
-            pw_screen_draw_from_eeprom(
-                76, 0,
-                8, 16,
-                PW_EEPROM_ADDR_IMG_DIGITS + PW_EEPROM_SIZE_IMG_CHAR*sv->reg_c,
-                PW_EEPROM_SIZE_IMG_CHAR
-            );
+            check_guess_draw_init(sv);
 
             uint8_t item_pos = 1<<(sv->reg_a);
             if(item_pos & sv->reg_b) {
@@ -394,6 +436,7 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
                     PW_EEPROM_ADDR_TEXT_NOTHING_FOUND,
                     PW_EEPROM_SIZE_TEXT_NOTHING_FOUND
                 );
+                pw_screen_draw_text_box(0, SCREEN_HEIGHT-16, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x3);
 
                 // do we still have guesses remaining?
                 if(sv->reg_c > 0) {
@@ -417,6 +460,7 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
                     PW_EEPROM_ADDR_TEXT_ITS_NEAR,
                     PW_EEPROM_SIZE_TEXT_ITS_NEAR
                 );
+                pw_screen_draw_text_box(0, SCREEN_HEIGHT-16, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x3);
             } else {
                 pw_screen_draw_from_eeprom(
                     0, SCREEN_HEIGHT-16,
@@ -424,6 +468,7 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
                     PW_EEPROM_ADDR_TEXT_FAR_AWAY,
                     PW_EEPROM_SIZE_TEXT_FAR_AWAY
                 );
+                pw_screen_draw_text_box(0, SCREEN_HEIGHT-16, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x3);
             }
 
             sv->reg_d = 0;
@@ -459,6 +504,7 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
                 PW_EEPROM_ADDR_TEXT_ITEM_NAMES + PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE*sv->reg_y,
                 PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
             );
+            pw_screen_draw_text_box(0, SCREEN_HEIGHT-32, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0x3);
 
             if( avail >= 3 ) {
                 sv->current_cursor = 0;
@@ -478,14 +524,6 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
                 sv->reg_d = 0;
                 sv->current_substate = DOWSING_AWAIT_INPUT;
                 sv->substate_2 = DOWSING_QUITTING;
-            }
-            break;
-        }
-        case DOWSING_REPLACE_ITEM: {
-            // only draw on our first go
-            if(sv->reg_d > 0) {
-                draw_switch_screen();
-                sv->reg_d = 0;
             }
             break;
         }
