@@ -32,6 +32,7 @@ void pw_screen_draw_time(uint8_t hour, uint8_t minute, uint8_t second, size_t x,
 void pw_screen_draw_subtime(uint8_t n, size_t x, size_t y, bool draw_colon);
 void pw_screen_clear_area(size_t x, size_t y, size_t width, size_t height);
 void pw_screen_draw_horiz_line(uint8_t x, uint8_t y, uint8_t len, uint8_t colour);
+void pw_screen_draw_text_box(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour);
 
 void pw_screen_clear();
 

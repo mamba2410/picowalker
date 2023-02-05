@@ -162,4 +162,14 @@ void pw_screen_draw_horiz_line(uint8_t x, uint8_t y, uint8_t len, uint8_t colour
 }
 
 
-// TODO: pw_screen_draw_text_box(x1, y1, x1, y2, uint8_t colour);
+void pw_screen_draw_text_box(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour) {
+    x1 = x1 + screen.offset_x;
+    x2 = x2 + screen.offset_x;
+    y1 = y1 + screen.offset_y;
+    y2 = y2 + screen.offset_y;
+    oled_draw_box(&(screen.chip), x1, y1, x1, y2, oled_convert_colour(colour));
+    oled_draw_box(&(screen.chip), x2, y1, x2, y2, oled_convert_colour(colour));
+    oled_draw_box(&(screen.chip), x1, y1, x2, y1, oled_convert_colour(colour));
+    oled_draw_box(&(screen.chip), x1, y2, x2, y2, oled_convert_colour(colour));
+}
+

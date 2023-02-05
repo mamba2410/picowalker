@@ -55,6 +55,7 @@ int oled_init(ssd1327_t *oled);
 int oled_draw(ssd1327_t *oled, oled_img_t *img);
 int oled_clear_ram(ssd1327_t *oled);
 uint8_t oled_convert_colour(uint8_t c);
+void oled_draw_box(ssd1327_t *oled, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour);
 
 void pw_img_to_oled(pw_img_t *pw_img, oled_img_t *oled_img);
 
