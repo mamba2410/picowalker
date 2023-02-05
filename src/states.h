@@ -38,6 +38,9 @@ typedef struct {
     uint8_t reg_b;
     uint8_t reg_c;
     uint8_t reg_d;
+    uint16_t reg_x;
+    uint16_t reg_y;
+    uint16_t reg_z;
 } state_vars_t;
 
 typedef void (state_draw_func_t)(state_vars_t*);

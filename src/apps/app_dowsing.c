@@ -18,13 +18,13 @@
  *  sv.reg_a = item_position
  *  sv.reg_b = chosen_positions
  *  sv.reg_c = choices_remaining
- *  sv.reg_d = bush_shakes
+ *  sv.reg_d = bush_shakes/user input
+ *  sv.reg_x = chosen item
+ *  sv.reg_y = chosen item index
  *
  */
 
 static uint8_t img_buf[128];
-static uint16_t le_chosen;
-static uint8_t  le_chosen_idx;
 
 static void switch_substate(state_vars_t *sv, uint8_t new) {
     sv->substate_2 = sv->current_substate;
@@ -40,16 +40,16 @@ static void move_cursor(state_vars_t *sv, int8_t m) {
     pw_request_redraw();
 }
 
-static uint16_t get_item(route_info_t *ri, health_data_t *hd) {
+static uint16_t get_item(state_vars_t *sv, route_info_t *ri, health_data_t *hd) {
     uint32_t today_steps = swap_bytes_u32(hd->be_today_steps);
 
     // TODO: checks for gift item
 
     do {
-        le_chosen_idx = pw_rand()%10;
-    } while(today_steps < ri->le_route_item_steps[le_chosen_idx]);
+        sv->reg_y = pw_rand()%10;
+    } while(today_steps < ri->le_route_item_steps[sv->reg_y]);
 
-    return ri->le_route_items[le_chosen_idx];
+    return ri->le_route_items[sv->reg_y];
 }
 
 static void draw_switch_screen() {
@@ -91,7 +91,7 @@ void pw_dowsing_init(state_vars_t *sv) {
         PW_EEPROM_SIZE_HEALTH_DATA_1
     );
 
-    uint16_t le_chosen = get_item(&ri, &hd);
+    sv->reg_x = get_item(sv, &ri, &hd);
 
     //sv->reg_a = 0; // choose position
     sv->reg_a = pw_rand()%6;
@@ -320,7 +320,7 @@ void pw_dowsing_handle_input(state_vars_t *sv, uint8_t b) {
                         PW_EEPROM_SIZE_OBTAINED_ITEMS
                     );
 
-                    inv[sv->current_cursor].le_item = le_chosen;
+                    inv[sv->current_cursor].le_item = sv->reg_x;
                     pw_eeprom_write(
                         PW_EEPROM_ADDR_OBTAINED_ITEMS,
                         (uint8_t*)inv,
@@ -456,7 +456,7 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
             pw_screen_draw_from_eeprom(
                 0, SCREEN_HEIGHT-32,
                 96, 16,
-                PW_EEPROM_ADDR_TEXT_ITEM_NAMES + PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE*le_chosen_idx,
+                PW_EEPROM_ADDR_TEXT_ITEM_NAMES + PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE*sv->reg_y,
                 PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
             );
 
@@ -468,7 +468,7 @@ void pw_dowsing_event_loop(state_vars_t *sv) {
                 sv->substate_2 = DOWSING_REPLACE_ITEM;
             } else {
 
-                inv[avail].le_item = le_chosen;
+                inv[avail].le_item = sv->reg_x;
                 pw_eeprom_write(
                     PW_EEPROM_ADDR_OBTAINED_ITEMS,
                     (uint8_t*)inv,
