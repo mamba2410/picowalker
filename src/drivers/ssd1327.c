@@ -47,17 +47,6 @@ int oled_init(ssd1327_t *oled) {
 	buf[cursor++] = OLED_CMD_ON;
 	oled_write(oled, buf, cursor);
 
-	cursor = 0;
-	buf[cursor++] = 0x00;
-	buf[cursor++] = OLED_CMD_DISPLAY_MODE | OLED_DISPLAY_ALL_ON;
-    for(size_t i = 0; i < 3; i++) {
-	    oled_write(oled, buf, cursor);
-        sleep_ms(500);
-        buf[cursor-1] ^= 1;
-	    oled_write(oled, buf, cursor);
-        sleep_ms(500);
-    }
-
     oled_clear_ram(oled);
 }
 
