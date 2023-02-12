@@ -12,9 +12,6 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
 	src/picowalker.c
-	src/ir_comms.c
-	src/ir_comms.h
-	src/ir_commands.h
 	src/buttons.c
 	src/buttons.h
 	src/states.c
@@ -25,8 +22,6 @@ add_executable(picowalker
     src/screen.h
     src/pwroms.S
     src/pwroms.h
-    #    src/pw_images.c
-    #    src/pw_images.h
     src/trainer_info.c
     src/trainer_info.h
     src/route_info.c
@@ -37,6 +32,12 @@ add_executable(picowalker
     src/eeprom.h
     src/rand.c
     src/rand.h
+    src/ir/compression.c
+    src/ir/compression.h
+    src/ir/pw_ir.c
+    src/ir/pw_ir.h
+    src/ir/pw_ir_actions.c
+    src/ir/pw_ir_actions.h
     src/drivers/ssd1327.c
     src/drivers/ssd1327.h
     src/drivers/ir.c
