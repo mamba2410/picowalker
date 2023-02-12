@@ -1,21 +1,20 @@
 #ifndef PW_BUTTONS_H
 #define PW_BUTTONS_H
 
-#include <pico/types.h>
+#include <stdint.h>
 
-#define PIN_BUTTON_LEFT     13 // GP13, phys 17
-#define PIN_BUTTON_MIDDLE   14 // GP14, phys 19
-#define PIN_BUTTON_RIGHT    15 // CP15, phys 20
 
-// Add an input type? For htings that aren't just buttons
+//#define DEBOUNCE_TIME_US    50000   // 50ms
+#define DEBOUNCE_TIME_US    100000   // 100ms
+
+// Add an input type? For things that aren't just buttons
 enum {
 	BUTTON_L = 0x01,
 	BUTTON_M = 0x02,
 	BUTTON_R = 0x04,
 };
 
-
 void pw_setup_buttons();
-void pw_irq_callback(uint gp, uint32_t events);
+void pw_button_callback(uint8_t b);
 
 #endif /* PW_BUTTONS_H */

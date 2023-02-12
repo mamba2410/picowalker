@@ -3,15 +3,20 @@
 
 #include "drivers/ssd1327.h"
 #include "screen.h"
+#include "eeprom.h"
+#include "eeprom_map.h"
 
 static screen_t screen;
 
 static uint8_t *screen_buf = 0;
+static uint8_t *eeprom_buf = 0;
 
 int pw_screen_init() {
 
     if(!screen_buf)
         screen_buf = malloc(SCREEN_BUF_SIZE);
+    if(!eeprom_buf)
+        eeprom_buf = malloc(SCREEN_BUF_SIZE);
 
 	ssd1327_t oled = {
 			i2c: i2c_default,
@@ -38,6 +43,12 @@ int pw_screen_init() {
 
 }
 
+//int pw_screen_draw_from_eeprom(uint16_t addr, size_t len, uint8_t w, uint8_t h, uint8_t x, uint8_t y) {
+int pw_screen_draw_from_eeprom(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint16_t addr, size_t len) {
+    pw_img_t img = {.height=h, .width=w, .data=eeprom_buf, .size=len};
+    pw_eeprom_read(addr, eeprom_buf, len);
+    pw_screen_draw_img(&img, x, y);
+}
 
 int pw_screen_draw_img(pw_img_t *img, size_t x, size_t y) {
     oled_img_t oled_img;
@@ -84,7 +95,12 @@ void pw_screen_draw_integer(uint32_t n, size_t right_x, size_t y) {
         size_t idx = m%10;
         m = m/10;
         x -= 8;
-        pw_screen_draw_img(&text_characters[idx], x, y);
+        pw_screen_draw_from_eeprom(
+            x, y,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx,
+            PW_EEPROM_SIZE_IMG_CHAR
+        );
     } while(m>0);
 }
 
@@ -100,13 +116,60 @@ void pw_screen_draw_subtime(uint8_t n, size_t x, size_t y, bool draw_colon) {
     uint8_t idx;
 
     idx = n/10;
-    pw_screen_draw_img(&text_characters[idx], x, y);
+    pw_screen_draw_from_eeprom(
+        x, y,
+        8, 16,
+        PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx,
+        PW_EEPROM_SIZE_IMG_CHAR
+    );
+
     x += 8;
     idx = n%10;
-    pw_screen_draw_img(&text_characters[idx], x, y);
+    pw_screen_draw_from_eeprom(
+        x, y,
+        8, 16,
+        PW_EEPROM_ADDR_IMG_DIGITS+PW_EEPROM_SIZE_IMG_CHAR*idx,
+        PW_EEPROM_SIZE_IMG_CHAR
+    );
     if(draw_colon) {
         x += 8;
-        pw_screen_draw_img(&text_character_colon, x, y);
+        pw_screen_draw_from_eeprom(
+            x, y,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_CHAR_COLON,
+            PW_EEPROM_SIZE_IMG_CHAR
+        );
     }
+}
+
+void pw_screen_draw_horiz_line(uint8_t x, uint8_t y, uint8_t len, uint8_t colour) {
+    oled_img_t img = {
+        x: x + screen.offset_x,
+        y: y + screen.offset_y,
+        width: len,
+        height: 1,
+        size: len/2,
+        data: screen_buf
+    };
+
+    colour = oled_convert_colour(colour);
+
+    for(uint8_t i = 0; i < len/2; i++) {
+        screen_buf[i] = colour | (colour<<4);   // 2 pixels per byte
+    }
+
+    oled_draw(&(screen.chip), &img);
+}
+
+
+void pw_screen_draw_text_box(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour) {
+    x1 = x1 + screen.offset_x;
+    x2 = x2 + screen.offset_x;
+    y1 = y1 + screen.offset_y;
+    y2 = y2 + screen.offset_y;
+    oled_draw_box(&(screen.chip), x1, y1, x1, y2, oled_convert_colour(colour));
+    oled_draw_box(&(screen.chip), x2, y1, x2, y2, oled_convert_colour(colour));
+    oled_draw_box(&(screen.chip), x1, y1, x2, y1, oled_convert_colour(colour));
+    oled_draw_box(&(screen.chip), x1, y2, x2, y2, oled_convert_colour(colour));
 }
 

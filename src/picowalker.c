@@ -11,10 +11,12 @@
 #include "buttons.h"
 #include "screen.h"
 #include "states.h"
+#include "rand.h"
 
 #include "trainer_info.h"
 
-#define SCREEN_REDRAW_DELAY_US  1000000 // 1 second
+//#define SCREEN_REDRAW_DELAY_US  1000000 // 1 second
+#define SCREEN_REDRAW_DELAY_US  500000 // 500ms
 
 void walker_entry();
 
@@ -42,12 +44,11 @@ int main() {
 
 void walker_entry() {
 
-    pw_check_struct_sizes();
-
 	// Setup IR uart and rx interrupts
 	pw_ir_setup();
 	pw_setup_buttons();
     pw_screen_init();
+    pw_srand(0x12345678);
 
     pw_set_state(STATE_SPLASH);
 

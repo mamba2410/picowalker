@@ -5,11 +5,12 @@
 #include "menu.h"
 #include "buttons.h"
 #include "screen.h"
-#include "utils.h"
-#include "trainer_info.h"
 
+#include "apps/app_splash.h"
 #include "apps/app_trainer_card.h"
 #include "apps/app_comms.h"
+#include "apps/app_inventory.h"
+#include "apps/app_dowsing.h"
 
 #include "pwroms.h"
 
@@ -33,8 +34,10 @@ state_event_func_t* const state_init_funcs[N_STATES] = {
 	[STATE_POKE_RADAR]      = pw_empty_event,
 	[STATE_DOWSING]         = pw_empty_event,
 	[STATE_CONNECT]         = pw_comms_init,
+	[STATE_DOWSING]         = pw_dowsing_init,
+	[STATE_CONNECT]         = pw_comms_init,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_init,
-	[STATE_INVENTORY]       = pw_empty_event,
+	[STATE_INVENTORY]       = pw_inventory_init,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
 };
@@ -44,7 +47,7 @@ state_event_func_t* const state_event_loop_funcs[N_STATES] = {
 	[STATE_SPLASH]          = pw_empty_event,
 	[STATE_MAIN_MENU]       = pw_empty_event,
 	[STATE_POKE_RADAR]      = pw_empty_event,
-	[STATE_DOWSING]         = pw_empty_event,
+	[STATE_DOWSING]         = pw_dowsing_event_loop,
 	[STATE_CONNECT]         = pw_comms_event_loop,
 	[STATE_TRAINER_CARD]    = pw_empty_event,
 	[STATE_INVENTORY]       = pw_empty_event,
@@ -57,10 +60,10 @@ state_input_func_t* const state_input_funcs[N_STATES] = {
 	[STATE_SPLASH]          = pw_splash_handle_input,
 	[STATE_MAIN_MENU]       = pw_menu_handle_input,
 	[STATE_POKE_RADAR]      = pw_send_to_error,
-	[STATE_DOWSING]         = pw_send_to_error,
+	[STATE_DOWSING]         = pw_dowsing_handle_input,
 	[STATE_CONNECT]         = pw_comms_handle_input,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_handle_input,
-	[STATE_INVENTORY]       = pw_send_to_error,
+	[STATE_INVENTORY]       = pw_inventory_handle_input,
 	[STATE_SETTINGS]        = pw_send_to_error,
     [STATE_ERROR]           = pw_send_to_splash,
 };
@@ -70,10 +73,10 @@ state_draw_func_t* const state_draw_init_funcs[] = {
 	[STATE_SPLASH]          = pw_splash_init_display,
 	[STATE_MAIN_MENU]       = pw_menu_init_display,
 	[STATE_POKE_RADAR]      = pw_screen_clear,
-	[STATE_DOWSING]         = pw_screen_clear,
+	[STATE_DOWSING]         = pw_dowsing_init_display,
 	[STATE_CONNECT]         = pw_comms_init_display,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_init_display,
-	[STATE_INVENTORY]       = pw_screen_clear,
+	[STATE_INVENTORY]       = pw_inventory_init_display,
 	[STATE_SETTINGS]        = pw_screen_clear,
     [STATE_ERROR]           = pw_error_init_display,
 };
@@ -83,10 +86,10 @@ state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
 	[STATE_SPLASH]          = pw_splash_update_display,
 	[STATE_MAIN_MENU]       = pw_menu_update_display,
 	[STATE_POKE_RADAR]      = pw_empty_event,
-	[STATE_DOWSING]         = pw_empty_event,
+	[STATE_DOWSING]         = pw_dowsing_update_display,
 	[STATE_CONNECT]         = pw_comms_draw_update,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_draw_update,
-	[STATE_INVENTORY]       = pw_empty_event,
+	[STATE_INVENTORY]       = pw_inventory_update_display,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
 };
@@ -95,7 +98,7 @@ static pw_state_t pw_current_state = STATE_SCREENSAVER;
 static pw_state_t pw_requested_state = 0;
 static uint32_t pw_requests = 0;
 
-static uint8_t splash_anim_frame = 0;
+static state_vars_t global_statevars = {0,};
 
 
 void pw_request_state(pw_state_t s_to) {
@@ -118,8 +121,8 @@ bool pw_set_state(pw_state_t s) {
 	if(s != pw_current_state) {
 		pw_current_state = s;
         pw_screen_clear();
-        state_init_funcs[s]();
-        state_draw_init_funcs[s]();
+        state_init_funcs[s](&global_statevars);
+        state_draw_init_funcs[s](&global_statevars);
 		// TODO: Notify when changed to and from state
 		return true;
 	} else {
@@ -136,7 +139,7 @@ pw_state_t pw_get_state() {
 
 //may not be needed/used
 void pw_state_init() {
-    state_init_funcs[pw_current_state]();
+    state_init_funcs[pw_current_state](&global_statevars);
 }
 
 void pw_state_run_event_loop() {
@@ -146,35 +149,32 @@ void pw_state_run_event_loop() {
         PW_CLR_REQUEST(pw_requests, PW_REQUEST_REDRAW);
     }
 
-    state_event_loop_funcs[pw_current_state]();
+    state_event_loop_funcs[pw_current_state](&global_statevars);
 
     if(PW_GET_REQUEST(pw_requests, PW_REQUEST_REDRAW)) {
-        state_draw_update_funcs[pw_current_state]();
+        pw_state_draw_update();
         PW_CLR_REQUEST(pw_requests, PW_REQUEST_REDRAW);
     }
 }
 
 /*
- *	Triggers when button is pressed.
- *	Want to spend as little time as possible in here
- */
-void pw_state_handle_input(uint8_t b) {
-    state_input_funcs[pw_current_state](b);
+    state_input_funcs[pw_current_state](&global_statevars, b);
 }
 
 void pw_state_draw_init() {
-    state_draw_init_funcs[pw_current_state]();
+    state_draw_init_funcs[pw_current_state](&global_statevars);
 }
 
 void pw_state_draw_update() {
-    state_draw_update_funcs[pw_current_state]();
+    global_statevars.anim_frame = !global_statevars.anim_frame;
+    state_draw_update_funcs[pw_current_state](&global_statevars);
 }
 
-void pw_send_to_error(uint8_t b) {
+void pw_send_to_error(state_vars_t *sv, uint8_t b) {
     pw_request_state(STATE_ERROR);
 }
 
-void pw_send_to_splash(uint8_t b) {
+void pw_send_to_splash(state_vars_t *sv, uint8_t b) {
     pw_request_state(STATE_SPLASH);
 }
 
@@ -184,38 +184,10 @@ void pw_send_to_splash(uint8_t b) {
  *  State functions
  *  ========================================
  */
-void pw_empty_event() {}
-void pw_empty_input(uint8_t b) {}
+void pw_empty_event(state_vars_t *sv) {}
+void pw_empty_input(state_vars_t *sv, uint8_t b) {}
 
-void pw_splash_handle_input(uint8_t b) {
-	switch(b) {
-		case BUTTON_M: { pw_menu_set_cursor((MENU_SIZE-1)/2); break; }
-		case BUTTON_L: { pw_menu_set_cursor(MENU_SIZE-1); break; }
-		case BUTTON_R:
-		default: { pw_menu_set_cursor(0); break; }
-	}
-	pw_request_state(STATE_MAIN_MENU);
-}
-
-void pw_splash_init_display() {
-    pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
-    pw_screen_draw_img(&img_route, 0, SCREEN_HEIGHT-img_route.height-16);
-    uint32_t today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
-    pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
-}
-
-void pw_splash_update_display() {
-    if(splash_anim_frame) {
-        pw_screen_draw_img(&img_pokemon_large_frame2, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
-    } else {
-        pw_screen_draw_img(&img_pokemon_large_frame1, SCREEN_WIDTH-img_pokemon_large_frame1.width, 0);
-    }
-    splash_anim_frame = !splash_anim_frame;
-    uint32_t today_steps = swap_bytes_u32(g_reliable_data_1->health_data.be_today_steps);
-    pw_screen_draw_integer(today_steps, SCREEN_WIDTH, SCREEN_HEIGHT-16);
-}
-
-void pw_error_init_display() {
+void pw_error_init_display(state_vars_t *sv) {
     pw_img_t sad_pokewalker_img   = {.height=48, .width=48, .data=sad_pokewalker, .size=576};
     pw_screen_draw_img(&sad_pokewalker_img, 0, 0);
 

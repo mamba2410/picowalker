@@ -116,10 +116,17 @@ typedef struct __attribute__((__packed__)) {
     uint8_t padding[16];
 } reliable_data_t;
 
-void pw_check_struct_sizes();
+typedef struct {
+    uint8_t stamp_heart: 1;
+    uint8_t stamp_space: 1;
+    uint8_t stamp_diamond: 1;
+    uint8_t stamp_club: 1;
+    uint8_t special_map: 1;
+    uint8_t event_pokemon: 1;
+    uint8_t evet_item: 1;
+    uint8_t special_route: 1;
+} special_inventory_t;
 
-extern reliable_data_t const *g_reliable_data_1;
-extern reliable_data_t const *g_reliable_data_2;
 
 
 #endif /* PW_TRAINER_INFO_H */

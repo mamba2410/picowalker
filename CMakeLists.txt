@@ -25,22 +25,37 @@ add_executable(picowalker
     src/screen.h
     src/pwroms.S
     src/pwroms.h
-    src/pw_images.c
-    src/pw_images.h
+    #    src/pw_images.c
+    #    src/pw_images.h
     src/trainer_info.c
     src/trainer_info.h
     src/route_info.c
     src/route_info.h
     src/utils.c
     src/utils.h
+    src/eeprom.c
+    src/eeprom.h
+    src/rand.c
+    src/rand.h
     src/drivers/ssd1327.c
     src/drivers/ssd1327.h
     src/drivers/ir.c
     src/drivers/ir.h
-    src/apps/app_trainer_card.c
-    src/apps/app_trainer_card.h
     src/apps/app_comms.c
     src/apps/app_comms.h
+    src/drivers/pico_buttons.c
+    src/drivers/pico_buttons.h
+    src/drivers/eeprom_pico_ram.S
+    src/drivers/eeprom_pico_ram.c
+    src/drivers/eeprom_pico_ram.h
+    src/apps/app_splash.c
+    src/apps/app_splash.h
+    src/apps/app_trainer_card.c
+    src/apps/app_trainer_card.h
+    src/apps/app_inventory.c
+    src/apps/app_inventory.h
+    src/apps/app_dowsing.c
+    src/apps/app_dowsing.h
 )
 
 ## Enable usb, uart etc for stdio

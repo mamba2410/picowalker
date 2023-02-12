@@ -10,8 +10,13 @@ static uint8_t greyscale_map[] = {0x0, 0x4, 0x8, 0xF};
 static uint8_t *oled_decode_buf = 0;    // for decoding images into
 static uint8_t *oled_msg_buf = 0; // I2C message buffer
 
+
 int oled_write(ssd1327_t *oled, uint8_t *buf, size_t len) {
 	i2c_write_blocking(oled->i2c, (OLED_ADDR & OLED_WRITE_MODE), buf, len, true);
+}
+
+int oled_read(ssd1327_t *oled, uint8_t *buf, size_t len) {
+	i2c_read_blocking(oled->i2c, (OLED_ADDR & OLED_READ_MODE), buf, len, true);
 }
 
 int oled_init(ssd1327_t *oled) {
@@ -47,20 +52,41 @@ int oled_init(ssd1327_t *oled) {
 	buf[cursor++] = OLED_CMD_ON;
 	oled_write(oled, buf, cursor);
 
-	cursor = 0;
-	buf[cursor++] = 0x00;
-	buf[cursor++] = OLED_CMD_DISPLAY_MODE | OLED_DISPLAY_ALL_ON;
-    for(size_t i = 0; i < 3; i++) {
-	    oled_write(oled, buf, cursor);
-        sleep_ms(500);
-        buf[cursor-1] ^= 1;
-	    oled_write(oled, buf, cursor);
-        sleep_ms(500);
-    }
-
     oled_clear_ram(oled);
 }
 
+
+void oled_draw_box(ssd1327_t *oled, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour) {
+    uint8_t buf[8];
+
+    size_t bc = 0;
+    buf[bc++] = 0x00;
+    buf[bc++] = 0x15; // column address
+    buf[bc++] = x1/2;
+    buf[bc++] = x2/2;
+    buf[bc++] = 0x75; // row address
+    buf[bc++] = y1;
+    buf[bc++] = y2;
+
+    oled_write(oled, buf, bc);
+
+    oled_msg_buf[0] = OLED_CMD_DATA;
+    size_t len = (x2-x1+1)*(y2-y1+1);
+
+    // if we are only 1 pixel wide, only set nibble
+    if(x2 == x1) {
+        if( x1%2 == 0)
+            colour = colour<<4;
+    } else {
+        colour = colour | colour<<4;
+    }
+
+    for(size_t i = 0; i < len; i++)
+        oled_msg_buf[1+i] = colour;
+
+    oled_write(oled, oled_msg_buf, len+1);
+
+}
 
 void oled_set_cursor(ssd1327_t *oled, oled_img_t *img) {
     uint8_t buf[8];
@@ -162,4 +188,11 @@ void pw_img_to_oled(pw_img_t *pw_img, oled_img_t *oled_img) {
 
 }
 
+
+uint8_t oled_convert_colour(uint8_t c) {
+    if(c < 4)
+        return greyscale_map[c];
+    else
+        return 0xff;
+}
 

@@ -3,13 +3,14 @@
 
 #include <stdint.h>
 
+#include "../states.h"
+
 #define TRAINER_CARD_MAX_DAYS   7
 
-void pw_trainer_card_init();
-void pw_trainer_card_init_display();
-void pw_trainer_card_handle_input(uint8_t b);
-void pw_trainer_card_draw_update();
-void pw_moe_tc_cursor(int8_t m);
+void pw_trainer_card_init(state_vars_t *sv);
+void pw_trainer_card_init_display(state_vars_t *sv);
+void pw_trainer_card_handle_input(state_vars_t *sv, uint8_t b);
+void pw_trainer_card_draw_update(state_vars_t *sv);
 
 
 #endif /* PW_APP_TRAINER_CARD_H */
