@@ -157,7 +157,7 @@ void pw_state_run_event_loop() {
     }
 }
 
-/*
+void pw_state_handle_input(uint8_t b) {
     state_input_funcs[pw_current_state](&global_statevars, b);
 }
 

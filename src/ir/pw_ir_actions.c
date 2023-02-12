@@ -1,16 +1,15 @@
 #include <stdio.h>
 
-#include <stdlib.h> // rand()
-#include <unistd.h> // usleep()
 #include <string.h> // memcpy()
 
-#include "eeprom_map.h"
+#include "../eeprom_map.h"
+#include "../eeprom.h"
+#include "../trainer_info.h"
+#include "../states.h"
+#include "../rand.h"
 #include "pw_ir.h"
 #include "pw_ir_actions.h"
-#include "eeprom.h"
 #include "compression.h"
-#include "trainer_info.h"
-
 
 
 static uint8_t decompression_buffer[DECOMPRESSION_BUFFER_SIZE];
@@ -49,7 +48,7 @@ ir_err_t pw_action_try_find_peer(state_vars_t *sv, uint8_t *packet, size_t packe
     ir_err_t err = IR_ERR_GENERAL;
     size_t n_read = 0;
 
-    switch(*psubstate) {
+    switch(sv->current_substate) {
         case COMM_SUBSTATE_FINDING_PEER: {
 
             err = pw_action_listen_and_advertise(packet, &n_read, &(sv->reg_c));
@@ -308,7 +307,7 @@ ir_err_t pw_action_peer_play(state_vars_t *sv, uint8_t *packet, size_t max_len) 
                     packet+8, PW_EEPROM_SIZE_IDENTITY_DATA_1);
             //pw_eeprom_read(PW_EEPROM_ADDR_IDENTITY_DATA_1,
             //        packet+8, PW_EEPROM_SIZE_IDENTITY_DATA_1);
-            packet[0x18] = (uint8_t)(rand()&0xff);  // Hack to change UID each time
+            packet[0x18] = (uint8_t)(pw_rand()&0xff);  // Hack to change UID each time
                                                     // to prevent "already connected" error
                                                     // TODO: remove this in proper code
             err = pw_ir_send_packet(packet, 8+PW_EEPROM_SIZE_IDENTITY_DATA_1, &n_read);
@@ -412,7 +411,7 @@ ir_err_t pw_action_peer_play(state_vars_t *sv, uint8_t *packet, size_t max_len) 
                         PW_EEPROM_ADDR_TEXT_POKEMON_NAME,               // src
                         PW_EEPROM_ADDR_TEXT_CURRENT_PEER_POKEMON_NAME,  // dst
                         PW_EEPROM_SIZE_TEXT_POKEMON_NAME,               // size
-                        read_size, sv->reg_c, packet, max_len
+                        read_size, &(sv->reg_c), packet, max_len
                     );
 
             size_t cur_read_size   = (size_t)(sv->reg_c) * read_size;

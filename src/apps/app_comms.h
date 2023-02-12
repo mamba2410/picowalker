@@ -4,11 +4,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
-void pw_comms_init();
-void pw_comms_event_loop();
-void pw_comms_init_display();
-void pw_comms_handle_input(uint8_t b);
-void pw_comms_draw_update();
+#include "../states.h"
+
+void pw_comms_init(state_vars_t *sv);
+void pw_comms_event_loop(state_vars_t *sv);
+void pw_comms_init_display(state_vars_t *sv);
+void pw_comms_handle_input(state_vars_t *sv, uint8_t b);
+void pw_comms_draw_update(state_vars_t *sv);
 
 
 #endif /* PW_APP_COMMS_H */

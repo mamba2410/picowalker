@@ -18,3 +18,7 @@ void pw_eeprom_raw_read(uint16_t addr, uint8_t *buf, size_t len) {
 void pw_eeprom_raw_write(uint16_t addr, uint8_t *buf, size_t len) {
     memcpy(&(pw_ram_eeprom[addr]), buf, len);
 }
+
+void pw_eeprom_raw_set_area(uint16_t addr, uint8_t v, size_t len) {
+    memset(&(pw_ram_eeprom[addr]), v, len);
+}
