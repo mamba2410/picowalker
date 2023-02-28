@@ -1,13 +1,17 @@
-#include <hardware/i2c.h>
-#include <hardware/gpio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hardware/i2c.h"
+#include "hardware/gpio.h"
 
 #include "ssd1327.h"
+#include "../screen.h"
 
+static ssd1327_t oled = {0,};
+static screen_t screen = {0,};
 static uint8_t greyscale_map[] = {0x0, 0x4, 0x8, 0xF};
 
 static uint8_t *oled_decode_buf = 0;    // for decoding images into
+static uint8_t *oled_image_buf = 0;    // for storing images
 static uint8_t *oled_msg_buf = 0; // I2C message buffer
 
 
@@ -19,7 +23,14 @@ int oled_read(ssd1327_t *oled, uint8_t *buf, size_t len) {
 	i2c_read_blocking(oled->i2c, (OLED_ADDR & OLED_READ_MODE), buf, len, true);
 }
 
-int oled_init(ssd1327_t *oled) {
+int pw_driver_screen_init() {
+
+    oled.width  = OLED_WIDTH;
+    oled.height = OLED_HEIGHT;
+    oled.i2c    = i2c_default;
+    oled.speed  = 400*1000;
+    oled.sda    = PICO_DEFAULT_I2C_SDA_PIN; // GP4
+    oled.scl    = PICO_DEFAULT_I2C_SCL_PIN; // GP5
 
     if(!oled_decode_buf)
         oled_decode_buf = malloc(OLED_MAX_MEM); // 8bpp, unpacked
@@ -51,6 +62,13 @@ int oled_init(ssd1327_t *oled) {
 	buf[cursor++] = 0x00;
 	buf[cursor++] = OLED_CMD_ON;
 	oled_write(oled, buf, cursor);
+
+    screen.width    = PW_SCREEN_WIDTH;
+    screen.height   = PW_SCREEN_HEIGHT;
+    screen.true_width   = oled.width;
+    screen.true_height   = oled.height;
+    screen.offset_x = (screen.true_width-screen.width)/2;
+    screen.offset_y = (screen.true_height-screen.height)/2;
 
     oled_clear_ram(oled);
 }
@@ -196,3 +214,69 @@ uint8_t oled_convert_colour(uint8_t c) {
         return 0xff;
 }
 
+int pw_screen_draw_img(pw_img_t *img, size_t x, size_t y) {
+    oled_img_t oled_img;
+    oled_img.data = screen_buf;
+
+    pw_img_to_oled(img, &oled_img);
+    oled_img.x = x + screen.offset_x;
+    oled_img.y = y + screen.offset_y;
+
+    oled_draw(&(screen.chip), &oled_img);
+
+}
+
+
+void pw_screen_clear() {
+    oled_clear_ram(&screen.chip);
+}
+
+void pw_screen_clear_area(size_t x, size_t y, size_t width, size_t height) {
+    size_t size = width * height/2;
+
+    oled_img_t area = {
+        x: x+screen.offset_x,
+        y: y+screen.offset_y,
+        width: width,
+        height: height,
+        size: size,
+        data: screen_buf,
+    };
+
+    memset(screen_buf, 0, size);
+
+    oled_draw(&(screen.chip), &area);
+
+}
+
+
+void pw_screen_draw_horiz_line(uint8_t x, uint8_t y, uint8_t len, uint8_t colour) {
+    oled_img_t img = {
+        x: x + screen.offset_x,
+        y: y + screen.offset_y,
+        width: len,
+        height: 1,
+        size: len/2,
+        data: screen_buf
+    };
+
+    colour = oled_convert_colour(colour);
+
+    for(uint8_t i = 0; i < len/2; i++) {
+        screen_buf[i] = colour | (colour<<4);   // 2 pixels per byte
+    }
+
+    oled_draw(&(screen.chip), &img);
+}
+
+
+void pw_screen_draw_text_box(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour) {
+    x1 = x1 + screen.offset_x;
+    x2 = x2 + screen.offset_x;
+    y1 = y1 + screen.offset_y;
+    y2 = y2 + screen.offset_y;
+    oled_draw_box(&(screen.chip), x1, y1, x1, y2, oled_convert_colour(colour));
+    oled_draw_box(&(screen.chip), x2, y1, x2, y2, oled_convert_colour(colour));
+    oled_draw_box(&(screen.chip), x1, y1, x2, y1, oled_convert_colour(colour));
+    oled_draw_box(&(screen.chip), x1, y2, x2, y2, oled_convert_colour(colour));
+}
