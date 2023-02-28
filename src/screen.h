@@ -8,8 +8,8 @@
 
 #define SCREEN_REDRAW_DELAY_US  500000
 
-#define PW_SCREEN_WIDTH    96
-#define PW_SCREEN_HEIGHT   64
+#define SCREEN_WIDTH    96
+#define SCREEN_HEIGHT   64
 
 #define SCREEN_BLACK    3
 #define SCREEN_DGREY    2
