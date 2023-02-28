@@ -26,10 +26,17 @@ Proposed hardware (for prototyping at least):
 - Main controller (Pico)
 - LCD screen 96x64 2-bit greyscale
     - SSD1327 128x128 4-bit greyscale oled is best I can find for now.
+    - [AliExpress SPI](https://www.aliexpress.com/item/32920538010.html)
 - IrDA interface
-    - TFDU4100/TFDS4500 TxR
-    - MCP2122 UART to IrDA encoder
-- Step counter
+    - TFDU4101 TxR [Mouser](https://www.mouser.co.uk/ProductDetail/Vishay-Semiconductors/TFDU4101-TR3?qs=4vzNq8kLoSZaXF7Bmpq4%252Bw%3D%3D)
+    - MCP2122 UART to IrDA encoder [Mouser](https://www.mouser.co.uk/ProductDetail/Microchip-Technology-Atmel/MCP2122T-E-SN?qs=php1hWwkCL7dJgtHA%2FdIXg%3D%3D)
+    - DSC1001CL1-001.8432T clock oscillator [Mouser](https://www.mouser.co.uk/ProductDetail/Microchip-Technology-Atmel/DSC1001CL1-001.8432T?qs=yDQnu9hAfI%2FtBK%252Bb6vr8lA%3D%3D)
+- Accelerometer
+    - Bosch BMA400 SPI [Mouser](https://www.mouser.co.uk/ProductDetail/Bosch-Sensortec/BMA400?qs=f9yNj16SXrKBoguHUc32eQ%3D%3D)
+- External EEPROM
+    - ST M95512 (128-byte page size, same model as pokewalker) [Mouser](https://www.mouser.co.uk/ProductDetail/STMicroelectronics/M95512-DWDW4TP-K?qs=gNDSiZmRJS8kMWQ2whknqA%3D%3D)
+    - 64K 25LC512 (128-byte page size)
+    - 128K 25LC1024 (256-byte page size, if you want extra storage [Mouser](https://www.mouser.co.uk/ProductDetail/Microchip-Technology-Atmel/25LC1024-E-P?qs=0R2K%2FH4DmMNuJO3S%2F11Ktg%3D%3D)
 - Control buttons
 - Speaker
 - Rechargeable battery
