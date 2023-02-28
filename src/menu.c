@@ -5,7 +5,6 @@
 #include "menu.h"
 #include "states.h"
 #include "buttons.h"
-#include "pw_images.h"
 #include "screen.h"
 #include "utils.h"
 #include "trainer_info.h"

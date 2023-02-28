@@ -1,12 +1,12 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <pico/stdlib.h>
-//#include <pico/mem.h>
-#include <hardware/uart.h>
-#include <hardware/irq.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "ir_comms.h"
+
+#include "hardware/uart.h"
+#include "hardware/gpio.h"
 
 //static uint64_t last_recv = 0;
 static ir_state_t ir_state = COMM_IDLE;

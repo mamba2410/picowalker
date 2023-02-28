@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+typedef uint16_t eeprom_addr_t;
+
 int pw_eeprom_read(uint16_t addr, uint8_t *buf, size_t len);
 int pw_eeprom_write(uint16_t addr, uint8_t *buf, size_t len);
 int pw_eeprom_reliable_read(uint16_t addr1, uint16_t addr2, uint8_t *buf, size_t len);

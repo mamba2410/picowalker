@@ -10,6 +10,7 @@
 #include "states.h"
 #include "rand.h"
 #include "states.h"
+#include "timer.h"
 
 void walker_entry() {
 

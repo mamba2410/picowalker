@@ -46,6 +46,7 @@ add_executable(picowalker
     src/drivers/eeprom_pico_ram.S
     src/drivers/eeprom_pico_ram.c
     src/drivers/eeprom_pico_ram.h
+    src/drivers/pico_timer.c
     src/apps/app_splash.c
     src/apps/app_splash.h
     src/apps/app_trainer_card.c

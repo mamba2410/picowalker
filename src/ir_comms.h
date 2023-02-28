@@ -1,7 +1,8 @@
 #ifndef IR_COMMS_H
 #define IR_COMMS_H
 
-#include <hardware/uart.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #include "ir_commands.h"
 
