@@ -27,8 +27,8 @@ add_executable(picowalker
     src/screen.h
     src/pwroms.S
     src/pwroms.h
-    #    src/pw_images.c
-    #    src/pw_images.h
+    src/buffers.c
+    src/buffers.h
     src/trainer_info.c
     src/trainer_info.h
     src/route_info.c

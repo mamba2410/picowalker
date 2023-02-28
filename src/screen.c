@@ -5,13 +5,14 @@
 #include "screen.h"
 #include "eeprom.h"
 #include "eeprom_map.h"
+#include "buffers.h"
 
 /*
  *  Most of the heavy lifting is done by the driver code
  */
 
 // TODO: move to global buffers.h
-static uint8_t *eeprom_buf = 0;
+//static uint8_t *eeprom_buf = 0;
 
 void pw_screen_draw_from_eeprom(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint16_t addr, size_t len) {
     pw_img_t img = {.height=h, .width=w, .data=eeprom_buf, .size=len};
