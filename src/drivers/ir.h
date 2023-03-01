@@ -20,7 +20,7 @@
 int pw_ir_read(uint8_t *buf, size_t max_len);
 int pw_ir_write(uint8_t *buf, size_t len);
 
-int pw_ir_init();
+void pw_ir_init();
 void pw_ir_deinit();
 
 void pw_ir_clear_rx();

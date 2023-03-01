@@ -14,8 +14,6 @@ add_executable(picowalker
     src/main.c
 	src/picowalker.c
     src/picowalker.h
-	src/ir_comms.c
-	src/ir_comms.h
 	src/ir_commands.h
 	src/buttons.c
 	src/buttons.h

@@ -116,6 +116,7 @@ ir_err_t pw_ir_send_advertising_packet();
 uint16_t pw_ir_checksum_seeded(uint8_t *packet, size_t len, uint16_t seed);
 uint16_t pw_ir_checksum(uint8_t *packet, size_t len);
 
+extern void pw_ir_init();
 void pw_ir_set_comm_state(comm_state_t s);
 comm_state_t pw_ir_get_comm_state();
 void pw_ir_die(const char* message);

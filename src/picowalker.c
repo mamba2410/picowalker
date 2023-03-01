@@ -4,13 +4,13 @@
 #include <stdbool.h>
 
 #include "picowalker.h"
-#include "ir_comms.h"
 #include "buttons.h"
 #include "screen.h"
 #include "states.h"
 #include "rand.h"
 #include "states.h"
 #include "timer.h"
+#include "ir/pw_ir.h"
 
 void walker_entry() {
 

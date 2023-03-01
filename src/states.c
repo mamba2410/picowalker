@@ -1,11 +1,11 @@
 #include <stdio.h>
 
-#include "ir_comms.h"
 #include "states.h"
 #include "menu.h"
 #include "buttons.h"
 #include "screen.h"
 #include "pico_roms.h"
+#include "ir/pw_ir.h"
 
 #include "apps/app_splash.h"
 #include "apps/app_trainer_card.h"

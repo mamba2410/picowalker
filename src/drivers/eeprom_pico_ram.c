@@ -22,6 +22,6 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len) {
     return 0;
 }
 
-void pw_eeprom_raw_set_area(uint16_t addr, uint8_t v, size_t len) {
+void pw_eeprom_set_area(eeprom_addr_t addr, uint8_t v, size_t len) {
     memset(&(pw_ram_eeprom[addr]), v, len);
 }

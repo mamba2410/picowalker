@@ -30,7 +30,7 @@ int pw_ir_write(uint8_t *buf, size_t len) {
     return i;
 }
 
-int pw_ir_init() {
+void pw_ir_init() {
 	// Initialise uart for IR comms
 	uart_init(IR_UART_ID, IR_UART_BAUD_RATE);
 	gpio_set_function(IR_UART_TX_PIN, GPIO_FUNC_UART);

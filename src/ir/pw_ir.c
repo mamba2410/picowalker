@@ -145,10 +145,6 @@ ir_err_t pw_ir_send_advertising_packet() {
     return IR_OK;
 }
 
-void pw_ir_setup() {
-    pw_ir_init();
-}
-
 void pw_ir_die(const char* message) {
     printf("IR disconnecting: %s\n", message);
     pw_ir_set_comm_state(COMM_STATE_DISCONNECTED);

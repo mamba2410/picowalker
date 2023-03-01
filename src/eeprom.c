@@ -69,11 +69,6 @@ int pw_eeprom_reliable_write(eeprom_addr_t addr1, eeprom_addr_t addr2, uint8_t *
     return 0;
 }
 
-int pw_eeprom_set_area(uint16_t addr, uint8_t v, size_t len) {
-    pw_eeprom_raw_set_area(addr, v, len);
-    return 0;
-}
-
 uint8_t pw_eeprom_checksum(uint8_t *buf, size_t len) {
     uint8_t chk = 1;
     for(size_t i = 0; i < len; i++)

@@ -7,7 +7,6 @@
 #include "../states.h"
 #include "../buttons.h"
 #include "../screen.h"
-#include "../pw_images.h"
 #include "../eeprom_map.h"
 #include "../ir/pw_ir.h"
 #include "../ir/pw_ir_actions.h"

@@ -12,6 +12,7 @@ typedef uint16_t eeprom_addr_t;
 extern void pw_eeprom_init();
 extern int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len);
 extern int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len);
+extern void pw_eeprom_set_area(eeprom_addr_t addr, uint8_t v, size_t len);
 
 
 /*
