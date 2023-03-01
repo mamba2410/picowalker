@@ -1,4 +1,4 @@
-#include "pwroms.h"
+#include "pico_extra_storage.h"
 
 //.section .data.flashrom, "ax", %progbits
 //.type flashrom, %object

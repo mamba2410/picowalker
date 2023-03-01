@@ -25,14 +25,11 @@ add_executable(picowalker
 	src/menu.h
     src/screen.c
     src/screen.h
-    src/pwroms.S
-    src/pwroms.h
     src/buffers.c
     src/buffers.h
-    src/trainer_info.c
     src/trainer_info.h
-    src/route_info.c
     src/route_info.h
+    src/pico_roms.h
     src/utils.c
     src/utils.h
     src/eeprom.c
@@ -47,6 +44,8 @@ add_executable(picowalker
     src/drivers/eeprom_pico_ram.c
     src/drivers/eeprom_pico_ram.h
     src/drivers/pico_timer.c
+    src/drivers/pico_extra_storage.S
+    src/drivers/pico_extra_storage.h
     src/apps/app_splash.c
     src/apps/app_splash.h
     src/apps/app_trainer_card.c
