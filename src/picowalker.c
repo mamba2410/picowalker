@@ -15,7 +15,7 @@
 void walker_entry() {
 
 	// Setup IR uart and rx interrupts
-	pw_setup_buttons();
+	pw_button_init();
     pw_screen_init();
     pw_eeprom_init();
     pw_srand(0x12345678);
