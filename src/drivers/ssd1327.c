@@ -35,6 +35,9 @@ void pw_screen_init() {
     if(!oled_decode_buf)
         oled_decode_buf = malloc(OLED_MAX_MEM); // 8bpp, unpacked
 
+    if(!oled_image_buf)
+        oled_image_buf = malloc(OLED_MAX_MEM);
+
     if(!oled_msg_buf)
         oled_msg_buf = malloc(OLED_MSG_BUF_SIZE); // 4bpp, packed
 
