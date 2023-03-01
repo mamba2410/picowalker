@@ -11,7 +11,12 @@ pico_sdk_init()
 
 ## Create executable from dependencies
 add_executable(picowalker
+    src/main.c
 	src/picowalker.c
+    src/picowalker.h
+	src/ir_comms.c
+	src/ir_comms.h
+	src/ir_commands.h
 	src/buttons.c
 	src/buttons.h
 	src/states.c
@@ -20,12 +25,11 @@ add_executable(picowalker
 	src/menu.h
     src/screen.c
     src/screen.h
-    src/pwroms.S
-    src/pwroms.h
-    src/trainer_info.c
+    src/globals.c
+    src/globals.h
     src/trainer_info.h
-    src/route_info.c
     src/route_info.h
+    src/pico_roms.h
     src/utils.c
     src/utils.h
     src/eeprom.c
@@ -49,6 +53,9 @@ add_executable(picowalker
     src/drivers/eeprom_pico_ram.S
     src/drivers/eeprom_pico_ram.c
     src/drivers/eeprom_pico_ram.h
+    src/drivers/pico_timer.c
+    src/drivers/pico_extra_storage.S
+    src/drivers/pico_extra_storage.h
     src/apps/app_splash.c
     src/apps/app_splash.h
     src/apps/app_trainer_card.c

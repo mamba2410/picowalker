@@ -14,7 +14,8 @@ enum {
 	BUTTON_R = 0x04,
 };
 
-void pw_setup_buttons();
+extern void pw_button_init();
+
 void pw_button_callback(uint8_t b);
 
 #endif /* PW_BUTTONS_H */

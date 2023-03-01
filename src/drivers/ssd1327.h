@@ -1,11 +1,11 @@
 #ifndef DRIVER_SSD1327_H
 #define DRIVER_SSD1327_H
 
-#include <hardware/i2c.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "hardware/i2c.h"
 
-#include "../pw_images.h"
+#include "../screen.h"
 
 
 #define OLED_ADDR   0x3c // from datasheet 8.1.5
@@ -56,7 +56,6 @@ typedef struct {
 
 
 int oled_write(ssd1327_t *oled, uint8_t *data, size_t len);
-int oled_init(ssd1327_t *oled);
 int oled_draw(ssd1327_t *oled, oled_img_t *img);
 int oled_clear_ram(ssd1327_t *oled);
 uint8_t oled_convert_colour(uint8_t c);

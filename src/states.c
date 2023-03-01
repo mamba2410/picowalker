@@ -5,14 +5,13 @@
 #include "menu.h"
 #include "buttons.h"
 #include "screen.h"
+#include "pico_roms.h"
 
 #include "apps/app_splash.h"
 #include "apps/app_trainer_card.h"
 #include "apps/app_comms.h"
 #include "apps/app_inventory.h"
 #include "apps/app_dowsing.h"
-
-#include "pwroms.h"
 
 const char* const state_strings[N_STATES] = {
     [STATE_SCREENSAVER]     = "Screensaver",

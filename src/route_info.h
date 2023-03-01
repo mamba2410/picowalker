@@ -41,7 +41,6 @@ typedef struct {
     uint8_t special_item_name_image[0x180];
 } special_route_info_t;
 
-
 /*
  *  size: 0x5e = 94 bytes
  *  dmitry: struct EventLogItem
@@ -67,8 +66,5 @@ typedef struct {
     /* 0x5c */ uint8_t  other_pokemon_flags;
     /* 0x5d */ uint8_t  padding;
 } event_log_item_t;
-
-extern route_info_t const *g_route_info;
-extern special_route_info_t const *g_special_route_info;
 
 #endif /* PW_ROUTE_INFO_H */

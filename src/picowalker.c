@@ -1,72 +1,43 @@
 // picowalker.c
 
-#include <stdio.h>
-#include <pico/stdlib.h>
-#include <pico/binary_info.h>
-#include <pico/time.h>
-#include <hardware/i2c.h>
-#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 
+#include "picowalker.h"
 #include "ir_comms.h"
 #include "buttons.h"
 #include "screen.h"
 #include "states.h"
 #include "rand.h"
-
-#include "trainer_info.h"
-
-//#define SCREEN_REDRAW_DELAY_US  1000000 // 1 second
-#define SCREEN_REDRAW_DELAY_US  500000 // 500ms
-
-void walker_entry();
-
-const uint LED_PIN = PICO_DEFAULT_LED_PIN;
-
-int main() {
-    bi_decl(bi_2pins_with_func(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C));
-	bi_decl(bi_program_description("picowalker"));
-
-	gpio_init(LED_PIN);
-	gpio_set_dir(LED_PIN, GPIO_OUT);
-
-	stdio_init_all();
-
-    printf("Hello, picowalker!\n");
-
-#if !defined(i2c_default) || !defined(PICO_DEFAULT_I2C_SDA_PIN) || !defined(PICO_DEFAULT_I2C_SCL_PIN)
-#warning i2c / oled_i2d example requires a board with I2C pins
-    puts("Default I2C pins were not defined");
-#endif
-
-	walker_entry();
-
-}
+#include "states.h"
+#include "timer.h"
 
 void walker_entry() {
 
 	// Setup IR uart and rx interrupts
-	pw_ir_setup();
-	pw_setup_buttons();
+    pw_ir_init();
+	pw_button_init();
     pw_screen_init();
+    pw_eeprom_init();
     pw_srand(0x12345678);
 
     pw_set_state(STATE_SPLASH);
 
-    absolute_time_t now, prev_screen_redraw;
-    prev_screen_redraw = get_absolute_time();
+    uint64_t now, prev_screen_redraw, td;
+    prev_screen_redraw = pw_now_us();
 
 	// Event loop
     // BEWARE: Could (WILL) receive interrupts during this time
-	while(1) {
+	while(true) {
         // TODO: Things to do regardless of state (eg check steps, battery etc.)
 
         // Run current state's event loop
         pw_state_run_event_loop();
 
         // Update screen since (presumably) we aren't doing anything time-critical
-        // TODO: Could break if we interrupt half way through, draw something else, and return
-        now = get_absolute_time();
-        if(absolute_time_diff_us(prev_screen_redraw, now) > SCREEN_REDRAW_DELAY_US) {
+        now = pw_now_us();
+        td = (prev_screen_redraw>now)?(prev_screen_redraw-now):(now-prev_screen_redraw);
+        if(td > SCREEN_REDRAW_DELAY_US) {
             prev_screen_redraw = now;
             pw_state_draw_update();
         }
@@ -74,6 +45,4 @@ void walker_entry() {
 	}
 
 }
-
-
 
