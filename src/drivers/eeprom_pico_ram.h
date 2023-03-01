@@ -7,14 +7,6 @@
 
 #ifndef __ASSEMBLER__
 
-#include <stdint.h>
-#include <stddef.h>
-
-void pw_eeprom_raw_init();
-void pw_eeprom_raw_read(uint16_t addr, uint8_t *buf, size_t len);
-void pw_eeprom_raw_write(uint16_t addr, uint8_t *buf, size_t len);
-
-
 #endif /* __ASSEMBLER__ */
 
 
