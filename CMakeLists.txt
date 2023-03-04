@@ -14,7 +14,6 @@ add_executable(picowalker
     src/main.c
 	src/picowalker.c
     src/picowalker.h
-	src/ir_commands.h
 	src/buttons.c
 	src/buttons.h
 	src/states.c
@@ -48,9 +47,11 @@ add_executable(picowalker
     src/apps/app_comms.h
     src/drivers/pico_buttons.c
     src/drivers/pico_buttons.h
-    src/drivers/eeprom_pico_ram.S
-    src/drivers/eeprom_pico_ram.c
-    src/drivers/eeprom_pico_ram.h
+    #src/drivers/eeprom_pico_ram.S
+    #src/drivers/eeprom_pico_ram.c
+    #src/drivers/eeprom_pico_ram.h
+    src/drivers/eeprom_25lc512.c
+    src/drivers/eeprom_25lc512.h
     src/drivers/pico_timer.c
     src/drivers/pico_extra_storage.S
     src/drivers/pico_extra_storage.h
@@ -75,4 +76,5 @@ pico_add_extra_outputs(picowalker)
 target_link_libraries(picowalker
 	pico_stdlib
     hardware_i2c
+    hardware_spi
 )
