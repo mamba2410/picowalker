@@ -27,10 +27,10 @@ void pw_screen_init() {
 
     oled.width  = OLED_WIDTH;
     oled.height = OLED_HEIGHT;
-    oled.i2c    = i2c_default;
+    oled.i2c    = i2c0;
     oled.speed  = 400*1000;
-    oled.sda    = PICO_DEFAULT_I2C_SDA_PIN; // GP4
-    oled.scl    = PICO_DEFAULT_I2C_SCL_PIN; // GP5
+    oled.sda    = OLED_SDA;
+    oled.scl    = OLED_SCL;
 
     if(!oled_decode_buf)
         oled_decode_buf = malloc(OLED_MAX_MEM); // 8bpp, unpacked

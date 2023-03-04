@@ -33,8 +33,10 @@
 
 //#define OLED_SDA    8   // GP8, phys 11
 //#define OLED_SCL    9   // GP9, phys 12
-#define OLED_SDA    4   // GP4, phys 6
-#define OLED_SCL    5   // GP5, phys 7
+//#define OLED_SDA    4   // GP4, phys 6
+//#define OLED_SCL    5   // GP5, phys 7
+#define OLED_SDA    16   // GP16, phys 21
+#define OLED_SCL    17   // GP17, phys 22
 
 
 typedef struct {
