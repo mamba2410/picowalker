@@ -3,19 +3,42 @@
 #include <stdlib.h>
 #include <hardware/uart.h>
 #include <hardware/gpio.h>
+#include "pico/time.h"
 
 #include "ir.h"
 
 
 int pw_ir_read(uint8_t *buf, size_t max_len) {
     size_t cursor = 0;
+    int64_t diff;
 
-    while( !uart_is_readable(IR_UART_ID) );
+    volatile absolute_time_t start, now, last_read;
+    start = get_absolute_time();
+    do {
+        now = get_absolute_time();
+        diff = absolute_time_diff_us(start, now);
+    } while( !uart_is_readable(IR_UART_ID) && diff < 50000);
 
-	while(uart_is_readable(IR_UART_ID) && (cursor<max_len)) {
-		buf[cursor] = uart_getc(IR_UART_ID);
-		cursor++;
-	}
+    diff = 0;
+    last_read = get_absolute_time();
+    do {
+        if(uart_is_readable(IR_UART_ID)) {
+		    buf[cursor] = uart_getc(IR_UART_ID);
+		    cursor++;
+            last_read = get_absolute_time();
+        }
+        now = get_absolute_time();
+        diff = absolute_time_diff_us(last_read, now); // signed difference
+        //printf("%ld ", diff);
+    } while( diff < 3742);
+
+    //printf("read: (%d)", cursor);
+    //for(size_t i = 0; i < cursor; i++) {
+    //    if(i%16 == 0) printf("\n");
+    //    if(i%i == 0)  printf(" ");
+    //    printf("%02x", buf[i]^0xaa);
+    //}
+    //printf("\n");
 
     return cursor;
 }
@@ -23,9 +46,14 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
 
 int pw_ir_write(uint8_t *buf, size_t len) {
     size_t i;
+    //printf("write: (%d)", len);
 	for(i = 0; i < len; i++) {
 		uart_putc_raw(IR_UART_ID, buf[i]);
+        //if(i%16 == 0) printf("\n");
+        //if(i%i == 0)  printf(" ");
+        //printf("%02x", buf[i]^0xaa);
 	}
+    //printf("\n");
 
     return i;
 }
@@ -36,10 +64,11 @@ void pw_ir_init() {
 	gpio_set_function(IR_UART_TX_PIN, GPIO_FUNC_UART);
 	gpio_set_function(IR_UART_RX_PIN, GPIO_FUNC_UART);
 
-	int __unused actual_baudrate = uart_set_baudrate(IR_UART_ID, IR_UART_BAUD_RATE);
+	//int __unused actual_baudrate = uart_set_baudrate(IR_UART_ID, IR_UART_BAUD_RATE);
 	uart_set_hw_flow(IR_UART_ID, false, false);
 	uart_set_format(IR_UART_ID, IR_UART_DATA_BITS, IR_UART_STOP_BITS, IR_UART_PARITY);
 	uart_set_fifo_enabled(IR_UART_ID, true);
+    uart_set_translate_crlf(IR_UART_ID, false);
 
 	while(uart_is_readable(IR_UART_ID)) {
 		uart_getc(IR_UART_ID);

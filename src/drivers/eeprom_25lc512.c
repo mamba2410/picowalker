@@ -88,7 +88,6 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len) {
         pw_eeprom_cs_enable();
         spi_write_blocking(eeprom_spi, msg, 1);
         pw_eeprom_cs_disable();
-        printf("wren\n");
 
         /*
          *  write length is min(bytes_left, bytes_til_end_of_page)
@@ -101,7 +100,6 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len) {
         msg[1] = (uint8_t)(addr>>8);
         msg[2] = (uint8_t)(addr&0xff);
 
-        printf("write %lu\n", this_write);
         pw_eeprom_cs_enable();
         spi_write_blocking(eeprom_spi, msg, 3);
         spi_write_blocking(eeprom_spi, buf, this_write);

@@ -11,6 +11,7 @@
 #include "pw_ir_actions.h"
 #include "compression.h"
 
+#define ACTION_DELAY_MS 1
 
 static uint8_t decompression_buffer[DECOMPRESSION_BUFFER_SIZE];
 ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len);
@@ -92,7 +93,7 @@ ir_err_t pw_action_try_find_peer(state_vars_t *sv, uint8_t *packet, size_t packe
                     // combine keys
                     for(int i = 0; i < 4; i++)
                         session_id[i] ^= session_id_master[i];
-                    pw_ir_delay_ms(1);
+                    pw_ir_delay_ms(ACTION_DELAY_MS);
 
                     pw_ir_set_comm_state(COMM_STATE_SLAVE);
                     break;
@@ -147,7 +148,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
                 return IR_ERR_GENERAL;
             }
 
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
 
             err = pw_ir_send_packet(packet, 8+PW_EEPROM_SIZE_IDENTITY_DATA_1, &n_rw);
 
@@ -159,7 +160,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
 
             //TODO: set the rtc, that's it
 
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
 
             err = pw_ir_send_packet(packet, 8, &n_rw);
 
@@ -171,7 +172,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
 
             //TODO: set the rtc, that's it
 
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
 
             err = pw_ir_send_packet(packet, 8, &n_rw);
 
@@ -183,7 +184,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
 
             //TODO: set the rtc, that's it
 
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
 
             err = pw_ir_send_packet(packet, 8, &n_rw);
 
@@ -197,7 +198,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             pw_ir_eeprom_do_write(packet, len);
             err = IR_OK;
 
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
             packet[0] = CMD_EEPROM_WRITE_ACK;
             packet[1] = EXTRA_BYTE_FROM_WALKER;
             pw_ir_send_packet(packet, 8, &n_rw);
@@ -211,7 +212,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             packet[1] = EXTRA_BYTE_FROM_WALKER;
             pw_eeprom_read(addr, packet+8, len);
 
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
 
             err = pw_ir_send_packet(packet, 8+len, &n_rw);
             break;
@@ -220,7 +221,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             packet[0] = CMD_PONG;
             packet[1] = EXTRA_BYTE_FROM_WALKER;
 
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
 
             err = pw_ir_send_packet(packet, 8, &n_rw);
             break;
@@ -228,7 +229,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
         case CMD_CONNECT_COMPLETE: {
             packet[0] = CMD_CONNECT_COMPLETE_ACK;
             packet[1] = EXTRA_BYTE_FROM_WALKER;
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
 
             err = pw_ir_send_packet(packet, 8, &n_rw);
             break;
@@ -236,14 +237,14 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
         case 0x40: {
             packet[0] = 0x42;
             packet[1] = EXTRA_BYTE_FROM_WALKER;
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
             break;
         }
         case CMD_WALK_END_REQ: {
             packet[0] = CMD_WALK_END_ACK;
             packet[1] = EXTRA_BYTE_FROM_WALKER;
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
 
             pw_ir_end_walk();
@@ -254,7 +255,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
         case CMD_WALK_START: {
             packet[0] = CMD_WALK_START;
             packet[1] = EXTRA_BYTE_FROM_WALKER;
-            pw_ir_delay_ms(3);
+            pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
             break;
         }
@@ -543,7 +544,7 @@ ir_err_t pw_action_send_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, s
     if( (cur_write_addr&0x07) > 0) return IR_ERR_UNALIGNED_WRITE;
     //if( (final_write_size&0x07) > 0) return IR_ERR_UNALIGNED_WRITE;   // walker can handle this
 
-    pw_ir_delay_ms(4);
+    pw_ir_delay_ms(ACTION_DELAY_MS);
 
     if( cur_write_size < final_write_size) {
         packet[0] = (uint8_t)(cur_write_addr&0xff) + 2; // Need +2 to make it raw write command
@@ -587,7 +588,7 @@ ir_err_t pw_action_read_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, s
     err = pw_ir_send_packet(packet, 8+3, &n_read);
     if(err != IR_OK) return err;
 
-    pw_ir_delay_ms(4);
+    pw_ir_delay_ms(ACTION_DELAY_MS);
 
     err = pw_ir_recv_packet(packet, read_size+8, &n_read);
     if(err != IR_OK) return err;
@@ -625,7 +626,7 @@ ir_err_t pw_action_send_large_raw_data_from_pointer(uint8_t *src, uint16_t dst, 
     if( (cur_write_addr&0x07) > 0) return IR_ERR_UNALIGNED_WRITE;
     //if( (final_write_size&0x07) > 0) return IR_ERR_UNALIGNED_WRITE;   // walker can handle this
 
-    pw_ir_delay_ms(4);
+    pw_ir_delay_ms(ACTION_DELAY_MS);
 
     if( cur_write_size < final_write_size) {
         packet[0] = (uint8_t)(cur_write_addr&0xff) + 2; // Need +2 to make it raw write command
@@ -648,6 +649,7 @@ ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len) {
 
     uint8_t cmd = packet[0];
     uint16_t addr = (packet[1]<<8) | (cmd&0x80);
+    printf("Writing %d bytes at %04x\n", wlen, addr);
 
     if(!(cmd & 0x02)) {
         // decompress
