@@ -23,12 +23,18 @@ void pw_splash_handle_input(state_vars_t *sv, uint8_t b) {
 
 void pw_splash_init_display(state_vars_t *sv) {
 
-    pw_screen_draw_from_eeprom(
-        SCREEN_WIDTH-64, 0,
-        64, 48,
-        PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME2,
-        PW_EEPROM_SIZE_IMG_POKEMON_LARGE_ANIMATED_FRAME
-    );
+    pokemon_summary_t caught_pokemon;
+
+    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&caught_pokemon), sizeof(caught_pokemon));
+
+    if(caught_pokemon.le_species != 0) {
+        pw_screen_draw_from_eeprom(
+            SCREEN_WIDTH-64, 0,
+            64, 48,
+            PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME2,
+            PW_EEPROM_SIZE_IMG_POKEMON_LARGE_ANIMATED_FRAME
+        );
+    }
 
     pw_screen_draw_from_eeprom(
         0, SCREEN_HEIGHT-24-16,
@@ -37,7 +43,6 @@ void pw_splash_init_display(state_vars_t *sv) {
         PW_EEPROM_SIZE_IMG_ROUTE_LARGE
     );
 
-    pokemon_summary_t caught_pokemon;
     for(uint8_t i = 0; i < 3; i++) {
         pw_eeprom_read(
             PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY+i*PW_EEPROM_SIZE_CAUGHT_POKEMON_SUMMARY_SINGLE,
@@ -140,12 +145,18 @@ void pw_splash_update_display(state_vars_t *sv) {
         frame_addr = PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME2;
     }
 
-    pw_screen_draw_from_eeprom(
-        SCREEN_WIDTH-64, 0,
-        64, 48,
-        frame_addr,
-        PW_EEPROM_SIZE_IMG_POKEMON_LARGE_ANIMATED_FRAME
-    );
+    pokemon_summary_t caught_pokemon;
+    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&caught_pokemon), sizeof(caught_pokemon));
+
+    if(caught_pokemon.le_species != 0) {
+        pw_screen_draw_from_eeprom(
+            SCREEN_WIDTH-64, 0,
+            64, 48,
+            frame_addr,
+            PW_EEPROM_SIZE_IMG_POKEMON_LARGE_ANIMATED_FRAME
+        );
+
+    }
 
     health_data_t health_data;
     int err = pw_eeprom_reliable_read(

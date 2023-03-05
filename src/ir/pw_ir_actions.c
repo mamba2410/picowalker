@@ -743,10 +743,8 @@ void pw_ir_start_walk() {
         PW_EEPROM_SIZE_IDENTITY_DATA_1
     );
 
-    info->le_unk0 = 1;
-    info->le_unk1 = 1;
-    info->le_unk0 = 7;
-    info->le_unk3 = 7;
+    info->le_unk1 = info->le_unk0;
+    info->le_unk3 = info->le_unk2;
     info->flags |= 0x2;
 
     pw_eeprom_reliable_write(
