@@ -257,6 +257,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             packet[1] = EXTRA_BYTE_FROM_WALKER;
             pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
+            pw_ir_start_walk();
             break;
         }
         case CMD_DISCONNECT: {
@@ -659,7 +660,7 @@ ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len) {
         data = packet+8;
     }
 
-        pw_eeprom_write(addr, data, wlen);
+    pw_eeprom_write(addr, data, wlen);
 
     return err;
 }
