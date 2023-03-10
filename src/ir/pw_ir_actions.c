@@ -195,8 +195,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
         case CMD_EEPROM_WRITE_RAW_00:
         case CMD_EEPROM_WRITE_CMP_80:
         case CMD_EEPROM_WRITE_RAW_80: {
-            pw_ir_eeprom_do_write(packet, len);
-            err = IR_OK;
+            err = pw_ir_eeprom_do_write(packet, len);
 
             pw_ir_delay_ms(ACTION_DELAY_MS);
             packet[0] = CMD_EEPROM_WRITE_ACK;
@@ -650,16 +649,21 @@ ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len) {
 
     uint8_t cmd = packet[0];
     uint16_t addr = (packet[1]<<8) | (cmd&0x80);
-    printf("Writing %d bytes at %04x\n", wlen, addr);
+    // compressed if 0x00 or 0x02 and length < 136
+    bool cmp = ( (cmd&0x02) == 0 ) && (len<0x88);
 
-    if(!(cmd & 0x02)) {
+    printf("P %02x %02x, len:0x%02x ; addr:%04x cmp:%d", cmd, packet[1], len, addr, cmp);
+
+    if(cmp) {
         // decompress
-        pw_decompress_data(packet+8, decompression_buffer, len-8);
+        int e = pw_decompress_data(packet+8, decompression_buffer, len-8);
+        if(e != 0) return IR_ERR_BAD_DATA;
         data = decompression_buffer;
     } else {
         data = packet+8;
     }
 
+    printf("\n");
     pw_eeprom_write(addr, data, wlen);
 
     return err;

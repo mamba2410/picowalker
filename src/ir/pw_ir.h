@@ -93,6 +93,7 @@ typedef enum {
     IR_ERR_PEER_ALREADY_SEEN,
     IR_ERR_UNKNOWN_SUBSTATE,
     IR_ERR_UNALIGNED_WRITE,
+    IR_ERR_BAD_DATA,
     IR_ERR_COUNT,
 } ir_err_t;
 
