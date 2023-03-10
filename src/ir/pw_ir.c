@@ -30,6 +30,7 @@ const char* const PW_IR_ERR_NAMES[] = {
     [IR_ERR_PEER_ALREADY_SEEN] = "peer already seen",
     [IR_ERR_UNKNOWN_SUBSTATE] = "unknown substate",
     [IR_ERR_UNALIGNED_WRITE] = "unaligned eeprom write",
+    [IR_ERR_BAD_DATA] = "bad data",
 };
 
 

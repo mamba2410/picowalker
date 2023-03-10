@@ -652,7 +652,7 @@ ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len) {
     // compressed if 0x00 or 0x02 and length < 136
     bool cmp = ( (cmd&0x02) == 0 ) && (len<0x88);
 
-    printf("P %02x %02x, len:0x%02x ; addr:%04x cmp:%d", cmd, packet[1], len, addr, cmp);
+    //printf("P %02x %02x, len:0x%02x ; addr:%04x cmp:%d", cmd, packet[1], len, addr, cmp);
 
     if(cmp) {
         // decompress
@@ -663,7 +663,7 @@ ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len) {
         data = packet+8;
     }
 
-    printf("\n");
+    //printf("\n");
     pw_eeprom_write(addr, data, wlen);
 
     return err;
@@ -734,9 +734,9 @@ void pw_ir_start_walk() {
     );
 
 
-    pw_eeprom_set_area(PW_EEPROM_ADDR_EVENT_LOG, 0, PW_EEPROM_SIZE_EVENT_LOG);
-    pw_eeprom_set_area(PW_EEPROM_ADDR_MET_PEER_DATA, 0, 0x1568);
-    pw_eeprom_set_area(PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY, 0, 0x64);
+    //pw_eeprom_set_area(PW_EEPROM_ADDR_EVENT_LOG, 0, PW_EEPROM_SIZE_EVENT_LOG);
+    //pw_eeprom_set_area(PW_EEPROM_ADDR_MET_PEER_DATA, 0, 0x1568);
+    //pw_eeprom_set_area(PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY, 0, 0x64);
 
     walker_info_t *info = (walker_info_t*)decompression_buffer;
 
@@ -768,6 +768,7 @@ void pw_ir_start_walk() {
     pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);
 
     event_item.le_our_species = route_info->pokemon_summary.le_species;
+    printf("species: %04x\n", event_item.le_our_species);
 
     for(size_t i = 0; i < 11; i++)
         event_item.our_pokemon_name[i] = route_info->pokemon_nickname[i];

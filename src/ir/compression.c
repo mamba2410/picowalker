@@ -40,9 +40,13 @@ int pw_decompress_data(uint8_t *data, uint8_t *buf, size_t dlen) {
                 c += 2;
 
                 if(backref > oc) return -1;
-                if( (oc + sz) > decomp_size) return -1;
 
-                for(int i = oc-backref; i < sz; i++, oc++)
+                size_t start = oc-backref;
+                size_t end   = start + sz;
+
+                //if( end > decomp_size) return -1;
+
+                for(size_t i = start; i < end; i++, oc++)
                     buf[oc] = buf[i];
 
             } else {
@@ -51,9 +55,8 @@ int pw_decompress_data(uint8_t *data, uint8_t *buf, size_t dlen) {
             }
         }
     }
-    printf(" ; oc:0x%02x", oc);
 
-    if(oc != decomp_size) return -1;
+    //if(oc != decomp_size) return -1;
 
     return 0;
 }

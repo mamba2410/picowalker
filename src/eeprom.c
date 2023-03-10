@@ -29,16 +29,18 @@ int pw_eeprom_reliable_read(eeprom_addr_t addr1, eeprom_addr_t addr2, uint8_t *b
         if(area_mismatch || !area2_ok) {
             // if 1 and 2 are different, or if area 2 is bad
             // assume 1 is newer, overwrite area 2 with area 1
-            pw_eeprom_write(addr2, buf, len);
-            pw_eeprom_write(addr2+len, &chk1, 1);
+            // TODO: Add this back
+            //pw_eeprom_write(addr2, buf, len);
+            //pw_eeprom_write(addr2+len, &chk1, 1);
             return 2;   // positive so ok, but telling that area 2 was bad
         }
     } else if(area2_ok) {
         // if area 1 is bad and area 2 is ok
         // use area 2 and overwrite area 1
         pw_eeprom_read(addr2, buf, len);
-        pw_eeprom_write(addr1, buf, len);
-        pw_eeprom_write(addr1+len, &chk2, 1);
+        // TODO: Add this back
+        //pw_eeprom_write(addr1, buf, len);
+        //pw_eeprom_write(addr1+len, &chk2, 1);
         return 1;   // positive so ok, but telling that area 1 was bad
 
     } else {
@@ -47,10 +49,11 @@ int pw_eeprom_reliable_read(eeprom_addr_t addr1, eeprom_addr_t addr2, uint8_t *b
             buf[i] = 0xff;
         chk1 = 0xff;
         chk2 = 0xff;
-        pw_eeprom_write(addr1, buf, len);
-        pw_eeprom_write(addr1+len, &chk1, 1);
-        pw_eeprom_write(addr2, buf, len);
-        pw_eeprom_write(addr2+len, &chk2, 1);
+        // TODO: Add this back
+        //pw_eeprom_write(addr1, buf, len);
+        //pw_eeprom_write(addr1+len, &chk1, 1);
+        //pw_eeprom_write(addr2, buf, len);
+        //pw_eeprom_write(addr2+len, &chk2, 1);
         return -1;
     }
 
