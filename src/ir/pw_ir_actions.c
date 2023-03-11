@@ -723,6 +723,8 @@ void pw_ir_start_walk() {
     // buf_size must wholly divide into copy size
     size_t sz = 128;
     for(size_t i = 0; i < 0x2900; i+=sz) {
+        // Sometimes reads zero here for x amount of bytes
+        // but later on line 746, it reads ok
         pw_eeprom_read(PW_EEPROM_ADDR_SCENARIO_STAGING_AREA+i, buf, sz);
         if(i == 0) printf("copy species: %02x%02x\n", buf[1], buf[0]);
         pw_eeprom_write(PW_EEPROM_ADDR_ROUTE_INFO+i, buf, sz);
@@ -741,6 +743,7 @@ void pw_ir_start_walk() {
         1
     );
 
+    // this always reads ok, so the write must have been fine
     route_info_t *route_info = (route_info_t*)buf;
     pw_eeprom_read(PW_EEPROM_ADDR_SCENARIO_STAGING_AREA, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);
     printf("d700 species: %04x\n", route_info->pokemon_summary.le_species);
