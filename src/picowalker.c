@@ -10,7 +10,7 @@
 #include "rand.h"
 #include "states.h"
 #include "timer.h"
-#include "ir/pw_ir.h"
+#include "ir/ir.h"
 
 void walker_entry() {
 

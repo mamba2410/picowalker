@@ -5,7 +5,7 @@
 #include <hardware/gpio.h>
 #include "pico/time.h"
 
-#include "ir.h"
+#include "ir_pico.h"
 
 
 int pw_ir_read(uint8_t *buf, size_t max_len) {

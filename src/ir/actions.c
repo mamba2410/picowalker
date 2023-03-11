@@ -7,8 +7,8 @@
 #include "../trainer_info.h"
 #include "../states.h"
 #include "../rand.h"
-#include "pw_ir.h"
-#include "pw_ir_actions.h"
+#include "ir.h"
+#include "actions.h"
 #include "compression.h"
 #include "../globals.h"
 

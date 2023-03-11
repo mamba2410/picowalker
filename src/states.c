@@ -5,7 +5,7 @@
 #include "buttons.h"
 #include "screen.h"
 #include "pico_roms.h"
-#include "ir/pw_ir.h"
+#include "ir/ir.h"
 
 #include "apps/app_splash.h"
 #include "apps/app_trainer_card.h"

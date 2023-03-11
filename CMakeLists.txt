@@ -36,14 +36,14 @@ add_executable(picowalker
     src/rand.h
     src/ir/compression.c
     src/ir/compression.h
-    src/ir/pw_ir.c
-    src/ir/pw_ir.h
-    src/ir/pw_ir_actions.c
-    src/ir/pw_ir_actions.h
+    src/ir/ir.c
+    src/ir/ir.h
+    src/ir/actions.c
+    src/ir/actions.h
     src/drivers/ssd1327.c
     src/drivers/ssd1327.h
-    src/drivers/ir.c
-    src/drivers/ir.h
+    src/drivers/ir_pico.c
+    src/drivers/ir_pico.h
     src/apps/app_comms.c
     src/apps/app_comms.h
     src/drivers/pico_buttons.c

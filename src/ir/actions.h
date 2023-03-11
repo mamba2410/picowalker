@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "pw_ir.h"
+#include "ir.h"
 #include "../trainer_info.h"
 #include "../route_info.h"
 #include "../states.h"

@@ -8,8 +8,8 @@
 #include "../buttons.h"
 #include "../screen.h"
 #include "../eeprom_map.h"
-#include "../ir/pw_ir.h"
-#include "../ir/pw_ir_actions.h"
+#include "../ir/ir.h"
+#include "../ir/actions.h"
 #include "../globals.h"
 #include "app_comms.h"
 

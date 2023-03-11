@@ -3,8 +3,7 @@
 
 #include <stdio.h>
 
-#include "../drivers/ir.h"
-#include "pw_ir.h"
+#include "ir.h"
 
 static comm_state_t g_comm_state = COMM_STATE_DISCONNECTED;
 
