@@ -2,8 +2,6 @@
 
 #include "app_inventory.h"
 
-#include "../route_info.h"
-#include "../trainer_info.h"
 #include "../eeprom.h"
 #include "../eeprom_map.h"
 #include "../screen.h"

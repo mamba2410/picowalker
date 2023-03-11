@@ -4,7 +4,7 @@
 
 #include "../eeprom_map.h"
 #include "../eeprom.h"
-#include "../trainer_info.h"
+#include "../types.h"
 #include "../states.h"
 #include "../rand.h"
 #include "ir.h"

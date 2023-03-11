@@ -7,9 +7,8 @@
 #include "../screen.h"
 #include "../states.h"
 #include "../rand.h"
-#include "../trainer_info.h"
-#include "../route_info.h"
 #include "../utils.h"
+#include "../types.h"
 
 #define BUSH_HEIGHT (SCREEN_HEIGHT-16-8-16)
 #define ARROW_HEIGHT (SCREEN_HEIGHT-16-8)

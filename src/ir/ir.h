@@ -107,6 +107,13 @@ typedef enum {
 extern const char* const PW_IR_ERR_NAMES[];
 extern uint8_t session_id[];
 
+/*
+ *  These should be defined by some driver
+ */
+extern void pw_ir_init();
+extern int pw_ir_read(uint8_t *buf, size_t len);
+extern int pw_ir_write(uint8_t *buf, size_t len);
+
 ir_err_t pw_ir_send_packet(pw_packet_t *packet, size_t len, size_t *n_read);
 ir_err_t pw_ir_recv_packet(pw_packet_t *packet, size_t len, size_t *n_write);
 ir_err_t pw_ir_send_advertising_packet();
@@ -114,7 +121,6 @@ ir_err_t pw_ir_send_advertising_packet();
 uint16_t pw_ir_checksum_seeded(uint8_t *data, size_t len, uint16_t seed);
 uint16_t pw_ir_checksum(pw_packet_t *packet, size_t len);
 
-extern void pw_ir_init();
 void pw_ir_set_comm_state(comm_state_t s);
 comm_state_t pw_ir_get_comm_state();
 void pw_ir_die(const char* message);

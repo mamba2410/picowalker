@@ -7,7 +7,7 @@
 #include "buttons.h"
 #include "screen.h"
 #include "utils.h"
-#include "trainer_info.h"
+#include "types.h"
 #include "eeprom_map.h"
 #include "eeprom.h"
 

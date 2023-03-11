@@ -6,9 +6,9 @@
 #include "../buttons.h"
 #include "../screen.h"
 #include "../utils.h"
-#include "../trainer_info.h"
 #include "../eeprom_map.h"
 #include "../eeprom.h"
+#include "../types.h"
 
 static uint32_t prev_step_counts[7] = {0,};
 

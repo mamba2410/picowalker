@@ -4,11 +4,11 @@
 #include "../states.h"
 #include "../buttons.h"
 #include "../menu.h"
-#include "../trainer_info.h"
 #include "../eeprom_map.h"
 #include "../eeprom.h"
 #include "../screen.h"
 #include "../utils.h"
+#include "../types.h"
 
 
 void pw_splash_handle_input(state_vars_t *sv, uint8_t b) {
