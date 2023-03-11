@@ -9,7 +9,7 @@ extern uint8_t eeprom_buf[];
 extern uint8_t decompression_buf[];
 extern pw_packet_t packet_buf;
 
-#define EEPROM_BUF_SIZE         0x200
+#define EEPROM_BUF_SIZE         0x100
 #define DECOMPRESSION_BUF_SIZE  0x100
 #define PACKET_BUF_SIZE         0x88
 

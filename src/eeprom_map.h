@@ -520,8 +520,8 @@
 #define PW_EEPROM_SIZE_EVENT_LOG_SINGLE 136
 #define PW_EEPROM_ADDR_TEAM_DATA_STAGING 0xd480  // team data written here before walk start action. struct teamdata
 #define PW_EEPROM_SIZE_TEAM_DATA_STAGING 640
-#define PW_EEPROM_ADDR_SCENARIO_DATA_STAGING 0xd700 // scenario data written here before walk start action. everything that 0x8F00-0xB7FF would have
-#define PW_EEPROM_SIZE_SCENARIO_DATA_STAGING 8184
+#define PW_EEPROM_ADDR_SCENARIO_STAGING_AREA 0xd700 // scenario data written here before walk start action. everything that 0x8F00-0xB7FF would have
+#define PW_EEPROM_SIZE_SCENARIO_STAGING_AREA 0x2800
 #define PW_EEPROM_ADDR_CURRENT_PEER_TEAM_DATA 0xdc00  // current peer play peer. struct teamdata. uploaded as part of peer play. later shifted to index [0] at 0xde24 list of peers
 #define PW_EEPROM_SIZE_CURRENT_PEER_TEAM_DATA 548
 #define PW_EEPROM_ADDR_MET_PEER_DATA 0xde24  // peers we've met. for battle house info. newest element is first. 10x struct teamdata

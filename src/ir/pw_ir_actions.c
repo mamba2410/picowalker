@@ -256,7 +256,7 @@ ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
             pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
             pw_ir_start_walk();
-            pw_ir_set_comm_state(COMM_STATE_DISCONNECTED);
+            //pw_ir_set_comm_state(COMM_STATE_DISCONNECTED);
             break;
         }
         case CMD_DISCONNECT: {
@@ -654,6 +654,7 @@ ir_err_t pw_ir_eeprom_do_write(pw_packet_t *packet, size_t len) {
 
     //printf("P %02x %02x, len:0x%02x ; addr:%04x cmp:%d", cmd, packet[1], len, addr, cmp);
 
+    //printf("addr: %04x", addr);
     if(cmp) {
         // decompress
         int e = pw_decompress_data(packet->payload, decompression_buf, len-8);
@@ -661,6 +662,10 @@ ir_err_t pw_ir_eeprom_do_write(pw_packet_t *packet, size_t len) {
         data = decompression_buf;
     } else {
         data = packet->payload;
+    }
+
+    if(addr == 0xd700) {
+        printf("decomp species: %02x%02x\n", data[1], data[0]);
     }
 
     //printf("\n");
@@ -715,14 +720,17 @@ void pw_ir_start_walk() {
         1
     );
 
-    for(size_t i = 0; i < 0x2900; i+=buf_size) {
-        pw_eeprom_read(0xd700+i, buf, buf_size);
-        pw_eeprom_write(0x8f00+i, buf, buf_size);
+    // buf_size must wholly divide into copy size
+    size_t sz = 128;
+    for(size_t i = 0; i < 0x2900; i+=sz) {
+        pw_eeprom_read(PW_EEPROM_ADDR_SCENARIO_STAGING_AREA+i, buf, sz);
+        if(i == 0) printf("copy species: %02x%02x\n", buf[1], buf[0]);
+        pw_eeprom_write(PW_EEPROM_ADDR_ROUTE_INFO+i, buf, sz);
     }
 
-    for(size_t i = 0; i < 0x280; i+=128) {
-        pw_eeprom_read(0xd480+i, buf, 128);
-        pw_eeprom_read(0xcc00+i, buf, 128);
+    for(size_t i = 0; i < 0x280; i+=sz) {
+        pw_eeprom_read(PW_EEPROM_ADDR_TEAM_DATA_STAGING+i, buf, sz);
+        pw_eeprom_read(PW_EEPROM_ADDR_TEAM_DATA_STRUCT+i,  buf, sz);
     }
 
     buf[0] = 0x00;
@@ -733,12 +741,16 @@ void pw_ir_start_walk() {
         1
     );
 
+    route_info_t *route_info = (route_info_t*)buf;
+    pw_eeprom_read(PW_EEPROM_ADDR_SCENARIO_STAGING_AREA, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);
+    printf("d700 species: %04x\n", route_info->pokemon_summary.le_species);
+
 
     pw_eeprom_set_area(PW_EEPROM_ADDR_EVENT_LOG, 0, PW_EEPROM_SIZE_EVENT_LOG);
     pw_eeprom_set_area(PW_EEPROM_ADDR_MET_PEER_DATA, 0, 0x1568);
     pw_eeprom_set_area(PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY, 0, 0x64);
 
-    walker_info_t *info = (walker_info_t*)decompression_buf;
+    walker_info_t *info = (walker_info_t*)buf;
 
     pw_eeprom_reliable_read(
         PW_EEPROM_ADDR_IDENTITY_DATA_1,
@@ -762,7 +774,6 @@ void pw_ir_start_walk() {
     // make walk start event
 
 
-    route_info_t *route_info = (route_info_t*)buf;
     event_log_item_t *event_item = malloc(sizeof(*event_item));
 
     pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);

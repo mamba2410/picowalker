@@ -30,7 +30,7 @@ int pw_decompress_data(uint8_t *data, uint8_t *buf, size_t dlen) {
     while(c < dlen) {
         // loop through header
         uint8_t header = data[c++];
-        for(uint8_t chunk_idx = (1<<7); chunk_idx > 0; chunk_idx >>= 1) {
+        for(uint8_t chunk_idx = (1<<7); chunk_idx > 0 && oc < decomp_size; chunk_idx >>= 1) {
             uint8_t cmd = header & chunk_idx;
 
             if(cmd != 0) {
@@ -56,8 +56,9 @@ int pw_decompress_data(uint8_t *data, uint8_t *buf, size_t dlen) {
         }
     }
 
-    //if(oc != decomp_size) return -1;
+    if(oc != decomp_size) return -1;
 
+    //printf("decomp size: %02x\n", oc);
     return 0;
 }
 

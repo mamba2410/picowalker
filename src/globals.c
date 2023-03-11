@@ -8,5 +8,3 @@ uint8_t eeprom_buf[EEPROM_BUF_SIZE];
 uint8_t decompression_buf[DECOMPRESSION_BUF_SIZE];
 pw_packet_t packet_buf;
 
-// rxbuf ir/pw_ir.c
-
