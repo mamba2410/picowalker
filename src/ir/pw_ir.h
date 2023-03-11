@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define PW_RX_BUF_LEN   256
-#define PW_TX_BUF_LEN   256
+#include "../types.h"
 
 #define CMD_EEPROM_READ_REQ     0x0c
 #define CMD_EEPROM_READ_RSP     0x0e
@@ -107,15 +106,13 @@ typedef enum {
 
 extern const char* const PW_IR_ERR_NAMES[];
 extern uint8_t session_id[];
-extern uint8_t tx_buf[];
-extern uint8_t rx_buf[];
 
-ir_err_t pw_ir_send_packet(uint8_t *packet, size_t len, size_t *n_read);
-ir_err_t pw_ir_recv_packet(uint8_t *packet, size_t len, size_t *n_write);
+ir_err_t pw_ir_send_packet(pw_packet_t *packet, size_t len, size_t *n_read);
+ir_err_t pw_ir_recv_packet(pw_packet_t *packet, size_t len, size_t *n_write);
 ir_err_t pw_ir_send_advertising_packet();
 
-uint16_t pw_ir_checksum_seeded(uint8_t *packet, size_t len, uint16_t seed);
-uint16_t pw_ir_checksum(uint8_t *packet, size_t len);
+uint16_t pw_ir_checksum_seeded(uint8_t *data, size_t len, uint16_t seed);
+uint16_t pw_ir_checksum(pw_packet_t *packet, size_t len);
 
 extern void pw_ir_init();
 void pw_ir_set_comm_state(comm_state_t s);

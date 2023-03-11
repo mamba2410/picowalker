@@ -8,6 +8,7 @@
 #include "../trainer_info.h"
 #include "../route_info.h"
 #include "../states.h"
+#include "../types.h"
 
 typedef enum {
     COMM_SUBSTATE_NONE,
@@ -33,19 +34,19 @@ typedef enum {
 } comm_substate_t;
 
 
-ir_err_t pw_action_listen_and_advertise(uint8_t *rx, size_t *pn_read, uint8_t *padvertising_attempts);
-ir_err_t pw_action_try_find_peer(state_vars_t *sv, uint8_t *packet, size_t packet_max);
-ir_err_t pw_action_peer_play(state_vars_t *sv, uint8_t *packet, size_t max_len);
-ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len);
+ir_err_t pw_action_listen_and_advertise(pw_packet_t *rx, size_t *pn_read, uint8_t *padvertising_attempts);
+ir_err_t pw_action_try_find_peer(state_vars_t *sv, pw_packet_t *packet, size_t packet_max);
+ir_err_t pw_action_peer_play(state_vars_t *sv, pw_packet_t *packet, size_t max_len);
+ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len);
 
 ir_err_t pw_action_send_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, size_t final_write_size,
-        size_t write_size, uint8_t *pcounter, uint8_t *packet, size_t max_len);
+        size_t write_size, uint8_t *pcounter, pw_packet_t *packet, size_t max_len);
 ir_err_t pw_action_read_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, size_t final_read_size,
-        size_t read_size, uint8_t *pcounter, uint8_t *packet, size_t max_len);
+        size_t read_size, uint8_t *pcounter, pw_packet_t *packet, size_t max_len);
 ir_err_t pw_action_send_large_raw_data_from_pointer(uint8_t *src, uint16_t dst, size_t final_write_size,
-        size_t write_size, uint8_t *pcounter, uint8_t *packet, size_t max_len);
+        size_t write_size, uint8_t *pcounter, pw_packet_t *packet, size_t max_len);
 
-ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len);
+ir_err_t pw_ir_eeprom_do_write(pw_packet_t *packet, size_t len);
 void pw_ir_start_walk();
 void pw_ir_end_walk();
 void pw_log_event(event_log_item_t *event_item);

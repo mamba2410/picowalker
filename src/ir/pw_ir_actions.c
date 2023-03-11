@@ -14,13 +14,13 @@
 
 #define ACTION_DELAY_MS 1
 
-ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len);
+ir_err_t pw_ir_eeprom_do_write(pw_packet_t *packet, size_t len);
 
 /*
  *  Listen for a packet.
  *  If we don't hear anything, send advertising byte
  */
-ir_err_t pw_action_listen_and_advertise(uint8_t *rx, size_t *pn_read, uint8_t *padvertising_attempts) {
+ir_err_t pw_action_listen_and_advertise(pw_packet_t *rx, size_t *pn_read, uint8_t *padvertising_attempts) {
 
     ir_err_t err = IR_ERR_TIMEOUT;
 
@@ -44,7 +44,7 @@ ir_err_t pw_action_listen_and_advertise(uint8_t *rx, size_t *pn_read, uint8_t *p
  *  We should be in COMM_STATE_AWAITING
  *  Do one action per call, called in the main event loop
  */
-ir_err_t pw_action_try_find_peer(state_vars_t *sv, uint8_t *packet, size_t packet_max) {
+ir_err_t pw_action_try_find_peer(state_vars_t *sv, pw_packet_t *packet, size_t packet_max) {
 
     ir_err_t err = IR_ERR_GENERAL;
     size_t n_read = 0;
@@ -70,23 +70,23 @@ ir_err_t pw_action_try_find_peer(state_vars_t *sv, uint8_t *packet, size_t packe
         case COMM_SUBSTATE_DETERMINE_ROLE: {
 
             // We should already have a response in the packet buffer
-            switch(packet[0]) {
+            switch(packet->cmd) {
                 case CMD_ADVERTISING: // we found peer, we request master
 
-                    packet[0x00] = CMD_ASSERT_MASTER;
-                    packet[0x01] = EXTRA_BYTE_FROM_WALKER;
+                    packet->cmd = CMD_ASSERT_MASTER;
+                    packet->extra = EXTRA_BYTE_FROM_WALKER;
                     err = pw_ir_send_packet(packet, 8, &n_read);
 
                     sv->current_substate = COMM_SUBSTATE_AWAITING_SLAVE_ACK;
                     break;
                 case CMD_ASSERT_MASTER: // peer found us, peer requests master
-                    packet[0x00] = CMD_SLAVE_ACK;
-                    packet[0x01] = 2;
+                    packet->cmd = CMD_SLAVE_ACK;
+                    packet->extra = 2;
 
                     // record master key
                     uint8_t session_id_master[4];
                     for(int i = 0; i < 4; i++)
-                        session_id_master[i] = packet[4+i];
+                        session_id_master[i] = packet->session_id_bytes[i];
 
                     err = pw_ir_send_packet(packet, 8, &n_read);
 
@@ -107,11 +107,11 @@ ir_err_t pw_action_try_find_peer(state_vars_t *sv, uint8_t *packet, size_t packe
             err = pw_ir_recv_packet(packet, 8, &n_read);
             if(err != IR_OK) return err;
 
-            if(packet[0] != CMD_SLAVE_ACK) return IR_ERR_UNEXPECTED_PACKET;
+            if(packet->cmd != CMD_SLAVE_ACK) return IR_ERR_UNEXPECTED_PACKET;
 
             // combine keys
             for(int i = 0; i < 4; i++)
-                session_id[i] ^= packet[4+i];
+                session_id[i] ^= packet->session_id_bytes[i];
 
             // key exchange done, we are now master
             pw_ir_set_comm_state(COMM_STATE_MASTER);
@@ -126,21 +126,20 @@ ir_err_t pw_action_try_find_peer(state_vars_t *sv, uint8_t *packet, size_t packe
 /*
  *  We are slave, given already recv'd packet, respond appropriately
  */
-ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
+ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
 
-    uint8_t cmd = packet[0];
     ir_err_t err = IR_ERR_GENERAL;
     size_t n_rw;
 
-    switch(cmd) {
+    switch(packet->cmd) {
         case CMD_IDENTITY_REQ: {
-            packet[0] = CMD_IDENTITY_RSP;
-            packet[1] = EXTRA_BYTE_FROM_WALKER;
+            packet->cmd = CMD_IDENTITY_RSP;
+            packet->extra = EXTRA_BYTE_FROM_WALKER;
 
             int r = pw_eeprom_reliable_read(
                  PW_EEPROM_ADDR_IDENTITY_DATA_1,
                  PW_EEPROM_ADDR_IDENTITY_DATA_2,
-                 packet+8,
+                 packet->payload,
                  PW_EEPROM_SIZE_IDENTITY_DATA_1
              );
 
@@ -155,8 +154,8 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             break;
         }
         case CMD_IDENTITY_SEND_ALIAS1: {
-            packet[0] = CMD_IDENTITY_ACK_ALIAS1;
-            packet[1] = EXTRA_BYTE_TO_WALKER;
+            packet->cmd   = CMD_IDENTITY_ACK_ALIAS1;
+            packet->extra = EXTRA_BYTE_TO_WALKER;
 
             //TODO: set the rtc, that's it
 
@@ -167,8 +166,8 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             break;
         }
         case CMD_IDENTITY_SEND_ALIAS2: {
-            packet[0] = CMD_IDENTITY_ACK_ALIAS2;
-            packet[1] = EXTRA_BYTE_TO_WALKER;
+            packet->cmd = CMD_IDENTITY_ACK_ALIAS2;
+            packet->extra = EXTRA_BYTE_TO_WALKER;
 
             //TODO: set the rtc, that's it
 
@@ -179,8 +178,8 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             break;
         }
         case CMD_IDENTITY_SEND_ALIAS3: {
-            packet[0] = CMD_IDENTITY_ACK_ALIAS3;
-            packet[1] = EXTRA_BYTE_TO_WALKER;
+            packet->cmd = CMD_IDENTITY_ACK_ALIAS3;
+            packet->extra = EXTRA_BYTE_TO_WALKER;
 
             //TODO: set the rtc, that's it
 
@@ -198,18 +197,18 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             err = pw_ir_eeprom_do_write(packet, len);
 
             pw_ir_delay_ms(ACTION_DELAY_MS);
-            packet[0] = CMD_EEPROM_WRITE_ACK;
-            packet[1] = EXTRA_BYTE_FROM_WALKER;
+            packet->cmd = CMD_EEPROM_WRITE_ACK;
+            packet->extra = EXTRA_BYTE_FROM_WALKER;
             pw_ir_send_packet(packet, 8, &n_rw);
             break;
         }
         case CMD_EEPROM_READ_REQ: {
-            uint16_t addr = packet[8]<<8 | packet[9];
-            size_t len = packet[10];
+            uint16_t addr = packet->payload[0]<<8 | packet->payload[1];
+            size_t len = packet->payload[2];
 
-            packet[0] = CMD_EEPROM_READ_RSP;
-            packet[1] = EXTRA_BYTE_FROM_WALKER;
-            pw_eeprom_read(addr, packet+8, len);
+            packet->cmd = CMD_EEPROM_READ_RSP;
+            packet->extra = EXTRA_BYTE_FROM_WALKER;
+            pw_eeprom_read(addr, packet->payload, len);
 
             pw_ir_delay_ms(ACTION_DELAY_MS);
 
@@ -217,8 +216,8 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             break;
         }
         case CMD_PING: {
-            packet[0] = CMD_PONG;
-            packet[1] = EXTRA_BYTE_FROM_WALKER;
+            packet->cmd = CMD_PONG;
+            packet->extra = EXTRA_BYTE_FROM_WALKER;
 
             pw_ir_delay_ms(ACTION_DELAY_MS);
 
@@ -226,23 +225,23 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             break;
         }
         case CMD_CONNECT_COMPLETE: {
-            packet[0] = CMD_CONNECT_COMPLETE_ACK;
-            packet[1] = EXTRA_BYTE_FROM_WALKER;
+            packet->cmd = CMD_CONNECT_COMPLETE_ACK;
+            packet->cmd = EXTRA_BYTE_FROM_WALKER;
             pw_ir_delay_ms(ACTION_DELAY_MS);
 
             err = pw_ir_send_packet(packet, 8, &n_rw);
             break;
         }
         case 0x40: {
-            packet[0] = 0x42;
-            packet[1] = EXTRA_BYTE_FROM_WALKER;
+            packet->cmd = 0x42;
+            packet->extra = EXTRA_BYTE_FROM_WALKER;
             pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
             break;
         }
         case CMD_WALK_END_REQ: {
-            packet[0] = CMD_WALK_END_ACK;
-            packet[1] = EXTRA_BYTE_FROM_WALKER;
+            packet->cmd = CMD_WALK_END_ACK;
+            packet->extra = EXTRA_BYTE_FROM_WALKER;
             pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
 
@@ -252,8 +251,8 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             break;
         }
         case CMD_WALK_START: {
-            packet[0] = CMD_WALK_START;
-            packet[1] = EXTRA_BYTE_FROM_WALKER;
+            packet->cmd = CMD_WALK_START;
+            packet->extra = EXTRA_BYTE_FROM_WALKER;
             pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
             pw_ir_start_walk();
@@ -271,7 +270,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             break;
         }
         default: {
-            printf("[Error] Slave recv unhandled packet: %02x\n", cmd);
+            printf("[Error] Slave recv unhandled packet: %02x\n", packet->cmd);
             break;
         }
 
@@ -296,20 +295,20 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
  *  display animation
  *  calculate gift
  */
-ir_err_t pw_action_peer_play(state_vars_t *sv, uint8_t *packet, size_t max_len) {
+ir_err_t pw_action_peer_play(state_vars_t *sv, pw_packet_t *packet, size_t max_len) {
     ir_err_t err = IR_ERR_GENERAL;
     size_t n_read;
 
     switch(sv->current_substate) {
         case COMM_SUBSTATE_START_PEER_PLAY: {
 
-            packet[0] = CMD_PEER_PLAY_START;
-            packet[1] = EXTRA_BYTE_FROM_WALKER;
+            packet->cmd = CMD_PEER_PLAY_START;
+            packet->extra = EXTRA_BYTE_FROM_WALKER;
             pw_eeprom_reliable_read(PW_EEPROM_ADDR_IDENTITY_DATA_1, PW_EEPROM_ADDR_IDENTITY_DATA_2,
-                    packet+8, PW_EEPROM_SIZE_IDENTITY_DATA_1);
+                    packet->payload, PW_EEPROM_SIZE_IDENTITY_DATA_1);
             //pw_eeprom_read(PW_EEPROM_ADDR_IDENTITY_DATA_1,
             //        packet+8, PW_EEPROM_SIZE_IDENTITY_DATA_1);
-            packet[0x18] = (uint8_t)(pw_rand()&0xff);  // Hack to change UID each time
+            packet->bytes[0x18] = (uint8_t)(pw_rand()&0xff);  // Hack to change UID each time
                                                     // to prevent "already connected" error
                                                     // TODO: remove this in proper code
             err = pw_ir_send_packet(packet, 8+PW_EEPROM_SIZE_IDENTITY_DATA_1, &n_read);
@@ -321,7 +320,7 @@ ir_err_t pw_action_peer_play(state_vars_t *sv, uint8_t *packet, size_t max_len) 
         case COMM_SUBSTATE_PEER_PLAY_ACK: {
 
             err = pw_ir_recv_packet(packet, 8+PW_EEPROM_SIZE_IDENTITY_DATA_1, &n_read);
-            switch(packet[0]) {
+            switch(packet->cmd) {
                 case CMD_PEER_PLAY_RSP: break;
                 case CMD_PEER_PLAY_SEEN: return IR_ERR_PEER_ALREADY_SEEN;
                 default: return IR_ERR_UNEXPECTED_PACKET;
@@ -443,33 +442,34 @@ ir_err_t pw_action_peer_play(state_vars_t *sv, uint8_t *packet, size_t max_len) 
             break;
         }
         case COMM_SUBSTATE_SEND_PEER_PLAY_DX: {
-            packet[0] = CMD_PEER_PLAY_DX;
-            packet[1] = 1;
+            packet->cmd = CMD_PEER_PLAY_DX;
+            packet->extra = 1;
 
             // TODO: Actually make proper peer_play_data_t
-            packet[0x08] = 0x0f;    // current steps = 9999
-            packet[0x09] = 0x27;
-            packet[0x0a] = 0;
-            packet[0x0b] = 0;
-            packet[0x0c] = 0x0f;    // current watts = 9999
-            packet[0x0d] = 0x27;
+            // eg peer_play_data_t *ppd = packet->payload
+            packet->payload[0x00] = 0x0f;    // current steps = 9999
+            packet->payload[0x01] = 0x27;
+            packet->payload[0x02] = 0;
+            packet->payload[0x03] = 0;
+            packet->payload[0x04] = 0x0f;    // current watts = 9999
+            packet->payload[0x05] = 0x27;
             // 0x0e, 0x0f padding
-            packet[0x10] = 1;   // identity_data_t.unk0
-            packet[0x11] = 0;
-            packet[0x12] = 0;
-            packet[0x13] = 0;
-            packet[0x14] = 7;   // identity_data_t.unk2
-            packet[0x15] = 0;
+            packet->payload[0x08] = 1;   // identity_data_t.unk0
+            packet->payload[0x09] = 0;
+            packet->payload[0x0a] = 0;
+            packet->payload[0x0b] = 0;
+            packet->payload[0x0c] = 7;   // identity_data_t.unk2
+            packet->payload[0x0d] = 0;
             // species
-            pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO+0, packet+0x16, 2);
+            pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO+0, packet->bytes+0x16, 2);
             // 22 bytes pokemon nickname
-            pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO+10, packet+0x18, 22);
+            pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO+10, packet->bytes+0x18, 22);
             // 16 bytes trainer name
-            pw_eeprom_read(PW_EEPROM_ADDR_IDENTITY_DATA_1+72, packet+0x2e, 16);
+            pw_eeprom_read(PW_EEPROM_ADDR_IDENTITY_DATA_1+72, packet->bytes+0x2e, 16);
             // 1 byte pokemon gender
-            pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO+13, packet+0x3e, 1);
+            pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO+13, packet->bytes+0x3e, 1);
             // 1 byte pokeIsSpecial
-            pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO+14, packet+0x3f, 1);
+            pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO+14, packet->bytes+0x3f, 1);
 
             // TODO: move sizze to #define
             err = pw_ir_send_packet(packet, 0x40, &n_read);;
@@ -482,15 +482,14 @@ ir_err_t pw_action_peer_play(state_vars_t *sv, uint8_t *packet, size_t max_len) 
             err = pw_ir_recv_packet(packet, 0x40, &n_read);
             if(err != IR_OK) return err;
 
-            // TODO: Not 0x80-byte aligned
-            pw_eeprom_write(PW_EEPROM_ADDR_CURRENT_PEER_DATA, packet, PW_EEPROM_SIZE_CURRENT_PEER_DATA);
+            pw_eeprom_write(PW_EEPROM_ADDR_CURRENT_PEER_DATA, packet->payload, PW_EEPROM_SIZE_CURRENT_PEER_DATA);
 
             sv->current_substate = COMM_SUBSTATE_SEND_PEER_PLAY_END;
             break;
         }
         case COMM_SUBSTATE_SEND_PEER_PLAY_END: {
-            packet[0] = CMD_PEER_PLAY_END;
-            packet[1] = EXTRA_BYTE_TO_WALKER;
+            packet->cmd = CMD_PEER_PLAY_END;
+            packet->extra = EXTRA_BYTE_TO_WALKER;
             err = pw_ir_send_packet(packet, 8, &n_read);
 
             sv->current_substate = COMM_SUBSTATE_RECV_PEER_PLAY_END;
@@ -499,7 +498,7 @@ ir_err_t pw_action_peer_play(state_vars_t *sv, uint8_t *packet, size_t max_len) 
         case COMM_SUBSTATE_RECV_PEER_PLAY_END: {
             err = pw_ir_recv_packet(packet, 8, &n_read);
             if(err != IR_OK) return err;
-            if(packet[0] != CMD_PEER_PLAY_END) return IR_ERR_UNEXPECTED_PACKET;
+            if(packet->cmd != CMD_PEER_PLAY_END) return IR_ERR_UNEXPECTED_PACKET;
             sv->current_substate = COMM_SUBSTATE_DISPLAY_PEER_PLAY_ANIMATION;
             break;
         }
@@ -527,7 +526,7 @@ ir_err_t pw_action_peer_play(state_vars_t *sv, uint8_t *packet, size_t max_len) 
  *  Designed to be run in a loop, hence only one read and one write.
  */
 ir_err_t pw_action_send_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, size_t final_write_size,
-        size_t write_size, uint8_t *pcounter, uint8_t *packet, size_t max_len) {
+        size_t write_size, uint8_t *pcounter, pw_packet_t *packet, size_t max_len) {
     ir_err_t err = IR_ERR_GENERAL;
 
     size_t cur_write_size   = (size_t)(*pcounter) * write_size;
@@ -539,7 +538,7 @@ ir_err_t pw_action_send_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, s
     if(cur_write_size > 0) {
         err = pw_ir_recv_packet(packet, 8, &n_read);
         if(err != IR_OK) return err;
-        if(packet[0] != CMD_EEPROM_WRITE_ACK) return IR_ERR_UNEXPECTED_PACKET;
+        if(packet->cmd != CMD_EEPROM_WRITE_ACK) return IR_ERR_UNEXPECTED_PACKET;
     }
 
     if( (cur_write_addr&0x07) > 0) return IR_ERR_UNALIGNED_WRITE;
@@ -548,9 +547,9 @@ ir_err_t pw_action_send_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, s
     pw_ir_delay_ms(ACTION_DELAY_MS);
 
     if( cur_write_size < final_write_size) {
-        packet[0] = (uint8_t)(cur_write_addr&0xff) + 2; // Need +2 to make it raw write command
-        packet[1] = (uint8_t)(cur_write_addr>>8);
-        pw_eeprom_read(cur_read_addr, packet+8, write_size);
+        packet->cmd = (uint8_t)(cur_write_addr&0xff) + 2; // Need +2 to make it raw write command
+        packet->extra = (uint8_t)(cur_write_addr>>8);
+        pw_eeprom_read(cur_read_addr, packet->payload, write_size);
 
         err = pw_ir_send_packet(packet, 8+write_size, &n_read);
         if(err != IR_OK) return err;
@@ -567,7 +566,7 @@ ir_err_t pw_action_send_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, s
  *  Designed to be run in a loop, hence only one read and one write.
  */
 ir_err_t pw_action_read_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, size_t final_read_size,
-        size_t read_size, uint8_t *pcounter, uint8_t *packet, size_t max_len) {
+        size_t read_size, uint8_t *pcounter, pw_packet_t *packet, size_t max_len) {
 
     ir_err_t err;
     size_t cur_read_size   = (size_t)(*pcounter) * read_size;
@@ -580,11 +579,11 @@ ir_err_t pw_action_read_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, s
 
     read_size = (remaining_read<read_size)?remaining_read:read_size;
 
-    packet[0] = CMD_EEPROM_READ_REQ;;
-    packet[1] = EXTRA_BYTE_TO_WALKER;
-    packet[8] = (uint8_t)(cur_read_addr>>8);
-    packet[9] = (uint8_t)(cur_read_addr&0xff);
-    packet[10] = read_size;
+    packet->cmd = CMD_EEPROM_READ_REQ;;
+    packet->extra = EXTRA_BYTE_TO_WALKER;
+    packet->payload[0] = (uint8_t)(cur_read_addr>>8);
+    packet->payload[1] = (uint8_t)(cur_read_addr&0xff);
+    packet->payload[2] = read_size;
 
     err = pw_ir_send_packet(packet, 8+3, &n_read);
     if(err != IR_OK) return err;
@@ -593,9 +592,9 @@ ir_err_t pw_action_read_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, s
 
     err = pw_ir_recv_packet(packet, read_size+8, &n_read);
     if(err != IR_OK) return err;
-    if(packet[0] != CMD_EEPROM_READ_RSP) return IR_ERR_UNEXPECTED_PACKET;
+    if(packet->cmd != CMD_EEPROM_READ_RSP) return IR_ERR_UNEXPECTED_PACKET;
 
-    pw_eeprom_write(cur_write_addr, packet+8, read_size);
+    pw_eeprom_write(cur_write_addr, packet->payload, read_size);
 
     (*pcounter)++;
 
@@ -609,7 +608,7 @@ ir_err_t pw_action_read_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, s
  *  Designed to be run in a loop, hence only one read and one write.
  */
 ir_err_t pw_action_send_large_raw_data_from_pointer(uint8_t *src, uint16_t dst, size_t final_write_size,
-        size_t write_size, uint8_t *pcounter, uint8_t *packet, size_t max_len) {
+        size_t write_size, uint8_t *pcounter, pw_packet_t *packet, size_t max_len) {
     ir_err_t err = IR_ERR_GENERAL;
 
     size_t cur_write_size   = (size_t)(*pcounter) * write_size;
@@ -621,7 +620,7 @@ ir_err_t pw_action_send_large_raw_data_from_pointer(uint8_t *src, uint16_t dst, 
     if(cur_write_size > 0) {
         err = pw_ir_recv_packet(packet, 8, &n_read);
         if(err != IR_OK) return err;
-        if(packet[0] != CMD_EEPROM_WRITE_ACK) return IR_ERR_UNEXPECTED_PACKET;
+        if(packet->cmd != CMD_EEPROM_WRITE_ACK) return IR_ERR_UNEXPECTED_PACKET;
     }
 
     if( (cur_write_addr&0x07) > 0) return IR_ERR_UNALIGNED_WRITE;
@@ -630,10 +629,10 @@ ir_err_t pw_action_send_large_raw_data_from_pointer(uint8_t *src, uint16_t dst, 
     pw_ir_delay_ms(ACTION_DELAY_MS);
 
     if( cur_write_size < final_write_size) {
-        packet[0] = (uint8_t)(cur_write_addr&0xff) + 2; // Need +2 to make it raw write command
-        packet[1] = (uint8_t)(cur_write_addr>>8);
+        packet->cmd = (uint8_t)(cur_write_addr&0xff) + 2; // Need +2 to make it raw write command
+        packet->extra = (uint8_t)(cur_write_addr>>8);
         //pw_eeprom_read(cur_read_addr, packet+8, write_size);
-        memcpy(packet+8, cur_read_addr, write_size);
+        memcpy(packet->payload, cur_read_addr, write_size);
 
         err = pw_ir_send_packet(packet, 8+write_size, &n_read);
         if(err != IR_OK) return err;
@@ -643,13 +642,13 @@ ir_err_t pw_action_send_large_raw_data_from_pointer(uint8_t *src, uint16_t dst, 
     return err;
 }
 
-ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len) {
+ir_err_t pw_ir_eeprom_do_write(pw_packet_t *packet, size_t len) {
     ir_err_t err = IR_OK;
     uint8_t *data;
     uint8_t wlen = 128;
 
-    uint8_t cmd = packet[0];
-    uint16_t addr = (packet[1]<<8) | (cmd&0x80);
+    uint8_t cmd = packet->cmd;
+    uint16_t addr = (packet->extra<<8) | (cmd&0x80);
     // compressed if 0x00 or 0x02 and length < 136
     bool cmp = ( (cmd&0x02) == 0 ) && (len<0x88);
 
@@ -657,11 +656,11 @@ ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len) {
 
     if(cmp) {
         // decompress
-        int e = pw_decompress_data(packet+8, decompression_buf, len-8);
+        int e = pw_decompress_data(packet->payload, decompression_buf, len-8);
         if(e != 0) return IR_ERR_BAD_DATA;
         data = decompression_buf;
     } else {
-        data = packet+8;
+        data = packet->payload;
     }
 
     //printf("\n");
@@ -705,7 +704,6 @@ void pw_ir_end_walk() {
 
 void pw_ir_start_walk() {
 
-    // use decompression buffer as copy buffer
     uint8_t *buf = eeprom_buf;
     size_t buf_size = EEPROM_BUF_SIZE;
 

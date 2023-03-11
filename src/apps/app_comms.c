@@ -10,6 +10,7 @@
 #include "../eeprom_map.h"
 #include "../ir/pw_ir.h"
 #include "../ir/pw_ir_actions.h"
+#include "../globals.h"
 #include "app_comms.h"
 
 /*
@@ -34,20 +35,20 @@ void pw_comms_event_loop(state_vars_t *sv) {
 
     switch(cs) {
         case COMM_STATE_AWAITING: {
-            err = pw_action_try_find_peer(sv, rx_buf, PW_RX_BUF_LEN);
+            err = pw_action_try_find_peer(sv, &packet_buf, PACKET_BUF_SIZE);
             break;
         }
         case COMM_STATE_SLAVE: {
-            err = pw_ir_recv_packet(rx_buf, PW_RX_BUF_LEN, &n_rw);
+            err = pw_ir_recv_packet(&packet_buf, PACKET_BUF_SIZE, &n_rw);
             if(err == IR_OK || err == IR_ERR_SIZE_MISMATCH) {
-                err = pw_action_slave_perform_request(rx_buf, n_rw);
+                err = pw_action_slave_perform_request(&packet_buf, n_rw);
             }
             break;
         }
         case COMM_STATE_MASTER: {
             if(sv->current_substate == COMM_SUBSTATE_AWAITING_SLAVE_ACK)
                 sv->current_substate = COMM_SUBSTATE_START_PEER_PLAY;
-            err = pw_action_peer_play(sv, rx_buf, PW_RX_BUF_LEN);
+            err = pw_action_peer_play(sv, &packet_buf, PACKET_BUF_SIZE);
             break;
         }
         case COMM_STATE_DISCONNECTED: {

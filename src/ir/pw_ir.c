@@ -10,9 +10,6 @@ static comm_state_t g_comm_state = COMM_STATE_DISCONNECTED;
 
 uint8_t session_id[4] = {0xde, 0xad, 0xbe, 0xef};
 
-uint8_t tx_buf[PW_TX_BUF_LEN];
-uint8_t rx_buf[PW_RX_BUF_LEN];
-
 const char* const PW_IR_ERR_NAMES[] = {
     [IR_OK] = "ok",
     [IR_ERR_GENERAL] = "general",
@@ -34,21 +31,22 @@ const char* const PW_IR_ERR_NAMES[] = {
 };
 
 
-ir_err_t pw_ir_send_packet(uint8_t *packet, size_t len, size_t *pn_write) {
+ir_err_t pw_ir_send_packet(pw_packet_t *packet, size_t len, size_t *pn_write) {
 
     for(uint8_t i = 0; i < 4; i++)
-        packet[4+i] = session_id[i];
+        packet->session_id_bytes[i] = session_id[i];
 
     uint16_t chk = pw_ir_checksum(packet, len);
 
     // Packet checksum little-endian
-    packet[0x02] = (uint8_t)(chk&0xff);
-    packet[0x03] = (uint8_t)(chk>>8);
+    //packet[0x02] = (uint8_t)(chk&0xff);
+    //packet[0x03] = (uint8_t)(chk>>8);
+    packet->le_checksum = chk;
 
     for(size_t i = 0; i < len; i++)
-        packet[i] ^= 0xaa;
+        packet->bytes[i] ^= 0xaa;
 
-    int n_write = pw_ir_write(packet, len);
+    int n_write = pw_ir_write(packet->bytes, len);
     *pn_write = (size_t)n_write;
 
     if(n_write != len) return IR_ERR_BAD_SEND;
@@ -56,28 +54,29 @@ ir_err_t pw_ir_send_packet(uint8_t *packet, size_t len, size_t *pn_write) {
     return IR_OK;
 }
 
-ir_err_t pw_ir_recv_packet(uint8_t *packet, size_t len, size_t *pn_read) {
+ir_err_t pw_ir_recv_packet(pw_packet_t *packet, size_t len, size_t *pn_read) {
 
     *pn_read = 0;
-    int n_read = pw_ir_read(packet, len);
+    int n_read = pw_ir_read(packet->bytes, len);
 
     if(n_read <= 0) return IR_ERR_TIMEOUT;
     *pn_read = (size_t)n_read;
 
     //printf("n_read: %lu\n", *pn_read);
     for(int i = 0; i < n_read; i++)
-        packet[i] ^= 0xaa;
+        packet->bytes[i] ^= 0xaa;
 
     if(n_read != len && len < MAX_PACKET_SIZE) return IR_ERR_SIZE_MISMATCH;
 
     // packet chk LE
-    uint16_t packet_chk = (((uint16_t)packet[3])<<8) + ((uint16_t)packet[2]);
+    //uint16_t packet_chk = (((uint16_t)packet[3])<<8) + ((uint16_t)packet[2]);
+    uint16_t packet_chk = packet->le_checksum;
     uint16_t chk = pw_ir_checksum(packet, *pn_read);
 
     if(packet_chk != chk) return IR_ERR_BAD_CHECKSUM;
 
     for(size_t i = i; i < 4; i++) {
-        if(packet[4+i] != session_id[i]) return IR_ERR_BAD_SESSID;
+        if(packet->session_id_bytes[i] != session_id[i]) return IR_ERR_BAD_SESSID;
     }
 
     return IR_OK;
@@ -100,27 +99,29 @@ uint16_t pw_ir_checksum_seeded(uint8_t *data, size_t len, uint16_t seed) {
     return crc;
 }
 
-uint16_t pw_ir_checksum(uint8_t *packet, size_t len) {
+uint16_t pw_ir_checksum(pw_packet_t *packet, size_t len) {
 
-    uint16_t crc;
-    uint8_t hc, lc;
+    uint16_t crc, orig;
 
     // save original checksum, LE
-    lc = packet[2];
-    hc = packet[3];
+    //lc = packet[2];
+    //hc = packet[3];
+    orig = packet->le_checksum;
 
     // zero checksum area
-    packet[2] = 0;
-    packet[3] = 0;
+    //packet[2] = 0;
+    //packet[3] = 0;
+    packet->le_checksum = 0;
 
-    crc = pw_ir_checksum_seeded(packet, 8, 0x0002);
+    crc = pw_ir_checksum_seeded(packet->bytes, 8, 0x0002);
     if(len>8) {
-        crc = pw_ir_checksum_seeded(packet+8, len-8, crc);
+        crc = pw_ir_checksum_seeded(packet->bytes+8, len-8, crc);
     }
 
     // restore original checksum, LE
-    packet[2] = lc;
-    packet[3] = hc;
+    //packet[2] = lc;
+    //packet[3] = hc;
+    packet->le_checksum = orig;
 
     return crc;
 }
