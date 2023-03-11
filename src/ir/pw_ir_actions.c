@@ -763,24 +763,32 @@ void pw_ir_start_walk() {
 
 
     route_info_t *route_info = (route_info_t*)decompression_buffer;
-    event_log_item_t event_item = {0,};
+    event_log_item_t *event_item = malloc(sizeof(*event_item));
 
     pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);
+    printf("8f00 species: %04x\n", route_info->pokemon_summary.le_species);
+    pw_eeprom_read(0xd700, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);
+    printf("d700 species: %04x\n", route_info->pokemon_summary.le_species);
 
-    event_item.le_our_species = route_info->pokemon_summary.le_species;
-    printf("species: %04x\n", event_item.le_our_species);
+
+    event_item->le_our_species = route_info->pokemon_summary.le_species;
+    event_item->our_pokemon_flags = route_info->pokemon_summary.pokemon_flags_1;
+    for(uint8_t i = 0; i < 11; i++)
+        event_item->our_pokemon_name[i] = route_info->pokemon_nickname[i];
+    printf("event species: %04x\n", event_item->le_our_species);
 
     for(size_t i = 0; i < 11; i++)
-        event_item.our_pokemon_name[i] = route_info->pokemon_nickname[i];
+        event_item->our_pokemon_name[i] = route_info->pokemon_nickname[i];
 
-    event_item.route_image_index = route_info->route_image_index;
-    event_item.event_type = 0x19;
+    event_item->route_image_index = route_info->route_image_index;
+    event_item->event_type = 0x19;
 
     pw_log_event(event_item);
 
 
 }
 
-void pw_log_event(event_log_item_t event_item) {
-    pw_eeprom_write(PW_EEPROM_ADDR_EVENT_LOG, (uint8_t*)(&event_item), sizeof(event_item));
+void pw_log_event(event_log_item_t *event_item) {
+    pw_eeprom_write(PW_EEPROM_ADDR_EVENT_LOG, (uint8_t*)event_item, sizeof(*event_item));
 }
+
