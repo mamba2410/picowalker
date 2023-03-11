@@ -3,7 +3,15 @@
 
 #include <stdint.h>
 
-extern uint8_t eeprom_buf[];
+#include "types.h"
 
-#define EEPROM_READ_BUFFER_SIZE  0x200
+extern uint8_t eeprom_buf[];
+extern uint8_t decompression_buf[];
+extern pw_packet_t packet_buf;
+
+#define EEPROM_BUF_SIZE         0x200
+#define DECOMPRESSION_BUF_SIZE  0x100
+#define PACKET_BUF_SIZE         0x88
+
+
 #endif /* PW_BUFFERS_H */

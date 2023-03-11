@@ -10,10 +10,10 @@
 #include "pw_ir.h"
 #include "pw_ir_actions.h"
 #include "compression.h"
+#include "../globals.h"
 
 #define ACTION_DELAY_MS 1
 
-static uint8_t decompression_buffer[DECOMPRESSION_BUFFER_SIZE];
 ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len);
 
 /*
@@ -657,9 +657,9 @@ ir_err_t pw_ir_eeprom_do_write(uint8_t *packet, size_t len) {
 
     if(cmp) {
         // decompress
-        int e = pw_decompress_data(packet+8, decompression_buffer, len-8);
+        int e = pw_decompress_data(packet+8, decompression_buf, len-8);
         if(e != 0) return IR_ERR_BAD_DATA;
-        data = decompression_buffer;
+        data = decompression_buf;
     } else {
         data = packet+8;
     }
@@ -706,7 +706,8 @@ void pw_ir_end_walk() {
 void pw_ir_start_walk() {
 
     // use decompression buffer as copy buffer
-    uint8_t *buf = decompression_buffer;
+    uint8_t *buf = eeprom_buf;
+    size_t buf_size = EEPROM_BUF_SIZE;
 
     buf[0] = 0xa5;
     pw_eeprom_reliable_write(
@@ -716,9 +717,9 @@ void pw_ir_start_walk() {
         1
     );
 
-    for(size_t i = 0; i < 0x2900; i+=DECOMPRESSION_BUFFER_SIZE) {
-        pw_eeprom_read(0xd700+i, buf, DECOMPRESSION_BUFFER_SIZE);
-        pw_eeprom_write(0x8f00+i, buf, DECOMPRESSION_BUFFER_SIZE);
+    for(size_t i = 0; i < 0x2900; i+=buf_size) {
+        pw_eeprom_read(0xd700+i, buf, buf_size);
+        pw_eeprom_write(0x8f00+i, buf, buf_size);
     }
 
     for(size_t i = 0; i < 0x280; i+=128) {
@@ -739,7 +740,7 @@ void pw_ir_start_walk() {
     pw_eeprom_set_area(PW_EEPROM_ADDR_MET_PEER_DATA, 0, 0x1568);
     pw_eeprom_set_area(PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY, 0, 0x64);
 
-    walker_info_t *info = (walker_info_t*)decompression_buffer;
+    walker_info_t *info = (walker_info_t*)decompression_buf;
 
     pw_eeprom_reliable_read(
         PW_EEPROM_ADDR_IDENTITY_DATA_1,
@@ -763,7 +764,7 @@ void pw_ir_start_walk() {
     // make walk start event
 
 
-    route_info_t *route_info = (route_info_t*)decompression_buffer;
+    route_info_t *route_info = (route_info_t*)buf;
     event_log_item_t *event_item = malloc(sizeof(*event_item));
 
     pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);
@@ -786,7 +787,7 @@ void pw_ir_start_walk() {
 
     pw_log_event(event_item);
 
-
+    free(event_item);
 }
 
 void pw_log_event(event_log_item_t *event_item) {

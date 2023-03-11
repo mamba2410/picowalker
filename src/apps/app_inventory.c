@@ -8,14 +8,14 @@
 #include "../eeprom_map.h"
 #include "../screen.h"
 #include "../buttons.h"
+#include "../globals.h"
+#include "../types.h"
 
 struct owned_things_s {
     uint16_t le_found[10];
     uint16_t le_presents[10];
     uint8_t n_presents;
 } inventory;
-
-static uint8_t eeprom_buf[PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED];
 
 enum search_type {
     SEARCH_POKEMON_NAME,

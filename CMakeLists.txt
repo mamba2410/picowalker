@@ -24,6 +24,7 @@ add_executable(picowalker
     src/screen.h
     src/globals.c
     src/globals.h
+    src/types.h
     src/trainer_info.h
     src/route_info.h
     src/pico_roms.h
