@@ -257,6 +257,7 @@ ir_err_t pw_action_slave_perform_request(uint8_t *packet, size_t len) {
             pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
             pw_ir_start_walk();
+            pw_ir_set_comm_state(COMM_STATE_DISCONNECTED);
             break;
         }
         case CMD_DISCONNECT: {
@@ -734,9 +735,9 @@ void pw_ir_start_walk() {
     );
 
 
-    //pw_eeprom_set_area(PW_EEPROM_ADDR_EVENT_LOG, 0, PW_EEPROM_SIZE_EVENT_LOG);
-    //pw_eeprom_set_area(PW_EEPROM_ADDR_MET_PEER_DATA, 0, 0x1568);
-    //pw_eeprom_set_area(PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY, 0, 0x64);
+    pw_eeprom_set_area(PW_EEPROM_ADDR_EVENT_LOG, 0, PW_EEPROM_SIZE_EVENT_LOG);
+    pw_eeprom_set_area(PW_EEPROM_ADDR_MET_PEER_DATA, 0, 0x1568);
+    pw_eeprom_set_area(PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY, 0, 0x64);
 
     walker_info_t *info = (walker_info_t*)decompression_buffer;
 
@@ -767,8 +768,8 @@ void pw_ir_start_walk() {
 
     pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);
     printf("8f00 species: %04x\n", route_info->pokemon_summary.le_species);
-    pw_eeprom_read(0xd700, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);
-    printf("d700 species: %04x\n", route_info->pokemon_summary.le_species);
+    //pw_eeprom_read(0xd700, (uint8_t*)route_info, PW_EEPROM_SIZE_ROUTE_INFO);
+    //printf("d700 species: %04x\n", route_info->pokemon_summary.le_species);
 
 
     event_item->le_our_species = route_info->pokemon_summary.le_species;
