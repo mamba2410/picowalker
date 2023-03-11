@@ -60,11 +60,20 @@ void pw_eeprom_init() {
 
 int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len) {
 
+    pw_eeprom_wait_for_ready();
+
+    buf[0] = CMD_WRDI;
+    pw_eeprom_cs_enable();
+    spi_write_blocking(eeprom_spi, buf, 1);
+    pw_eeprom_cs_disable();
+
+
     buf[0] = CMD_READ;
     buf[1] = (uint8_t)(addr>>8);
     buf[2] = (uint8_t)(addr&0xff);
 
     pw_eeprom_wait_for_ready();
+
 
     pw_eeprom_cs_enable();
     spi_write_blocking(eeprom_spi, buf, 3);
@@ -114,9 +123,19 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len) {
 }
 
 void pw_eeprom_set_area(eeprom_addr_t addr, uint8_t v, size_t len) {
-    uint8_t *buf = malloc(len);
-    memset(buf, v, len);
-    pw_eeprom_write(addr, buf, len);
+    // get a buffer of value
+    uint8_t *buf = malloc(128);
+    memset(buf, v, 128);
+
+    // align writes to page size
+    size_t write_sz = 128 - (addr&(0x007f));
+    int remaining = len;
+    while(remaining > 0) {
+        pw_eeprom_write(addr, buf, write_sz);
+        remaining -= write_sz;
+        write_sz = (remaining>128)?128:remaining;
+    }
+
     free(buf);
 }
 

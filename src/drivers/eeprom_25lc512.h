@@ -10,6 +10,7 @@
 #define CMD_READ        0x03
 #define CMD_WRITE       0x02
 #define CMD_WREN        0x06    // write enable
+#define CMD_WRDI        0x04    // write disable
 #define CMD_RDSR        0x05    // read status reg
 #define CMD_WRSR        0x01    // write status ref
 #define CMD_PE          0x42    // page erase
