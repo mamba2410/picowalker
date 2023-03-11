@@ -721,12 +721,15 @@ void pw_ir_start_walk() {
     );
 
     // buf_size must wholly divide into copy size
-    size_t sz = 128;
+    const size_t sz = 128;
     for(size_t i = 0; i < 0x2900; i+=sz) {
         // Sometimes reads zero here for x amount of bytes
         // but later on line 746, it reads ok
-        pw_eeprom_read(PW_EEPROM_ADDR_SCENARIO_STAGING_AREA+i, buf, sz);
-        if(i == 0) printf("copy species: %02x%02x\n", buf[1], buf[0]);
+        int a = pw_eeprom_read(PW_EEPROM_ADDR_SCENARIO_STAGING_AREA+i, buf, sz);
+        uint16_t species = buf[0] | (uint16_t)(buf[1])<<8;
+        if(i == 0 && species == 0) {
+            printf("n read: %d\n", a);
+        }
         pw_eeprom_write(PW_EEPROM_ADDR_ROUTE_INFO+i, buf, sz);
     }
 
