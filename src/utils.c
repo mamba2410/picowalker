@@ -1,6 +1,51 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "utils.h"
+#include "states.h"
+#include "types.h"
+#include "eeprom_map.h"
+#include "eeprom.h"
+
+
+/*
+ * Sets sv->reg{a,b,c}
+ */
+void pw_read_inventory(state_vars_t *sv) {
+    sv->reg_a = 0;
+    sv->reg_b = 0;
+    sv->reg_c = 0;
+
+    pokemon_summary_t caught_pokemon;
+    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&caught_pokemon), sizeof(caught_pokemon));
+
+    if(caught_pokemon.le_species != 0) {
+        sv->reg_a |= HAVE_POKEMON;
+    }
+
+    struct {
+        uint16_t le_item;
+        uint16_t pad;
+    } items[3];
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_OBTAINED_ITEMS,
+        (uint8_t*)(items),
+        PW_EEPROM_SIZE_OBTAINED_ITEMS
+    );
+
+    for(uint8_t i = 0; i < 3; i++) {
+        if(items[i].le_item != 0) {
+            sv->reg_b |= (1<<i);
+        }
+    }
+
+    uint8_t special_inventory;
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_RECEIVED_BITFIELD,
+        &(sv->reg_c),
+        1
+    );
+}
 
 int nintendo_to_ascii(uint8_t *str, char* buf, size_t len) {
     uint16_t c;
