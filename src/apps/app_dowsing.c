@@ -9,6 +9,7 @@
 #include "../rand.h"
 #include "../utils.h"
 #include "../types.h"
+#include "../globals.h"
 
 #define BUSH_HEIGHT (SCREEN_HEIGHT-16-8-16)
 #define ARROW_HEIGHT (SCREEN_HEIGHT-16-8)
@@ -80,12 +81,32 @@ static uint16_t get_item(state_vars_t *sv, route_info_t *ri, health_data_t *hd) 
     uint32_t today_steps = swap_bytes_u32(hd->be_today_steps);
 
     // TODO: checks for gift item
+    struct {
+        uint16_t le_item;
+        uint16_t le_steps;
+        uint8_t  percent;
+    } event_item;
+    pw_eeprom_read(PW_EEPROM_ADDR_SPECIAL_ITEM, (uint8_t*)(&event_item), sizeof(event_item));
 
-    do {
-        sv->reg_y = pw_rand()%10;
-    } while(today_steps < ri->le_route_item_steps[sv->reg_y]);
+    uint8_t rnd = pw_rand()%100;
 
-    return ri->le_route_items[sv->reg_y];
+    if(event_item.le_item != 0 || event_item.le_item != 0xffff) {
+        if(today_steps >= event_item.le_steps) {
+            if(rnd < event_item.percent) {
+                return event_item.le_item;
+            }
+        }
+    }
+
+    for(uint8_t i = 0; i < 10; i++) {
+        if(today_steps >= ri->le_route_item_steps[i]) {
+            if(rnd < ri->route_item_percent[i])
+                return ri->le_route_items[i];
+        }
+    }
+
+    // should not get here, but just in case
+    return ri->le_route_items[9];
 }
 
 static void replace_item_draw_init(state_vars_t *sv) {
@@ -117,18 +138,10 @@ static void replace_item_draw_init(state_vars_t *sv) {
 
 
 void pw_dowsing_init(state_vars_t *sv) {
-    health_data_t hd;
     route_info_t ri;
+    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&ri), sizeof(ri));
 
-    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&ri), PW_EEPROM_SIZE_ROUTE_INFO);
-    pw_eeprom_reliable_read(
-        PW_EEPROM_ADDR_HEALTH_DATA_1,
-        PW_EEPROM_ADDR_HEALTH_DATA_2,
-        (uint8_t*)(&hd),
-        PW_EEPROM_SIZE_HEALTH_DATA_1
-    );
-
-    sv->reg_x = get_item(sv, &ri, &hd);
+    sv->reg_x = get_item(sv, &ri, &health_data_cache);
 
     //sv->reg_a = 0; // choose position
     sv->reg_a = pw_rand()%6;

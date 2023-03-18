@@ -145,6 +145,10 @@ void pw_inventory_init(state_vars_t *sv) {
             inventory.n_presents++
         ) ;
 
+    if(inventory.le_found[0] == 0) {
+        pw_inventory_move_cursor(sv, 1);
+    }
+
     //inv_state = 0x03df; // all pokemon/items unlocked
     //n_presents = 10;    // we have 10 presents :D
 }

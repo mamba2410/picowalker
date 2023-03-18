@@ -10,6 +10,8 @@
 #include "rand.h"
 #include "states.h"
 #include "timer.h"
+#include "globals.h"
+#include "utils.h"
 #include "ir/ir.h"
 
 void walker_entry() {
@@ -25,6 +27,11 @@ void walker_entry() {
 
     uint64_t now, prev_screen_redraw, td;
     prev_screen_redraw = pw_now_us();
+
+    health_data_cache.be_total_steps = swap_bytes_u32(99999);
+    health_data_cache.be_today_steps = swap_bytes_u32(99999);
+    health_data_cache.be_current_watts = swap_bytes_u16(9999);
+
 
 	// Event loop
     // BEWARE: Could (WILL) receive interrupts during this time

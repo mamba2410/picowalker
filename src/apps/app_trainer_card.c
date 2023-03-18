@@ -9,6 +9,7 @@
 #include "../eeprom_map.h"
 #include "../eeprom.h"
 #include "../types.h"
+#include "../globals.h"
 
 static uint32_t prev_step_counts[7] = {0,};
 
@@ -179,9 +180,9 @@ void pw_trainer_card_draw_update(state_vars_t *sv) {
         if(sv->current_cursor <= 0) {
             pw_trainer_card_init_display(sv);
         } else {
-            uint32_t const total_steps = swap_bytes_u32(health_data_cache->be_total_steps);
-            uint32_t const today_steps = swap_bytes_u32(health_data_cache->be_today_steps);
-            uint16_t const total_days  = swap_bytes_u16(health_data_cache->be_total_days);
+            uint32_t const total_steps = swap_bytes_u32(health_data_cache.be_total_steps);
+            uint32_t const today_steps = swap_bytes_u32(health_data_cache.be_today_steps);
+            uint16_t const total_days  = swap_bytes_u16(health_data_cache.be_total_days);
             pw_trainer_card_draw_dayview(
                     sv->current_cursor,
                     swap_bytes_u32(prev_step_counts[sv->current_cursor-1]),
