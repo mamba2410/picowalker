@@ -28,8 +28,8 @@ const char* const state_strings[N_STATES] = {
 
 state_event_func_t* const state_init_funcs[N_STATES] = {
     [STATE_SCREENSAVER]     = pw_empty_event,
-	[STATE_SPLASH]          = pw_empty_event,
-	[STATE_MAIN_MENU]       = pw_empty_event,
+	[STATE_SPLASH]          = pw_splash_init,
+	[STATE_MAIN_MENU]       = pw_menu_init,
 	[STATE_POKE_RADAR]      = pw_empty_event,
 	[STATE_DOWSING]         = pw_empty_event,
 	[STATE_CONNECT]         = pw_comms_init,

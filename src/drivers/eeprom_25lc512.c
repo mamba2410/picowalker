@@ -59,7 +59,7 @@ void pw_eeprom_init() {
 }
 
 int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len) {
-    printf("EEPROM: reading %04x\n", addr);
+    //printf("EEPROM: reading %04x\n", addr);
 
     pw_eeprom_wait_for_ready();
 
@@ -89,7 +89,7 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len) {
     size_t this_write, bytes_left;
     int n_written = 0;
     eeprom_addr_t addr_end = addr + len;
-    printf("EEPROM: writing %04x\n", addr);
+    //printf("EEPROM: writing %04x\n", addr);
 
 
     while(n_written < len) {

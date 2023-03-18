@@ -171,11 +171,11 @@ void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
     switch(b) {
         case BUTTON_L: { pw_inventory_move_cursor(sv, -1); break; };
         case BUTTON_M: {
-                           if(sv->current_substate == SUBSCREEN_FOUND) {
-                               sv->current_substate = SUBSCREEN_PRESENTS;
-                           } else {
-                               pw_request_state(STATE_SPLASH);
-                           }
+            if(sv->current_substate == SUBSCREEN_FOUND && inventory.n_presents > 0) {
+                sv->current_substate = SUBSCREEN_PRESENTS;
+            } else {
+                pw_request_state(STATE_SPLASH);
+            }
         };
         case BUTTON_R: { pw_inventory_move_cursor(sv, +1); break; };
     };

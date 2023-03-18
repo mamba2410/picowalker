@@ -10,6 +10,7 @@
 #include "types.h"
 #include "eeprom_map.h"
 #include "eeprom.h"
+#include "globals.h"
 
 static pw_state_t const MENU_ENTRIES[] = {
 	STATE_POKE_RADAR,
@@ -38,6 +39,14 @@ static uint16_t const MENU_ICONS[] = {
     PW_EEPROM_ADDR_IMG_MENU_ICON_INVENTORY,
     PW_EEPROM_ADDR_IMG_MENU_ICON_SETTINGS,
 };
+
+void pw_menu_init(state_vars_t *sv) {
+    sv->reg_a = 0;
+    sv->reg_b = 0;
+    sv->reg_c = 0;
+    sv->current_substate = MSG_NONE;
+}
+
 
 void pw_menu_init_display(state_vars_t *sv) {
 
@@ -71,24 +80,17 @@ void pw_menu_init_display(state_vars_t *sv) {
 
         if(sv->current_cursor == i) {
             pw_screen_draw_from_eeprom(
-                i*16, y_values[i]-8,
+                4+i*16, y_values[i]-8,
                 8, 8,
                 PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL,
                 PW_EEPROM_SIZE_IMG_ARROW
             );
         } else {
-            pw_screen_clear_area(i*16, y_values[i]-8, 8, 8);
+            pw_screen_clear_area(4+i*16, y_values[i]-8, 8, 8);
         }
     }
 
-    health_data_t health_data;
-    int err = pw_eeprom_reliable_read(
-        PW_EEPROM_ADDR_HEALTH_DATA_1,
-        PW_EEPROM_ADDR_HEALTH_DATA_2,
-        (uint8_t*)(&health_data),
-        PW_EEPROM_SIZE_HEALTH_DATA_1
-    );
-    const uint16_t current_watts = swap_bytes_u16(health_data.be_current_watts);;
+    const uint16_t current_watts = swap_bytes_u16(health_data_cache.be_current_watts);;
 
     pw_screen_draw_from_eeprom(
         SCREEN_WIDTH-16, SCREEN_HEIGHT-16,
@@ -102,9 +104,28 @@ void pw_menu_init_display(state_vars_t *sv) {
 
 void pw_menu_handle_input(state_vars_t *sv, uint8_t b) {
 
+    // if there's a message, clear it
+    if(sv->current_substate != 0) {
+        pw_screen_clear_area(0, SCREEN_HEIGHT-16, SCREEN_WIDTH, 16);
+        sv->substate_2 = sv->current_substate;
+        sv->current_substate = 0;
+        return;
+    }
+
 	switch(b) {
 		case BUTTON_L: { pw_menu_move_cursor(sv, -1); break; };
-		case BUTTON_M: { pw_request_state(MENU_ENTRIES[sv->current_cursor]); break; };
+		case BUTTON_M: {
+            if(sv->current_cursor == 4) {
+                pw_read_inventory(sv);
+                // no pokemon or items
+                if(sv->reg_a == 0 && sv->reg_b == 0) {
+                    sv->current_substate = MSG_NOTHING_HELD;
+                    break;
+                }
+            }
+            pw_request_state(MENU_ENTRIES[sv->current_cursor]);
+            break;
+        };
 		case BUTTON_R: { pw_menu_move_cursor(sv, +1); break; };
 		default: break;
 	}
@@ -112,6 +133,14 @@ void pw_menu_handle_input(state_vars_t *sv, uint8_t b) {
 }
 
 void pw_menu_update_display(state_vars_t *sv) {
+
+    // quick way to redraw if we were just displaying a message
+    if(sv->substate_2 != 0) {
+        pw_menu_init_display(sv);
+        sv->substate_2 = 0;
+    }
+
+
     /*
      *  Redraw title, arrows
      */
@@ -126,15 +155,26 @@ void pw_menu_update_display(state_vars_t *sv) {
     for(size_t i = 0; i < MENU_SIZE; i++) {
         if(sv->current_cursor == i) {
             pw_screen_draw_from_eeprom(
-                i*16, y_values[i]-8,
+                4+i*16, y_values[i]-8,
                 8, 8,
                 PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL,
                 PW_EEPROM_SIZE_IMG_ARROW
             );
 
         } else {
-            pw_screen_clear_area(i*16, y_values[i]-8, 8, 8);
+            pw_screen_clear_area(4+i*16, y_values[i]-8, 8, 8);
         }
+    }
+
+    // TODO: Move out of here and only draw once
+    if(sv->current_substate != 0) {
+        pw_screen_draw_from_eeprom(
+            0, SCREEN_HEIGHT-16,
+            SCREEN_WIDTH, 16,
+            PW_EEPROM_ADDR_TEXT_NEED_WATTS + PW_EEPROM_SIZE_TEXT_NEED_WATTS*(sv->current_substate-1),
+            PW_EEPROM_SIZE_TEXT_NEED_WATTS
+        );
+        pw_screen_draw_text_box(0, SCREEN_HEIGHT-16, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SCREEN_BLACK);
     }
 
 }
