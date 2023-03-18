@@ -179,16 +179,9 @@ void pw_trainer_card_draw_update(state_vars_t *sv) {
         if(sv->current_cursor <= 0) {
             pw_trainer_card_init_display(sv);
         } else {
-            health_data_t health_data;
-            int err = pw_eeprom_reliable_read(
-                PW_EEPROM_ADDR_HEALTH_DATA_1,
-                PW_EEPROM_ADDR_HEALTH_DATA_2,
-                (uint8_t*)(&health_data),
-                PW_EEPROM_SIZE_HEALTH_DATA_1
-            );
-            uint32_t const total_steps = swap_bytes_u32(health_data.be_total_steps);
-            uint32_t const today_steps = swap_bytes_u32(health_data.be_today_steps);
-            uint16_t const total_days  = swap_bytes_u16(health_data.be_total_days);
+            uint32_t const total_steps = swap_bytes_u32(health_data_cache->be_total_steps);
+            uint32_t const today_steps = swap_bytes_u32(health_data_cache->be_today_steps);
+            uint16_t const total_days  = swap_bytes_u16(health_data_cache->be_total_days);
             pw_trainer_card_draw_dayview(
                     sv->current_cursor,
                     swap_bytes_u32(prev_step_counts[sv->current_cursor-1]),
