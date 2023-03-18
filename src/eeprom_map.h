@@ -362,6 +362,8 @@
 #define PW_EEPROM_SIZE_RANDOM_CHECKSUM_AREA 528
 #define PW_EEPROM_ADDR_ROUTE_INFO 0x8f00  // struct routeinfo - current route data
 #define PW_EEPROM_SIZE_ROUTE_INFO 190
+#define PW_EEPROM_ADDR_ROUTE_POKEMON (PW_EEPROM_ADDR_ROUTE_INFO+0x52)
+#define PW_EEPROM_SIZE_ROUTE_POKEMON (3*16)
 #define PW_EEPROM_ADDR_IMG_ROUTE_LARGE 0x8fbe  // current "area" we are strolling in graphic 32x24
 #define PW_EEPROM_SIZE_IMG_ROUTE_LARGE 192
 #define PW_EEPROM_ADDR_TEXT_ROUTE_NAME 0x907e  // current "area" we are strolling in textual name 80x16

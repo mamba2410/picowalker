@@ -191,12 +191,12 @@ typedef struct __attribute__((packed)) {
 
 typedef struct {
     uint8_t stamp_heart: 1;
-    uint8_t stamp_space: 1;
+    uint8_t stamp_spade: 1;
     uint8_t stamp_diamond: 1;
     uint8_t stamp_club: 1;
     uint8_t special_map: 1;
     uint8_t event_pokemon: 1;
-    uint8_t evet_item: 1;
+    uint8_t event_item: 1;
     uint8_t special_route: 1;
 } special_inventory_t;
 
