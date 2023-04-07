@@ -73,7 +73,12 @@ void pw_screen_init() {
     screen.offset_x = (screen.true_width-screen.width)/2;
     screen.offset_y = (screen.true_height-screen.height)/2;
 
+
+#ifdef OLED_DEBUG
+    oled_draw_box(&oled, 0, 0, oled.width-1, oled.height-1, 0x01);
+#else
     oled_clear_ram(&oled);
+#endif
 }
 
 
@@ -226,12 +231,20 @@ void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y) {
     oled_img.y = y + screen.offset_y;
 
     oled_draw(&oled, &oled_img);
-
 }
 
 
 void pw_screen_clear() {
+#ifdef OLED_DEBUG
+    oled_draw_box(
+        &oled,
+        screen.offset_x, screen.offset_y,
+        screen.offset_x+SCREEN_WIDTH-1, screen.offset_y+SCREEN_HEIGHT-1,
+        0x0
+    );
+#else
     oled_clear_ram(&oled);
+#endif
 }
 
 void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height) {

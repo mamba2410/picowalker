@@ -7,6 +7,7 @@
 
 #include "../screen.h"
 
+#define OLED_DEBUG
 
 #define OLED_ADDR   0x3c // from datasheet 8.1.5
 #define OLED_WIDTH	128
