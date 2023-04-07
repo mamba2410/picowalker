@@ -247,7 +247,8 @@ void pw_screen_clear() {
 #endif
 }
 
-void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height) {
+void pw_screen_fill_area(screen_pos_t x, screen_pos_t y,
+        screen_pos_t width, screen_pos_t height, screen_colour_t colour) {
     size_t size = width * height/2;
 
     oled_img_t area = {
@@ -259,10 +260,14 @@ void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, sc
         data: oled_image_buf,
     };
 
-    memset(oled_image_buf, 0, size);
+    memset(oled_image_buf, greyscale_map[colour]<<4 | greyscale_map[colour], size);
 
     oled_draw(&oled, &area);
 
+}
+
+void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height) {
+    pw_screen_fill_area(x, y, width, height, SCREEN_WHITE);
 }
 
 
