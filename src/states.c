@@ -12,7 +12,7 @@
 #include "apps/app_comms.h"
 #include "apps/app_inventory.h"
 #include "apps/app_dowsing.h"
-#include "apps/app_first_comms.h"
+#include "apps/app_poke_radar.h"
 
 const char* const state_strings[N_STATES] = {
     [STATE_SCREENSAVER]     = "Screensaver",
@@ -32,7 +32,7 @@ state_event_func_t* const state_init_funcs[N_STATES] = {
     [STATE_SCREENSAVER]     = pw_empty_event,
 	[STATE_SPLASH]          = pw_splash_init,
 	[STATE_MAIN_MENU]       = pw_menu_init,
-	[STATE_POKE_RADAR]      = pw_empty_event,
+	[STATE_POKE_RADAR]      = pw_poke_radar_init,
 	[STATE_DOWSING]         = pw_empty_event,
 	[STATE_CONNECT]         = pw_comms_init,
 	[STATE_DOWSING]         = pw_dowsing_init,
@@ -41,63 +41,58 @@ state_event_func_t* const state_init_funcs[N_STATES] = {
 	[STATE_INVENTORY]       = pw_inventory_init,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
-    [STATE_FIRST_CONNECT]   = pw_first_comms_init,
 };
 
 state_event_func_t* const state_event_loop_funcs[N_STATES] = {
     [STATE_SCREENSAVER]     = pw_empty_event,
 	[STATE_SPLASH]          = pw_empty_event,
 	[STATE_MAIN_MENU]       = pw_empty_event,
-	[STATE_POKE_RADAR]      = pw_empty_event,
+	[STATE_POKE_RADAR]      = pw_poke_radar_event_loop,
 	[STATE_DOWSING]         = pw_dowsing_event_loop,
 	[STATE_CONNECT]         = pw_comms_event_loop,
 	[STATE_TRAINER_CARD]    = pw_empty_event,
 	[STATE_INVENTORY]       = pw_empty_event,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
-	[STATE_FIRST_CONNECT]   = pw_first_comms_event_loop,
 };
 
 state_input_func_t* const state_input_funcs[N_STATES] = {
     [STATE_SCREENSAVER]     = pw_empty_input,
 	[STATE_SPLASH]          = pw_splash_handle_input,
 	[STATE_MAIN_MENU]       = pw_menu_handle_input,
-	[STATE_POKE_RADAR]      = pw_send_to_error,
+	[STATE_POKE_RADAR]      = pw_poke_radar_handle_input,
 	[STATE_DOWSING]         = pw_dowsing_handle_input,
 	[STATE_CONNECT]         = pw_comms_handle_input,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_handle_input,
 	[STATE_INVENTORY]       = pw_inventory_handle_input,
 	[STATE_SETTINGS]        = pw_send_to_error,
     [STATE_ERROR]           = pw_send_to_splash,
-	[STATE_FIRST_CONNECT]   = pw_first_comms_handle_input,
 };
 
 state_draw_func_t* const state_draw_init_funcs[] = {
     [STATE_SCREENSAVER]     = pw_screen_clear,
 	[STATE_SPLASH]          = pw_splash_init_display,
 	[STATE_MAIN_MENU]       = pw_menu_init_display,
-	[STATE_POKE_RADAR]      = pw_screen_clear,
+	[STATE_POKE_RADAR]      = pw_poke_radar_init_display,
 	[STATE_DOWSING]         = pw_dowsing_init_display,
 	[STATE_CONNECT]         = pw_comms_init_display,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_init_display,
 	[STATE_INVENTORY]       = pw_inventory_init_display,
 	[STATE_SETTINGS]        = pw_screen_clear,
     [STATE_ERROR]           = pw_error_init_display,
-	[STATE_FIRST_CONNECT]   = pw_first_comms_init_display,
 };
 
 state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
     [STATE_SCREENSAVER]     = pw_empty_event,
 	[STATE_SPLASH]          = pw_splash_update_display,
 	[STATE_MAIN_MENU]       = pw_menu_update_display,
-	[STATE_POKE_RADAR]      = pw_empty_event,
+	[STATE_POKE_RADAR]      = pw_poke_radar_update_display,
 	[STATE_DOWSING]         = pw_dowsing_update_display,
 	[STATE_CONNECT]         = pw_comms_draw_update,
 	[STATE_TRAINER_CARD]    = pw_trainer_card_draw_update,
 	[STATE_INVENTORY]       = pw_inventory_update_display,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
-	[STATE_FIRST_CONNECT]   = pw_first_comms_draw_update,
 };
 
 static pw_state_t pw_current_state = STATE_SCREENSAVER;

@@ -55,6 +55,11 @@ extern void pw_screen_draw_text_box(
     screen_colour_t colour
 );
 extern void pw_screen_clear();
+extern void pw_screen_fill_area(
+    screen_pos_t x, screen_pos_t y,
+    screen_pos_t w, screen_pos_t h,
+    screen_colour_t colour
+);
 
 /*
  *  Derived functions
@@ -68,6 +73,7 @@ void pw_screen_draw_from_eeprom(
 void pw_screen_draw_integer(uint32_t n, size_t right_x, size_t y);
 void pw_screen_draw_time(uint8_t hour, uint8_t minute, uint8_t second, size_t x, size_t y);
 void pw_screen_draw_subtime(uint8_t n, size_t x, size_t y, bool draw_colon);
+void pw_screen_draw_message(screen_pos_t y, uint8_t message_index, screen_pos_t h);
 
 
 #endif /* PW_SCREEN_H */
