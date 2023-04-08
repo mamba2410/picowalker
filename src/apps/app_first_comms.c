@@ -8,7 +8,11 @@
 #include "../states.h"
 #include "../eeprom.h"
 #include "../ir/ir.h"
-#include "app_comms.h"
+#include "../ir/actions.h"
+#include "../screen.h"
+#include "../buttons.h"
+#include "../globals.h"
+#include "app_first_comms.h"
 
 
 /*
@@ -42,7 +46,7 @@ void pw_first_comms_event_loop(state_vars_t *sv) {
                 err = pw_action_slave_perform_request(&packet_buf, n_rw);
             }
 
-            if(pw_ir_get_comm_state() == COMM_STATE_DISCONNECTED && err = IR_OK) {
+            if(pw_ir_get_comm_state() == COMM_STATE_DISCONNECTED && err == IR_OK) {
                     sv->substate_2 = FC_SUBSTATE_SUCCESS;
             }
             break;
@@ -54,12 +58,15 @@ void pw_first_comms_event_loop(state_vars_t *sv) {
         case COMM_STATE_DISCONNECTED: {
             err = IR_OK;
             sv->reg_c = 0;
-            if(sv->substate_2 == FC_SUBSTATE_TIMEOUT && sv->x == 0) {
+            if(sv->substate_2 == FC_SUBSTATE_TIMEOUT && sv->reg_x == 0) {
                 sv->substate_2 = FC_SUBSTATE_WAITING;
             }
             break;
         }
-        default: break;
+        default: {
+                     printf("Error: Unexpected comm state 0x%02x\n", cs);
+                 }
+                                      break;
     } // switch(cs)
 
     if(err != IR_OK) {
@@ -78,15 +85,15 @@ void pw_first_comms_event_loop(state_vars_t *sv) {
 
 void pw_first_comms_init_display(state_vars_t *sv) {
 
-    pw_img_t img = {.h=32, .w=32, .size=256, .data=eeprom_buf};
+    pw_img_t img = {.height=32, .width=32, .size=256, .data=eeprom_buf};
     pw_flash_read(FLASH_IMG_POKEWALKER, img.data);
     pw_screen_draw_img(&img, (SCREEN_WIDTH-32)/2, (SCREEN_HEIGHT-32)/2);
 
-    img.w = 16;
-    img.h = 8;
+    img.width = 16;
+    img.height = 8;
     img.size = 0x20;
     pw_flash_read(FLASH_IMG_FACE_NEUTRAL, img.data);
-    pw_screen_draw_img(&img, (SCREEN_WIDTH-32)/2, (SCREEN_HEIGHT-32)/2);
+    pw_screen_draw_img(&img, (SCREEN_WIDTH-16)/2, (SCREEN_HEIGHT-8)/2);
 
 }
 
@@ -94,7 +101,8 @@ void pw_first_comms_handle_input(state_vars_t *sv, uint8_t b) {
 
     if( b == BUTTON_M && pw_ir_get_comm_state() == COMM_STATE_DISCONNECTED ) {
         // if we are actually initialised
-        if(pw_eeprom_check_for_nintendo()) {
+        if(pw_eeprom_check_for_nintendo() && walker_info_cache.flags&0x01) { // TODO: walker inited flag
+        //if(false) {
              pw_request_state(STATE_SPLASH);
              return;
         }
@@ -114,19 +122,26 @@ void pw_first_comms_draw_update(state_vars_t *sv) {
         case COMM_STATE_DISCONNECTED: {
             switch(sv->substate_2) {
                 case FC_SUBSTATE_WAITING: {
+                    pw_img_t img = {.width=8, .height=8, .size=16, .data=eeprom_buf};
                     if(sv->anim_frame&1) {
-                        pw_img_t img = {.w = 8, .h = 8, .size=16, .data=eeprom_buf};
                         pw_flash_read(FLASH_IMG_UP_ARROW, img.data);
                         pw_screen_draw_img(&img, (SCREEN_WIDTH-8)/2, 48);
                     } else {
-                        pw_screen_clear_area((SCREEN_WIDTH-8)/2, 48, (SCREEN_WIDTH-8)/2+8, 56);
+                        pw_screen_clear_area((SCREEN_WIDTH-8)/2, 48, 8, 8);
                     }
+
+                    img.width = 16;
+                    img.size=32;
+                    pw_flash_read(FLASH_IMG_FACE_NEUTRAL, img.data);
+                    pw_screen_draw_img(&img, (SCREEN_WIDTH-16)/2, (SCREEN_HEIGHT-8)/2);
+
                     break;
                 }
                 case FC_SUBSTATE_TIMEOUT: {
-                    pw_img_t face = {.w=16, .h=8, .size=32, .data=eeprom_buf};
+                    pw_screen_clear_area((SCREEN_WIDTH-8)/2, 0, 8, 8);
+                    pw_img_t face = {.width=16, .height=8, .size=32, .data=eeprom_buf};
                     pw_flash_read(FLASH_IMG_FACE_SAD, face.data);
-                    pw_screen_draw_img(&face, (SCREEN_WIDTH-32)/2, (SCREEN_HEIGHT-32)/2);
+                    pw_screen_draw_img(&face, (SCREEN_WIDTH-16)/2, (SCREEN_HEIGHT-8)/2);
                     sv->reg_x--;
                     break;
                 }
@@ -135,16 +150,17 @@ void pw_first_comms_draw_update(state_vars_t *sv) {
         }
         case COMM_STATE_AWAITING:
         case COMM_STATE_SLAVE: {
-            pw_img_t face = {.w=16, .h=8, .size=32, .data=eeprom_buf};
+            pw_img_t face = {.width=16, .height=8, .size=32, .data=eeprom_buf};
             pw_flash_read(FLASH_IMG_FACE_HAPPY, face.data);
-            pw_screen_draw_img(&face, (SCREEN_WIDTH-32)/2, (SCREEN_HEIGHT-32)/2);
+            pw_screen_draw_img(&face, (SCREEN_WIDTH-16)/2, (SCREEN_HEIGHT-8)/2);
+            pw_screen_clear_area((SCREEN_WIDTH-8)/2, 48, 8, 8);
 
             if(sv->anim_frame&1) {
-                pw_img_t img = {.w = 8, .h = 8, .size=16, .data=eeprom_buf};
+                pw_img_t img = {.width=8, .height=8, .size=16, .data=eeprom_buf};
                 pw_flash_read(FLASH_IMG_IR_ACTIVE, img.data);
                 pw_screen_draw_img(&img, (SCREEN_WIDTH-8)/2, 0);
             } else {
-                pw_screen_clear_area((SCREEN_WIDTH-8)/2, 0, (SCREEN_WIDTH-8)/2+8, 8);
+                pw_screen_clear_area((SCREEN_WIDTH-8)/2, 0, 8, 8);
             }
             break;
         }

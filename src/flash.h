@@ -10,7 +10,7 @@ typedef enum {
     FLASH_IMG_FACE_SAD,
     FLASH_IMG_UP_ARROW,
     FLASH_IMG_IR_ACTIVE,
-    FLASH_IMG_TINY_CHARS
+    FLASH_IMG_TINY_CHARS,
 } pw_flash_img_t;
 
 extern void pw_flash_read(pw_flash_img_t img_index, uint8_t *buf);
