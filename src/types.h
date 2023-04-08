@@ -66,7 +66,8 @@ typedef struct {
     /* +0x10 */ unique_identity_data_t identity_data;
     /* +0x38 */ event_bitmap_t event_bitmap;
     /* +0x48 */ uint16_t le_trainer_name[8];
-    /* +0x58 */ uint8_t unk4[3];
+    /* +0x58 */ uint8_t unk4[2];
+    /* +0x5a */ uint8_t event_index;
     /* +0x5b */ uint8_t flags;
     /* +0x5c */ uint8_t protocol_ver;
     /* +0x5d */ uint8_t unk5;
@@ -86,9 +87,11 @@ typedef struct {    // strut HealthData
     /* +0x08 */ uint32_t be_last_sync;
     /* +0x0c */ uint16_t be_total_days;
     /* +0x0e */ uint16_t be_current_watts;
-    /* +0x10 */ uint8_t unk[4];
-    /* +0x14 */ uint8_t padding[3];
-    /* +0x17 */ uint8_t settings;
+    /* +0x10 */ uint16_t be_walk_minute_counter;
+    /* +0x12 */ uint8_t  steps_this_watt;
+    /* +0x13 */ uint8_t  event_log_index;
+    /* +0x14 */ uint8_t  padding[3];
+    /* +0x17 */ uint8_t  settings;
 } health_data_t;
 
 typedef struct {
