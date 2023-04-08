@@ -23,14 +23,20 @@ void walker_entry() {
     pw_eeprom_init();
     pw_srand(0x12345678);
 
-    pw_set_state(STATE_SPLASH);
+    if(!pw_eeprom_check_for_nintendo()) {
+        pw_eeprom_reset(true, true);
+        pw_set_state(STATE_FIRST_CONNECT);
+    } else {
+        pw_set_state(STATE_SPLASH);
+    }
+
 
     uint64_t now, prev_screen_redraw, td;
     prev_screen_redraw = pw_now_us();
 
-    health_data_cache.be_total_steps = swap_bytes_u32(99999);
-    health_data_cache.be_today_steps = swap_bytes_u32(99999);
-    health_data_cache.be_current_watts = swap_bytes_u16(9999);
+    //health_data_cache.be_total_steps = swap_bytes_u32(99999);
+    //health_data_cache.be_today_steps = swap_bytes_u32(99999);
+    //health_data_cache.be_current_watts = swap_bytes_u16(9999);
 
 
 	// Event loop

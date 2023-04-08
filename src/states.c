@@ -24,6 +24,7 @@ const char* const state_strings[N_STATES] = {
 	[STATE_INVENTORY]       = "Pokemon and items",
 	[STATE_SETTINGS]        = "Settings",
     [STATE_ERROR]           = "Error",
+    [STATE_FIRST_CONNECT]   = "First connect",
 };
 
 state_event_func_t* const state_init_funcs[N_STATES] = {
@@ -39,6 +40,7 @@ state_event_func_t* const state_init_funcs[N_STATES] = {
 	[STATE_INVENTORY]       = pw_inventory_init,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
+    [STATE_FIRST_CONNECT]   = pw_comms_init,
 };
 
 state_event_func_t* const state_event_loop_funcs[N_STATES] = {
@@ -52,6 +54,7 @@ state_event_func_t* const state_event_loop_funcs[N_STATES] = {
 	[STATE_INVENTORY]       = pw_empty_event,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
+	[STATE_FIRST_CONNECT]   = pw_comms_event_loop,
 };
 
 state_input_func_t* const state_input_funcs[N_STATES] = {
@@ -65,6 +68,7 @@ state_input_func_t* const state_input_funcs[N_STATES] = {
 	[STATE_INVENTORY]       = pw_inventory_handle_input,
 	[STATE_SETTINGS]        = pw_send_to_error,
     [STATE_ERROR]           = pw_send_to_splash,
+	[STATE_FIRST_CONNECT]   = pw_send_to_error,
 };
 
 state_draw_func_t* const state_draw_init_funcs[] = {
@@ -78,6 +82,7 @@ state_draw_func_t* const state_draw_init_funcs[] = {
 	[STATE_INVENTORY]       = pw_inventory_init_display,
 	[STATE_SETTINGS]        = pw_screen_clear,
     [STATE_ERROR]           = pw_error_init_display,
+	[STATE_FIRST_CONNECT]   = pw_screen_clear,
 };
 
 state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
@@ -91,6 +96,7 @@ state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
 	[STATE_INVENTORY]       = pw_inventory_update_display,
 	[STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
+	[STATE_FIRST_CONNECT]   = pw_empty_event,
 };
 
 static pw_state_t pw_current_state = STATE_SCREENSAVER;

@@ -10,6 +10,7 @@ extern uint8_t decompression_buf[];
 extern pw_packet_t packet_buf;
 
 extern health_data_t health_data_cache;
+extern walker_info_t walker_info_cache;
 
 #define EEPROM_BUF_SIZE         0x100
 #define DECOMPRESSION_BUF_SIZE  0x100

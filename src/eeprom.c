@@ -3,6 +3,10 @@
 #include <stdbool.h>
 
 #include "eeprom.h"
+#include "eeprom_map.h"
+#include "globals.h"
+
+static const char const NINTENDO_STRING[] = "nintendo";
 
 int pw_eeprom_reliable_read(eeprom_addr_t addr1, eeprom_addr_t addr2, uint8_t *buf, size_t len) {
 
@@ -171,9 +175,21 @@ void pw_eeprom_initialise_health_data(bool clear_time) {
     pw_eeprom_reliable_write(
         PW_EEPROM_ADDR_HEALTH_DATA_1,
         PW_EEPROM_ADDR_HEALTH_DATA_2,
-        (uint8_t)(&health_data_cache),
+        (uint8_t*)(&health_data_cache),
         sizeof(health_data_t)
     );
 }
 
+
+bool pw_eeprom_check_for_nintendo() {
+    uint8_t *buf = eeprom_buf;
+    pw_eeprom_read(PW_EEPROM_ADDR_NINTENDO, buf, PW_EEPROM_SIZE_NINTENDO);
+
+    uint8_t i = 0;
+    for(i = 0; i < PW_EEPROM_SIZE_NINTENDO; i++) {
+        if(buf[i] != NINTENDO_STRING[i]) break;
+    }
+
+    return i != PW_EEPROM_SIZE_NINTENDO;
+}
 

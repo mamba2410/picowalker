@@ -32,6 +32,7 @@ add_executable(picowalker
     src/eeprom.h
     src/rand.c
     src/rand.h
+    src/flash.h
     src/ir/compression.c
     src/ir/compression.h
     src/ir/ir.c
@@ -54,6 +55,9 @@ add_executable(picowalker
     src/drivers/pico_timer.c
     src/drivers/pico_extra_storage.S
     src/drivers/pico_extra_storage.h
+    src/drivers/pico_flash.c
+    src/drivers/pico_flash.S
+    src/drivers/pico_flash.h
     src/apps/app_splash.c
     src/apps/app_splash.h
     src/apps/app_trainer_card.c
@@ -62,6 +66,8 @@ add_executable(picowalker
     src/apps/app_inventory.h
     src/apps/app_dowsing.c
     src/apps/app_dowsing.h
+    src/apps/app_first_comms.c
+    src/apps/app_first_comms.h
 )
 
 ## Enable usb, uart etc for stdio

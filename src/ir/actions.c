@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 
 #include <string.h> // memcpy()
 
@@ -15,6 +16,7 @@
 #define ACTION_DELAY_MS 1
 
 ir_err_t pw_ir_eeprom_do_write(pw_packet_t *packet, size_t len);
+ir_err_t pw_ir_identity_ack(pw_packet_t *packet);
 
 /*
  *  Listen for a packet.
@@ -153,43 +155,13 @@ ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
 
             break;
         }
-        case CMD_IDENTITY_SEND_ALIAS1: {
-            packet->cmd   = CMD_IDENTITY_ACK_ALIAS1;
-            packet->extra = EXTRA_BYTE_TO_WALKER;
-
-            //TODO: set the rtc, that's it
-
-            pw_ir_delay_ms(ACTION_DELAY_MS);
-
-            err = pw_ir_send_packet(packet, 8, &n_rw);
-
-            break;
-        }
-        case CMD_IDENTITY_SEND_ALIAS2: {
-            packet->cmd = CMD_IDENTITY_ACK_ALIAS2;
-            packet->extra = EXTRA_BYTE_TO_WALKER;
-
-            //TODO: set the rtc, that's it
-
-            pw_ir_delay_ms(ACTION_DELAY_MS);
-
-            err = pw_ir_send_packet(packet, 8, &n_rw);
-
-            break;
-        }
+        case CMD_IDENTITY_SEND:
+        case CMD_IDENTITY_SEND_ALIAS1:
+        case CMD_IDENTITY_SEND_ALIAS2:
         case CMD_IDENTITY_SEND_ALIAS3: {
-            packet->cmd = CMD_IDENTITY_ACK_ALIAS3;
-            packet->extra = EXTRA_BYTE_TO_WALKER;
-
-            //TODO: set the rtc, that's it
-
-            pw_ir_delay_ms(ACTION_DELAY_MS);
-
-            err = pw_ir_send_packet(packet, 8, &n_rw);
-
+            pw_ir_identity_ack(packet);
             break;
         }
-
         case CMD_EEPROM_WRITE_CMP_00:
         case CMD_EEPROM_WRITE_RAW_00:
         case CMD_EEPROM_WRITE_CMP_80:
@@ -250,13 +222,13 @@ ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
             pw_ir_set_comm_state(COMM_STATE_DISCONNECTED);
             break;
         }
+        case CMD_WALK_START_INIT:
         case CMD_WALK_START: {
-            packet->cmd = CMD_WALK_START;
+            // keep cmd
             packet->extra = EXTRA_BYTE_FROM_WALKER;
             pw_ir_delay_ms(ACTION_DELAY_MS);
             err = pw_ir_send_packet(packet, 8, &n_rw);
             pw_ir_start_walk();
-            //pw_ir_set_comm_state(COMM_STATE_DISCONNECTED);
             break;
         }
         case CMD_DISCONNECT: {
@@ -809,3 +781,23 @@ void pw_log_event(event_log_item_t *event_item) {
     pw_eeprom_write(PW_EEPROM_ADDR_EVENT_LOG, (uint8_t*)event_item, sizeof(*event_item));
 }
 
+
+ir_err_t pw_ir_identity_ack(pw_packet_t *packet) {
+    size_t n_rw;
+    switch(packet->cmd) {
+        case CMD_IDENTITY_SEND:        packet->cmd = CMD_IDENTITY_ACK; break;
+        case CMD_IDENTITY_SEND_ALIAS1: packet->cmd = CMD_IDENTITY_ACK_ALIAS1; break;
+        case CMD_IDENTITY_SEND_ALIAS2: packet->cmd = CMD_IDENTITY_ACK_ALIAS2; break;
+        case CMD_IDENTITY_SEND_ALIAS3: packet->cmd = CMD_IDENTITY_ACK_ALIAS3; break;
+        default: return IR_ERR_UNEXPECTED_PACKET;
+    }
+
+    packet->extra = EXTRA_BYTE_TO_WALKER;
+
+    //TODO: set the rtc, that's it
+
+    pw_ir_delay_ms(ACTION_DELAY_MS);
+
+    ir_err_t err = pw_ir_send_packet(packet, 8, &n_rw);
+    return err;
+}

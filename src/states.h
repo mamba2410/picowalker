@@ -22,6 +22,7 @@ typedef enum {
 	STATE_INVENTORY,
 	STATE_SETTINGS,
     STATE_ERROR,
+    STATE_FIRST_CONNECT,
 	N_STATES,
 } pw_state_t;
 

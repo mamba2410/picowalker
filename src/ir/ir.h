@@ -51,6 +51,7 @@
 #define CMD_WALK_END_REQ        0x4e
 #define CMD_WALK_END_ACK        0x50
 #define CMD_WALK_START          0x5a
+#define CMD_WALK_START_INIT     0x38
 
 #define CMD_EVENT_MAP           0xc0
 #define CMD_EVENT_POKEMON       0xc2
@@ -93,6 +94,7 @@ typedef enum {
     IR_ERR_UNKNOWN_SUBSTATE,
     IR_ERR_UNALIGNED_WRITE,
     IR_ERR_BAD_DATA,
+    IR_ERR_INVALID_MASTER,
     IR_ERR_COUNT,
 } ir_err_t;
 

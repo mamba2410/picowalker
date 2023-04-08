@@ -1,0 +1,14 @@
+#ifndef PW_APP_FIRST_COMMS_H
+#define PW_APP_FIRST_COMMS_H
+
+#include <stdint.h>
+
+enum {
+    FC_SUBSTATE_WAITING,
+    FC_SUBSTATE_CONNECTING,
+    FC_SUBSTATE_TIMEOUT,
+    FC_SUBSTATE_SUCCESS,
+    N_FC_SUBSTATES,
+};
+
+#endif /* PW_APP_FIRST_COMMS_H */
