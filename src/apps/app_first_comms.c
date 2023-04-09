@@ -62,6 +62,9 @@ void pw_first_comms_event_loop(state_vars_t *sv) {
             if(sv->substate_2 == FC_SUBSTATE_TIMEOUT && sv->reg_x == 0) {
                 sv->substate_2 = FC_SUBSTATE_WAITING;
             }
+            if(sv->substate_2 == FC_SUBSTATE_SUCCESS) {
+                pw_request_state(STATE_SPLASH);
+            }
             break;
         }
         default: {

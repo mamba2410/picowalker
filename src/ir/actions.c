@@ -746,7 +746,7 @@ void pw_ir_start_walk() {
 
     info->le_unk1 = info->le_unk0;
     info->le_unk3 = info->le_unk2;
-    info->flags |= 0x2;
+    info->flags |= WALKER_INFO_FLAG_INIT | WALKER_INFO_FLAG_HAS_POKEMON;
 
     pw_eeprom_reliable_write(
         PW_EEPROM_ADDR_IDENTITY_DATA_1,

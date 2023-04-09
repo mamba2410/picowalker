@@ -26,6 +26,7 @@ void walker_entry() {
     pw_srand(0x12345678);
 
     if(!pw_eeprom_check_for_nintendo()) {
+        printf("'nintendo' not found, resetting\n");
         pw_eeprom_reset(true, true);
     }
 
@@ -43,7 +44,7 @@ void walker_entry() {
         sizeof(health_data_cache)
     );
 
-    if(walker_info_cache.flags & 0x01) {
+    if(walker_info_cache.flags & WALKER_INFO_FLAG_INIT) {
         pw_set_state(STATE_SPLASH);
     } else {
         pw_set_state(STATE_FIRST_CONNECT);
