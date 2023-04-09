@@ -32,7 +32,7 @@ void pw_first_comms_init(state_vars_t *sv) {
 
 void pw_first_comms_event_loop(state_vars_t *sv) {
     comm_state_t cs = pw_ir_get_comm_state();
-    ir_err_t err = IR_ERR_GENERAL;
+    ir_err_t err = IR_ERR_UNHANDLED_ERROR;
     size_t n_rw;
 
     switch(cs) {
@@ -68,9 +68,10 @@ void pw_first_comms_event_loop(state_vars_t *sv) {
             break;
         }
         default: {
-                     printf("Error: Unexpected comm state 0x%02x\n", cs);
-                 }
-                                      break;
+            printf("Error: Unexpected comm state 0x%02x\n", cs);
+            err = IR_ERR_UNKNOWN_SUBSTATE;
+            break;
+        }
     } // switch(cs)
 
     if(err != IR_OK) {

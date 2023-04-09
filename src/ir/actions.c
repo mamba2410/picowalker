@@ -48,7 +48,7 @@ ir_err_t pw_action_listen_and_advertise(pw_packet_t *rx, size_t *pn_read, uint8_
  */
 ir_err_t pw_action_try_find_peer(state_vars_t *sv, pw_packet_t *packet, size_t packet_max) {
 
-    ir_err_t err = IR_ERR_GENERAL;
+    ir_err_t err = IR_ERR_UNHANDLED_ERROR;
     size_t n_read = 0;
 
     switch(sv->current_substate) {
@@ -64,7 +64,7 @@ ir_err_t pw_action_try_find_peer(state_vars_t *sv, pw_packet_t *packet, size_t p
                     break;
                 case IR_ERR_TIMEOUT: err = IR_OK; return IR_OK; // ignore timeout
                 case IR_ERR_ADVERTISING_MAX: return IR_ERR_ADVERTISING_MAX;
-                default: return IR_ERR_GENERAL;
+                default: return err; // TODO: change this
             }
 
             //break;
@@ -130,7 +130,7 @@ ir_err_t pw_action_try_find_peer(state_vars_t *sv, pw_packet_t *packet, size_t p
  */
 ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
 
-    ir_err_t err = IR_ERR_GENERAL;
+    ir_err_t err = IR_ERR_UNHANDLED_ERROR;
     size_t n_rw;
 
     switch(packet->cmd) {
@@ -145,9 +145,7 @@ ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
                  PW_EEPROM_SIZE_IDENTITY_DATA_1
              );
 
-            if(r < 0) {
-                return IR_ERR_GENERAL;
-            }
+            if(r < 0) { return IR_ERR_BAD_DATA; }
 
             pw_ir_delay_ms(ACTION_DELAY_MS);
 
@@ -244,12 +242,19 @@ ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
         case CMD_WALKER_RESET_1: {
             packet->extra = EXTRA_BYTE_FROM_WALKER;
             pw_ir_delay_ms(ACTION_DELAY_MS);
-            err = pw_ir_send_packet(packet, 8, &n_rw);
+            pw_eeprom_reliable_read(
+                PW_EEPROM_ADDR_UNIQUE_IDENTITY_DATA_1,
+                PW_EEPROM_ADDR_UNIQUE_IDENTITY_DATA_2,
+                packet->payload,
+                sizeof(unique_identity_data_t)
+            );
+            err = pw_ir_send_packet(packet, 8+sizeof(unique_identity_data_t), &n_rw);
             pw_eeprom_reset(true, false);
             break;
         }
         default: {
             printf("[Error] Slave recv unhandled packet: %02x\n", packet->cmd);
+            err = IR_ERR_UNEXPECTED_PACKET;
             break;
         }
 
@@ -275,7 +280,7 @@ ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
  *  calculate gift
  */
 ir_err_t pw_action_peer_play(state_vars_t *sv, pw_packet_t *packet, size_t max_len) {
-    ir_err_t err = IR_ERR_GENERAL;
+    ir_err_t err = IR_ERR_UNHANDLED_ERROR;
     size_t n_read;
 
     switch(sv->current_substate) {
@@ -506,7 +511,7 @@ ir_err_t pw_action_peer_play(state_vars_t *sv, pw_packet_t *packet, size_t max_l
  */
 ir_err_t pw_action_send_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, size_t final_write_size,
         size_t write_size, uint8_t *pcounter, pw_packet_t *packet, size_t max_len) {
-    ir_err_t err = IR_ERR_GENERAL;
+    ir_err_t err = IR_ERR_UNHANDLED_ERROR;
 
     size_t cur_write_size   = (size_t)(*pcounter) * write_size;
     uint16_t cur_write_addr = dst + cur_write_size;
@@ -588,7 +593,7 @@ ir_err_t pw_action_read_large_raw_data_from_eeprom(uint16_t src, uint16_t dst, s
  */
 ir_err_t pw_action_send_large_raw_data_from_pointer(uint8_t *src, uint16_t dst, size_t final_write_size,
         size_t write_size, uint8_t *pcounter, pw_packet_t *packet, size_t max_len) {
-    ir_err_t err = IR_ERR_GENERAL;
+    ir_err_t err = IR_ERR_UNHANDLED_ERROR;
 
     size_t cur_write_size   = (size_t)(*pcounter) * write_size;
     uint16_t cur_write_addr = dst + cur_write_size;
@@ -667,7 +672,7 @@ void pw_ir_end_walk() {
 
     info.le_unk1 = 0;
     info.le_unk3 = 0;
-    info.flags &= ~0x2;
+    info.flags &= ~WALKER_INFO_FLAG_HAS_POKEMON;
 
     pw_eeprom_reliable_write(
         PW_EEPROM_ADDR_IDENTITY_DATA_1,

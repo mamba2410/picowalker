@@ -28,6 +28,7 @@ const char* const PW_IR_ERR_NAMES[] = {
     [IR_ERR_UNALIGNED_WRITE] = "unaligned eeprom write",
     [IR_ERR_INVALID_MASTER] = "invalid master",
     [IR_ERR_BAD_DATA] = "bad data",
+    [IR_ERR_UNHANDLED_ERROR] = "unhandled error",
 };
 
 

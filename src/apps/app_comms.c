@@ -30,7 +30,7 @@ void pw_comms_init(state_vars_t *sv) {
 void pw_comms_event_loop(state_vars_t *sv) {
 
     comm_state_t cs = pw_ir_get_comm_state();
-    ir_err_t err = IR_ERR_GENERAL;
+    ir_err_t err = IR_ERR_UNHANDLED_ERROR;
     size_t n_rw;
 
     switch(cs) {

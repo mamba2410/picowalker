@@ -37,6 +37,7 @@
 #define CMD_NOCOMPLETE          0x36
 #define CMD_NOCOMPLETE_ALIAS1   0x56
 #define CMD_NOCOMPLETE_ALIAS2   0x64
+#define CMD_NOCOMPLETE_ALIAS3   0x44 // only found from g2w
 #define CMD_NORX                0x9c
 #define CMD_NORX_ACK            0x9e
 #define CMD_CONNECT_COMPLETE    0x66
@@ -96,6 +97,7 @@ typedef enum {
     IR_ERR_UNALIGNED_WRITE,
     IR_ERR_BAD_DATA,
     IR_ERR_INVALID_MASTER,
+    IR_ERR_UNHANDLED_ERROR,
     IR_ERR_COUNT,
 } ir_err_t;
 

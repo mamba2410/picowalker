@@ -155,6 +155,8 @@ void pw_eeprom_reset(bool clear_events, bool clear_steps) {
     }
 
     pw_eeprom_set_area(PW_EEPROM_ADDR_MET_PEER_DATA, 0, PW_EEPROM_SIZE_MET_PEER_DATA);
+
+    pw_eeprom_write(PW_EEPROM_ADDR_NINTENDO, NINTENDO_STRING, PW_EEPROM_SIZE_NINTENDO);
 }
 
 void pw_eeprom_initialise_health_data(bool clear_time) {
