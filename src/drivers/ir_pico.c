@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <hardware/uart.h>
 #include <hardware/gpio.h>
 #include "pico/time.h"
@@ -32,13 +33,15 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
         //printf("%ld ", diff);
     } while( diff < 3742);
 
-    //printf("read: (%d)", cursor);
-    //for(size_t i = 0; i < cursor; i++) {
-    //    if(i%16 == 0) printf("\n");
-    //    if(i%i == 0)  printf(" ");
-    //    printf("%02x", buf[i]^0xaa);
-    //}
-    //printf("\n");
+#ifdef DEBUG_IR
+    printf("read: (%d)", cursor);
+    for(size_t i = 0; i < cursor; i++) {
+        if(i%16 == 0) printf("\n");
+        if(i%i == 0)  printf(" ");
+        printf("%02x", buf[i]^0xaa);
+    }
+    printf("\n");
+#endif
 
     return cursor;
 }
@@ -46,14 +49,20 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
 
 int pw_ir_write(uint8_t *buf, size_t len) {
     size_t i;
-    //printf("write: (%d)", len);
+#ifdef DEBUG_IR
+    printf("write: (%d)", len);
 	for(i = 0; i < len; i++) {
 		uart_putc_raw(IR_UART_ID, buf[i]);
-        //if(i%16 == 0) printf("\n");
-        //if(i%i == 0)  printf(" ");
-        //printf("%02x", buf[i]^0xaa);
+        if(i%16 == 0) printf("\n");
+        if(i%i == 0)  printf(" ");
+        printf("%02x", buf[i]^0xaa);
 	}
-    //printf("\n");
+    printf("\n");
+#else
+	for(i = 0; i < len; i++) {
+		uart_putc_raw(IR_UART_ID, buf[i]);
+	}
+#endif
 
     return i;
 }

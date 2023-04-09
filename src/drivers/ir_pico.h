@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <hardware/uart.h>
 
+//#define DEBUG_IR
 
 #define IR_UART_ID			uart1
 //#define IR_UART_TX_PIN		4   // GP4, phys 6
