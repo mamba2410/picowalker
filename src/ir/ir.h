@@ -46,8 +46,9 @@
 #define CMD_SLAVE_ACK           0xf8
 #define CMD_ASSERT_MASTER       0xfa
 
-#define CMD_WALKER_RESET_REQ    0x2a    // recv this from game
-#define CMD_WALKER_RESET_RSP    0x2c
+#define CMD_WALKER_RESET_0      0x2c    // don't clear events or lifetime
+#define CMD_WALKER_RESET_1      0x2a    // recv this from game, clear events only
+#define CMD_WALKER_RESET_3      0xe0    // clear events + lifetime
 #define CMD_WALK_END_REQ        0x4e
 #define CMD_WALK_END_ACK        0x50
 #define CMD_WALK_START          0x5a

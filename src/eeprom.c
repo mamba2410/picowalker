@@ -190,6 +190,6 @@ bool pw_eeprom_check_for_nintendo() {
         if(buf[i] != NINTENDO_STRING[i]) break;
     }
 
-    return i != PW_EEPROM_SIZE_NINTENDO;
+    return i == PW_EEPROM_SIZE_NINTENDO;
 }
 

@@ -41,6 +41,7 @@ void pw_first_comms_event_loop(state_vars_t *sv) {
             break;
         }
         case COMM_STATE_SLAVE: {
+            printf("Slave waiting\n");
             err = pw_ir_recv_packet(&packet_buf, PACKET_BUF_SIZE, &n_rw);
             if(err == IR_OK || err == IR_ERR_SIZE_MISMATCH) {
                 err = pw_action_slave_perform_request(&packet_buf, n_rw);

@@ -159,7 +159,7 @@ ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
         case CMD_IDENTITY_SEND_ALIAS1:
         case CMD_IDENTITY_SEND_ALIAS2:
         case CMD_IDENTITY_SEND_ALIAS3: {
-            pw_ir_identity_ack(packet);
+            err = pw_ir_identity_ack(packet);
             break;
         }
         case CMD_EEPROM_WRITE_CMP_00:
@@ -239,6 +239,13 @@ ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
         case CMD_NOCOMPLETE_ALIAS1: {
             err = IR_OK;
             pw_ir_set_comm_state(COMM_STATE_DISCONNECTED);
+            break;
+        }
+        case CMD_WALKER_RESET_1: {
+            packet->extra = EXTRA_BYTE_FROM_WALKER;
+            pw_ir_delay_ms(ACTION_DELAY_MS);
+            err = pw_ir_send_packet(packet, 8, &n_rw);
+            pw_eeprom_reset(true, false);
             break;
         }
         default: {

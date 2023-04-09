@@ -13,6 +13,8 @@
 #include "globals.h"
 #include "utils.h"
 #include "ir/ir.h"
+#include "eeprom.h"
+#include "eeprom_map.h"
 
 void walker_entry() {
 
@@ -25,11 +27,27 @@ void walker_entry() {
 
     if(!pw_eeprom_check_for_nintendo()) {
         pw_eeprom_reset(true, true);
-        pw_set_state(STATE_FIRST_CONNECT);
-    } else {
-        pw_set_state(STATE_SPLASH);
     }
 
+    pw_eeprom_reliable_read(
+        PW_EEPROM_ADDR_IDENTITY_DATA_1,
+        PW_EEPROM_ADDR_IDENTITY_DATA_2,
+        (uint8_t*)&walker_info_cache,
+        sizeof(walker_info_cache)
+    );
+
+    pw_eeprom_reliable_read(
+        PW_EEPROM_ADDR_HEALTH_DATA_1,
+        PW_EEPROM_ADDR_HEALTH_DATA_2,
+        (uint8_t*)&health_data_cache,
+        sizeof(health_data_cache)
+    );
+
+    if(walker_info_cache.flags & 0x01) {
+        pw_set_state(STATE_SPLASH);
+    } else {
+        pw_set_state(STATE_FIRST_CONNECT);
+    }
 
     uint64_t now, prev_screen_redraw, td;
     prev_screen_redraw = pw_now_us();
