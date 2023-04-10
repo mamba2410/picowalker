@@ -761,6 +761,7 @@ void pw_ir_start_walk() {
     info->le_unk2 = peer_info_cache.le_unk2;
     info->le_unk3 = info->le_unk2;
 
+    info->flags &= ~WALKER_INFO_FLAG_POKEMON_JOINED;
     info->flags |= WALKER_INFO_FLAG_INIT | WALKER_INFO_FLAG_HAS_POKEMON;
 
     info->le_tid = peer_info_cache.le_tid;
@@ -785,8 +786,8 @@ void pw_ir_start_walk() {
     );
     info = 0;
 
-    // make walk start event
 
+    // make walk start event
 
     event_log_item_t *event_item = malloc(sizeof(*event_item));
 

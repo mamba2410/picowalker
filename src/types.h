@@ -54,7 +54,7 @@ typedef struct {
 
 #define WALKER_INFO_FLAG_INIT           (1<<0)
 #define WALKER_INFO_FLAG_HAS_POKEMON    (1<<1)
-#define WALKER_INFO_FLAG_JOINED_POKEMON (1<<2)
+#define WALKER_INFO_FLAG_POKEMON_JOINED (1<<2)
 
 /*
  *  size: 0x68 = 104 bytes

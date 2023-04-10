@@ -10,18 +10,44 @@
 
 /*
  * Sets sv->reg{a,b,c}
+ *
+ * reg_a = [0]=walking_mon, [1..3]=caught_pokemon, [4]=event_pokemon
+ * reg_b = [1..3]=found_items, [4]=event_item
+ * reg_c = [0..3]=stamps
  */
 void pw_read_inventory(state_vars_t *sv) {
     sv->reg_a = 0;
     sv->reg_b = 0;
     sv->reg_c = 0;
 
-    pokemon_summary_t caught_pokemon;
-    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(&caught_pokemon), sizeof(caught_pokemon));
+    pokemon_summary_t caught_pokemon[3];
+    pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)(caught_pokemon), sizeof(pokemon_summary_t));
 
-    if(caught_pokemon.le_species != 0) {
-        sv->reg_a |= HAVE_POKEMON;
+    if(caught_pokemon[0].le_species != 0 && caught_pokemon[0].le_species != -1) {
+        sv->reg_a |= INV_WALKING_POKEMON;
     }
+
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY,
+        (uint8_t*)caught_pokemon,
+        PW_EEPROM_SIZE_CAUGHT_POKEMON_SUMMARY
+    );
+
+    for(uint8_t i = 0; i < 3; i++) {
+        if(caught_pokemon[i].le_species != 0 && caught_pokemon[i].le_species != -1) {
+            sv->reg_a |= (1<<(i+1));
+        }
+    }
+
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_EVENT_POKEMON_BASIC_DATA,
+        (uint8_t*)(caught_pokemon),
+        sizeof(pokemon_summary_t)
+    );
+    if(caught_pokemon[0].le_species != 0 && caught_pokemon[0].le_species != -1) {
+        sv->reg_a |= INV_EVENT_POKEMON;
+    }
+
 
     struct {
         uint16_t le_item;
@@ -34,9 +60,19 @@ void pw_read_inventory(state_vars_t *sv) {
     );
 
     for(uint8_t i = 0; i < 3; i++) {
-        if(items[i].le_item != 0) {
-            sv->reg_b |= (1<<i);
+        if(items[i].le_item != 0 && items[i].le_item != -1) {
+            sv->reg_b |= (1<<(i+1));
         }
+    }
+
+    pw_eeprom_read(
+        PW_EEPROM_ADDR_EVENT_ITEM,
+        (uint8_t*)items,
+        2
+    );
+
+    if(items[0].le_item != 0 && items[0].le_item != -1) {
+        sv->reg_b |= INV_FOUND_EVENT_ITEM;
     }
 
     uint8_t special_inventory;

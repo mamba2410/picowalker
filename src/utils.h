@@ -7,19 +7,19 @@
 #include "states.h"
 
 
-#define HAVE_POKEMON        (1<<0)  // reg_a
-#define CAUGHT_POKEMON_1    (1<<1)
-#define CAUGHT_POKEMON_2    (1<<2)
-#define CAUGHT_POKEMON_3    (1<<3)
-#define FOUND_ITEM_1        (1<<0)  // reg_b
-#define FOUND_ITEM_2        (1<<1)
-#define FOUND_ITEM_3        (1<<2)
-#define HAVE_HEART          (1<<0)  // reg_c (received_bitfield)
-#define HAVE_SPADE          (1<<1)
-#define HAVE_DIAMOND        (1<<2)
-#define HAVE_CLUB           (1<<3)
-#define HAVE_EVENT_POKEMON  (1<<5)
-#define FOUND_EVENT_ITEM    (1<<6)
+#define INV_WALKING_POKEMON     (1<<0)  // reg_a
+#define INV_CAUGHT_POKEMON_1    (1<<1)
+#define INV_CAUGHT_POKEMON_2    (1<<2)
+#define INV_CAUGHT_POKEMON_3    (1<<3)
+#define INV_EVENT_POKEMON       (1<<4)
+#define INV_FOUND_ITEM_1        (1<<1)  // reg_b
+#define INV_FOUND_ITEM_2        (1<<2)
+#define INV_FOUND_ITEM_3        (1<<3)
+#define INV_FOUND_EVENT_ITEM    (1<<4)
+#define INV_HAVE_HEART          (1<<0)  // reg_c (received_bitfield)
+#define INV_HAVE_SPADE          (1<<1)
+#define INV_HAVE_DIAMOND        (1<<2)
+#define INV_HAVE_CLUB           (1<<3)
 
 inline uint16_t swap_bytes_u16(uint16_t x) {
     uint16_t y = (x>>8) | ((x&0xff)<<8);
