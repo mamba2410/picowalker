@@ -25,8 +25,8 @@
 #define CMD_IDENTITY_RSP        0x22
 #define CMD_IDENTITY_SEND       0x32    // master's identity to slave
 #define CMD_IDENTITY_ACK        0x34
-#define CMD_IDENTITY_SEND_ALIAS1 0x42    // alias for 0x32
-#define CMD_IDENTITY_ACK_ALIAS1  0x44    // resp for 0x42
+#define CMD_IDENTITY_SEND_ALIAS1 0x40    // alias for 0x32
+#define CMD_IDENTITY_ACK_ALIAS1  0x42    // resp for 0x42
 #define CMD_IDENTITY_SEND_ALIAS2 0x52    // alias for 0x32
 #define CMD_IDENTITY_ACK_ALIAS2  0x54    // resp for 0x52
 #define CMD_IDENTITY_SEND_ALIAS3 0x60    // alias for 0x32
@@ -67,6 +67,8 @@
 
 #define CMD_RAM_WRITE   0x06
 
+#define EXTRA_FROM_MASTER       0x01
+#define EXTRA_FROM_SLAVE        0x02
 #define EXTRA_BYTE_FROM_WALKER  0x01
 #define EXTRA_BYTE_TO_WALKER    0x02
 

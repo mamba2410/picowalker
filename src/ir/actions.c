@@ -202,13 +202,6 @@ ir_err_t pw_action_slave_perform_request(pw_packet_t *packet, size_t len) {
             err = pw_ir_send_packet(packet, 8, &n_rw);
             break;
         }
-        case 0x40: {
-            packet->cmd = 0x42;
-            packet->extra = EXTRA_BYTE_FROM_WALKER;
-            pw_ir_delay_ms(ACTION_DELAY_MS);
-            err = pw_ir_send_packet(packet, 8, &n_rw);
-            break;
-        }
         case CMD_WALK_END_REQ: {
             packet->cmd = CMD_WALK_END_ACK;
             packet->extra = EXTRA_BYTE_FROM_WALKER;
@@ -695,9 +688,10 @@ void pw_ir_start_walk() {
 
     uint8_t *buf = eeprom_buf;
     size_t buf_size = EEPROM_BUF_SIZE;
+    int n = 0;
 
     buf[0] = 0xa5;
-    pw_eeprom_reliable_write(
+    n = pw_eeprom_reliable_write(
         PW_EEPROM_ADDR_COPY_MARKER_1,
         PW_EEPROM_ADDR_COPY_MARKER_2,
         buf,
@@ -723,11 +717,22 @@ void pw_ir_start_walk() {
     }
 
     buf[0] = 0x00;
-    pw_eeprom_reliable_write(
+    n = pw_eeprom_reliable_write(
         PW_EEPROM_ADDR_COPY_MARKER_1,
         PW_EEPROM_ADDR_COPY_MARKER_2,
         buf,
         1
+    );
+
+    health_data_cache.be_walk_minute_counter = 0;
+    health_data_cache.event_log_index = 0;
+    health_data_cache.be_current_watts = 0;
+
+    n = pw_eeprom_reliable_write(
+        PW_EEPROM_ADDR_HEALTH_DATA_1,
+        PW_EEPROM_ADDR_HEALTH_DATA_2,
+        (uint8_t*)&health_data_cache,
+        sizeof(health_data_cache)
     );
 
     // this always reads ok, so the write must have been fine
@@ -740,7 +745,8 @@ void pw_ir_start_walk() {
     pw_eeprom_set_area(PW_EEPROM_ADDR_MET_PEER_DATA, 0, 0x1568);
     pw_eeprom_set_area(PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY, 0, 0x64);
 
-    walker_info_t *info = (walker_info_t*)buf;
+    //walker_info_t *info = (walker_info_t*)buf;
+    walker_info_t *info = &walker_info_cache;
 
     pw_eeprom_reliable_read(
         PW_EEPROM_ADDR_IDENTITY_DATA_1,
@@ -749,9 +755,27 @@ void pw_ir_start_walk() {
         PW_EEPROM_SIZE_IDENTITY_DATA_1
     );
 
+
+    info->le_unk0 = peer_info_cache.le_unk0;
     info->le_unk1 = info->le_unk0;
+    info->le_unk2 = peer_info_cache.le_unk2;
     info->le_unk3 = info->le_unk2;
+
     info->flags |= WALKER_INFO_FLAG_INIT | WALKER_INFO_FLAG_HAS_POKEMON;
+
+    info->le_tid = peer_info_cache.le_tid;
+    info->le_sid = peer_info_cache.le_sid;
+
+    for(size_t i = 0; i < 8; i++) {
+        info->le_trainer_name[i] = peer_info_cache.le_trainer_name[i];
+    }
+
+    info->identity_data = peer_info_cache.identity_data;
+
+    info->protocol_ver = peer_info_cache.protocol_ver;
+    info->protocol_subver = peer_info_cache.protocol_subver;
+    info->unk5 = peer_info_cache.unk5;
+    info->unk8 = 0x02;
 
     pw_eeprom_reliable_write(
         PW_EEPROM_ADDR_IDENTITY_DATA_1,
@@ -804,6 +828,10 @@ ir_err_t pw_ir_identity_ack(pw_packet_t *packet) {
         default: return IR_ERR_UNEXPECTED_PACKET;
     }
 
+    for(size_t i = 0; i < sizeof(walker_info_t); i++) {
+        ((uint8_t*)(&peer_info_cache))[i] = packet->payload[i];
+    }
+
     packet->extra = EXTRA_BYTE_TO_WALKER;
 
     //TODO: set the rtc, that's it
@@ -813,3 +841,4 @@ ir_err_t pw_ir_identity_ack(pw_packet_t *packet) {
     ir_err_t err = pw_ir_send_packet(packet, 8, &n_rw);
     return err;
 }
+
