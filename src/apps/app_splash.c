@@ -17,13 +17,22 @@ void pw_splash_init(state_vars_t *sv) {
 }
 
 void pw_splash_handle_input(state_vars_t *sv, uint8_t b) {
-	switch(b) {
-		case BUTTON_M: { pw_menu_set_cursor(sv, (MENU_SIZE-1)/2); break; }
-		case BUTTON_L: { pw_menu_set_cursor(sv, MENU_SIZE-1); break; }
-		case BUTTON_R:
-		default: { pw_menu_set_cursor(sv, 0); break; }
-	}
-	pw_request_state(STATE_MAIN_MENU);
+    switch(b) {
+    case BUTTON_M: {
+        pw_menu_set_cursor(sv, (MENU_SIZE-1)/2);
+        break;
+    }
+    case BUTTON_L: {
+        pw_menu_set_cursor(sv, MENU_SIZE-1);
+        break;
+    }
+    case BUTTON_R:
+    default: {
+        pw_menu_set_cursor(sv, 0);
+        break;
+    }
+    }
+    pw_request_state(STATE_MAIN_MENU);
 }
 
 void pw_splash_init_display(state_vars_t *sv) {
@@ -46,7 +55,7 @@ void pw_splash_init_display(state_vars_t *sv) {
     );
 
     for(uint8_t i = 0; i < 3; i++) {
-        if(sv->reg_a & INV_WALKING_POKEMON) {
+        if(sv->reg_a & (1<<(i+1))) {
             pw_screen_draw_from_eeprom(
                 i*8, SCREEN_HEIGHT-8,
                 8, 8,
