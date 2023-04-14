@@ -140,10 +140,10 @@ void pw_inventory_init(state_vars_t *sv) {
 
     // count presents
     for(
-            inventory.n_presents = 0;
-            inventory.le_presents[inventory.n_presents] != 0 && inventory.n_presents < 10;
-            inventory.n_presents++
-        ) ;
+        inventory.n_presents = 0;
+        inventory.le_presents[inventory.n_presents] != 0 && inventory.n_presents < 10;
+        inventory.n_presents++
+    ) ;
 
     if(inventory.le_found[0] == 0) {
         pw_inventory_move_cursor(sv, 1);
@@ -173,15 +173,21 @@ void pw_inventory_update_display(state_vars_t *sv) {
 
 void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
     switch(b) {
-        case BUTTON_L: { pw_inventory_move_cursor(sv, -1); break; };
-        case BUTTON_M: {
-            if(sv->current_substate == SUBSCREEN_FOUND && inventory.n_presents > 0) {
-                sv->current_substate = SUBSCREEN_PRESENTS;
-            } else {
-                pw_request_state(STATE_SPLASH);
-            }
-        };
-        case BUTTON_R: { pw_inventory_move_cursor(sv, +1); break; };
+    case BUTTON_L: {
+        pw_inventory_move_cursor(sv, -1);
+        break;
+    };
+    case BUTTON_M: {
+        if(sv->current_substate == SUBSCREEN_FOUND && inventory.n_presents > 0) {
+            sv->current_substate = SUBSCREEN_PRESENTS;
+        } else {
+            pw_request_state(STATE_SPLASH);
+        }
+    };
+    case BUTTON_R: {
+        pw_inventory_move_cursor(sv, +1);
+        break;
+    };
     };
 
 }
@@ -202,39 +208,41 @@ void pw_inventory_handle_input(state_vars_t *sv, uint8_t b) {
 static void pw_inventory_move_cursor(state_vars_t *sv, int8_t m) {
 
     switch(sv->current_substate) {
-        case SUBSCREEN_FOUND: {
-            uint16_t is_filled = 0;
+    case SUBSCREEN_FOUND: {
+        uint16_t is_filled = 0;
 
-            // move cursor by `m` until it hits a nonzero bit, cursor<0 or cursor>=10
-            do {
-                sv->current_cursor += m;
-                is_filled = inventory.le_found[sv->current_cursor] != 0;
-            } while( (!is_filled) && (sv->current_cursor>=0) && (sv->current_cursor<=9) );
-
-            if(sv->current_cursor < 0) {
-                sv->current_cursor = 4;
-                pw_request_state(STATE_MAIN_MENU); // back to main menu
-            }
-            if(sv->current_cursor > 9) {
-                sv->current_substate = SUBSCREEN_PRESENTS;  // change to presents screen
-                sv->current_cursor = 0;
-            }
-            break;
-        }
-        case SUBSCREEN_PRESENTS: {
+        // move cursor by `m` until it hits a nonzero bit, cursor<0 or cursor>=10
+        do {
             sv->current_cursor += m;
-            if(sv->current_cursor < 0) {
-                sv->current_substate = SUBSCREEN_FOUND;
-                sv->current_cursor = 10;
-                pw_inventory_move_cursor(sv, -1);   // laziest way of setting cursor to last non-empty slot
-            }
+            is_filled = inventory.le_found[sv->current_cursor] != 0
+                        && inventory.le_found[sv->current_cursor] != 0xffff;
+        } while( (!is_filled) && (sv->current_cursor>=0) && (sv->current_cursor<=9) );
 
-            if(sv->current_cursor >= inventory.n_presents)
-                sv->current_cursor = inventory.n_presents-1;
-
-            break;
+        if(sv->current_cursor < 0) {
+            sv->current_cursor = 4;
+            pw_request_state(STATE_MAIN_MENU); // back to main menu
         }
-        default: break;
+        if(sv->current_cursor > 9) {
+            sv->current_substate = SUBSCREEN_PRESENTS;  // change to presents screen
+            sv->current_cursor = 0;
+        }
+        break;
+    }
+    case SUBSCREEN_PRESENTS: {
+        sv->current_cursor += m;
+        if(sv->current_cursor < 0) {
+            sv->current_substate = SUBSCREEN_FOUND;
+            sv->current_cursor = 10;
+            pw_inventory_move_cursor(sv, -1);   // laziest way of setting cursor to last non-empty slot
+        }
+
+        if(sv->current_cursor >= inventory.n_presents)
+            sv->current_cursor = inventory.n_presents-1;
+
+        break;
+    }
+    default:
+        break;
     }
 
     pw_request_redraw();
@@ -247,20 +255,21 @@ static void draw_cursor(state_vars_t *sv) {
     uint8_t x0 = 16, y0 = 24;
 
     switch(sv->current_substate) {
-        case SUBSCREEN_FOUND: {
-            cx = xs[ (sv->current_cursor)%5 ];
-            cy = (sv->current_cursor>5)?yi:yp;
-            cy -= 8;
+    case SUBSCREEN_FOUND: {
+        cx = xs[ (sv->current_cursor)%5 ];
+        cy = (sv->current_cursor>5)?yi:yp;
+        cy -= 8;
 
-            break;
-        }
-        case SUBSCREEN_PRESENTS: {
-            cx = x0 + 8*(sv->current_cursor%5);
-            cy = y0 + 16*(sv->current_cursor/5) - 8;
+        break;
+    }
+    case SUBSCREEN_PRESENTS: {
+        cx = x0 + 8*(sv->current_cursor%5);
+        cy = y0 + 16*(sv->current_cursor/5) - 8;
 
-            break;
-        }
-        default: break;
+        break;
+    }
+    default:
+        break;
     }
 
     uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
@@ -299,7 +308,9 @@ static void draw_animated_sprite(state_vars_t *sv) {
     }
 
     pw_inventory_index_to_data(sv, buf, idx, type);
-    sprite = (pw_img_t){.data=buf, .width=32, .height=24, .size=size};
+    sprite = (pw_img_t) {
+        .data=buf, .width=32, .height=24, .size=size
+    };
     pw_screen_draw_img(&sprite, SCREEN_WIDTH-32-4, SCREEN_HEIGHT-16-24);
 
 }
@@ -328,7 +339,7 @@ static void draw_name(state_vars_t *sv) {
     }
 
     uint16_t data = (sv->current_substate==SUBSCREEN_FOUND)?
-        inventory.le_found[sv->current_cursor]:inventory.le_presents[sv->current_cursor];
+                    inventory.le_found[sv->current_cursor]:inventory.le_presents[sv->current_cursor];
 
     idx = pw_inventory_find_index(sv, data, type);
     pw_inventory_index_to_data(sv, buf, idx, type);
@@ -375,21 +386,21 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
 
     // draw normal pokeballs
     for(uint8_t i = 0; i < 4; i++) {
-        if( inventory.le_found[i] != 0 ) {
+        if( inventory.le_found[i] != 0 && inventory.le_found[i] != 0xffff) {
             pw_screen_draw_img(&pokeball, xs[i], yp);
         }
     }
 
     // draw normal items
     for(uint8_t i = 5; i < 9; i++) {
-        if( inventory.le_found[i] != 0 ) {
+        if( inventory.le_found[i] != 0 && inventory.le_found[i] != 0xffff) {
             pw_screen_draw_img(&item, xs[i%5], yi);
         }
     }
 
 
     // draw special pokeball
-    if( inventory.le_found[4] != 0 ) {
+    if( inventory.le_found[4] != 0 && inventory.le_found[4] != 0xffff) {
         pw_screen_draw_from_eeprom(
             xs[4], yp,
             8, 8,
@@ -399,7 +410,7 @@ static void pw_inventory_draw_screen1(state_vars_t *sv) {
     }
 
     // draw special item
-    if(inventory.le_found[9] != 0) {
+    if(inventory.le_found[9] != 0 && inventory.le_found[9] != 0xffff) {
         pw_screen_draw_from_eeprom(
             xs[4], yi,
             8, 8,
@@ -444,9 +455,9 @@ static void pw_inventory_draw_screen2(state_vars_t *sv) {
     uint8_t x0 = 16, y0 = 24;
     for(uint8_t i = 0; i < inventory.n_presents; i++) {
         pw_screen_draw_img(&item,
-            x0 + 8*(i%5),
-            y0 + 16*(i/5)
-        );
+                           x0 + 8*(i%5),
+                           y0 + 16*(i/5)
+                          );
     }
 
     // don't draw this if we don't have presents
@@ -521,136 +532,136 @@ static uint8_t pw_inventory_find_index(state_vars_t *sv, uint16_t data, enum sea
     uint8_t idx;
 
     switch(type) {
-        case SEARCH_POKEMON_SPRITE:
-        case SEARCH_POKEMON_NAME: {
-            // pokemon name
-            uint16_t le_species = data;
+    case SEARCH_POKEMON_SPRITE:
+    case SEARCH_POKEMON_NAME: {
+        // pokemon name
+        uint16_t le_species = data;
 
-            pokemon_summary_t route_pokemon[3];
+        pokemon_summary_t route_pokemon[3];
+        pw_eeprom_read(
+            PW_EEPROM_ADDR_ROUTE_INFO+0x52, // get route available pokemon
+            (uint8_t*)(route_pokemon),
+            3*sizeof(pokemon_summary_t)
+        );
+
+        for(idx = 0; idx < 3; idx++)
+            if(route_pokemon[idx].le_species == le_species) break;
+
+        if(idx == 3) {
             pw_eeprom_read(
-                PW_EEPROM_ADDR_ROUTE_INFO+0x52, // get route available pokemon
-                (uint8_t*)(route_pokemon),
-                3*sizeof(pokemon_summary_t)
+                PW_EEPROM_ADDR_ROUTE_INFO+0x00,
+                (uint8_t*)route_pokemon,
+                sizeof(pokemon_summary_t)
             );
-
-            for(idx = 0; idx < 3; idx++)
-                if(route_pokemon[idx].le_species == le_species) break;
-
-            if(idx == 3) {
-                pw_eeprom_read(
-                    PW_EEPROM_ADDR_ROUTE_INFO+0x00,
-                    (uint8_t*)route_pokemon,
-                    sizeof(pokemon_summary_t)
-                );
-                if(route_pokemon[0].le_species == le_species)
-                    idx = 4;
-            }
-
-            // idx == 3 means special pokemon
-            break;
+            if(route_pokemon[0].le_species == le_species)
+                idx = 4;
         }
-        case SEARCH_ITEM_NAME: {
-            // item name
-            uint16_t le_item = data;
 
-            struct {
-                uint16_t le_item;
-            } items[10];
+        // idx == 3 means special pokemon
+        break;
+    }
+    case SEARCH_ITEM_NAME: {
+        // item name
+        uint16_t le_item = data;
 
-            pw_eeprom_read(
-                PW_EEPROM_ADDR_ROUTE_INFO+0x8c,
-                (uint8_t*)(items),
-                sizeof(items)
-            );
+        struct {
+            uint16_t le_item;
+        } items[10];
 
-            for(idx = 0; idx < 10; idx++) {
-                if(items[idx].le_item == le_item) break;
-            }
+        pw_eeprom_read(
+            PW_EEPROM_ADDR_ROUTE_INFO+0x8c,
+            (uint8_t*)(items),
+            sizeof(items)
+        );
 
-            break;
-            // idx == 11 means special item
+        for(idx = 0; idx < 10; idx++) {
+            if(items[idx].le_item == le_item) break;
         }
-        case SEARCH_ITEM_SPRITE:
-        default: {
-            idx = 0;
-            break;
-        }
+
+        break;
+        // idx == 11 means special item
+    }
+    case SEARCH_ITEM_SPRITE:
+    default: {
+        idx = 0;
+        break;
+    }
     }
     return idx;
 }
 
 static void pw_inventory_index_to_data(state_vars_t *sv, uint8_t *buf, uint8_t idx, enum search_type type) {
     switch(type) {
-        case SEARCH_POKEMON_SPRITE: {
-            if(idx < 3) {
-                pw_eeprom_read(
-                    PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED+(2*idx+sv->anim_frame)*PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME,
-                    buf,
-                    PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                );
-            } else if (idx == 3){
-                pw_eeprom_read(
-                    PW_EEPROM_ADDR_IMG_EVENT_POKEMON_SMALL_ANIMATED,
-                    buf,
-                    PW_EEPROM_SIZE_IMG_EVENT_POKEMON_SMALL_ANIMATED_FRAME
-                );
-            } else {
-                // walk pokemon
-                pw_eeprom_read(
-                    PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED+sv->anim_frame*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME,
-                    buf,
-                    PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
-                );
-            }
-            break;
-        }
-        case SEARCH_ITEM_NAME: {
-            if(idx < 10) {
-                pw_eeprom_read(
-                    PW_EEPROM_ADDR_TEXT_ITEM_NAMES+idx*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
-                    buf,
-                    PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
-                );
-            } else {
-                pw_eeprom_read(
-                    PW_EEPROM_ADDR_TEXT_EVENT_ITEM_NAME,
-                    buf,
-                    PW_EEPROM_SIZE_TEXT_EVENT_ITEM_NAME
-                );
-            }
-
-            break;
-        }
-        case SEARCH_POKEMON_NAME: {
-            if(idx < 3) {
-                pw_eeprom_read(
-                    PW_EEPROM_ADDR_TEXT_POKEMON_NAMES+idx*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
-                    buf,
-                    PW_EEPROM_SIZE_TEXT_POKEMON_NAME
-                );
-            } else if(idx == 3) {
-                pw_eeprom_read(
-                    PW_EEPROM_ADDR_TEXT_EVENT_POKEMON_NAME,
-                    buf,
-                    PW_EEPROM_SIZE_TEXT_EVENT_POKEMON_NAME
-                );
-            } else {
-                pw_eeprom_read(
-                    PW_EEPROM_ADDR_TEXT_POKEMON_NAME,
-                    buf,
-                    PW_EEPROM_SIZE_TEXT_POKEMON_NAME
-                );
-            }
-            break;
-        }
-        case SEARCH_ITEM_SPRITE: {
+    case SEARCH_POKEMON_SPRITE: {
+        if(idx < 3) {
             pw_eeprom_read(
-                PW_EEPROM_ADDR_IMG_TREASURE_LARGE,
+                PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED+(2*idx+sv->anim_frame)*PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME,
                 buf,
-                PW_EEPROM_SIZE_IMG_TREASURE_LARGE
+                PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
             );
-            break;
+        } else if (idx == 3) {
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_IMG_EVENT_POKEMON_SMALL_ANIMATED,
+                buf,
+                PW_EEPROM_SIZE_IMG_EVENT_POKEMON_SMALL_ANIMATED_FRAME
+            );
+        } else {
+            // walk pokemon
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED+sv->anim_frame*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME,
+                buf,
+                PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
+            );
         }
+        break;
+    }
+    case SEARCH_ITEM_NAME: {
+        if(idx < 10) {
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_TEXT_ITEM_NAMES+idx*PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE,
+                buf,
+                PW_EEPROM_SIZE_TEXT_ITEM_NAME_SINGLE
+            );
+        } else {
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_TEXT_EVENT_ITEM_NAME,
+                buf,
+                PW_EEPROM_SIZE_TEXT_EVENT_ITEM_NAME
+            );
+        }
+
+        break;
+    }
+    case SEARCH_POKEMON_NAME: {
+        if(idx < 3) {
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_TEXT_POKEMON_NAMES+idx*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
+                buf,
+                PW_EEPROM_SIZE_TEXT_POKEMON_NAME
+            );
+        } else if(idx == 3) {
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_TEXT_EVENT_POKEMON_NAME,
+                buf,
+                PW_EEPROM_SIZE_TEXT_EVENT_POKEMON_NAME
+            );
+        } else {
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_TEXT_POKEMON_NAME,
+                buf,
+                PW_EEPROM_SIZE_TEXT_POKEMON_NAME
+            );
+        }
+        break;
+    }
+    case SEARCH_ITEM_SPRITE: {
+        pw_eeprom_read(
+            PW_EEPROM_ADDR_IMG_TREASURE_LARGE,
+            buf,
+            PW_EEPROM_SIZE_IMG_TREASURE_LARGE
+        );
+        break;
+    }
     }   // switch
 }
 
