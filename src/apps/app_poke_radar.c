@@ -63,33 +63,33 @@ void pw_poke_radar_init(state_vars_t *sv) {
 
 void pw_poke_radar_init_display(state_vars_t *sv) {
     switch(sv->current_substate) {
-        case RADAR_CHOOSING: {
-            pw_img_t bush = {.width=32, .height=24, .data=eeprom_buf, .size=192};
-            pw_eeprom_read(PW_EEPROM_ADDR_IMG_RADAR_BUSH, eeprom_buf, PW_EEPROM_SIZE_IMG_RADAR_BUSH);
+    case RADAR_CHOOSING: {
+        pw_img_t bush = {.width=32, .height=24, .data=eeprom_buf, .size=192};
+        pw_eeprom_read(PW_EEPROM_ADDR_IMG_RADAR_BUSH, eeprom_buf, PW_EEPROM_SIZE_IMG_RADAR_BUSH);
 
-            for(uint8_t i = 0; i < 4; i++)
-                pw_screen_draw_img(&bush, bush_xs[i], bush_ys[i]);
+        for(uint8_t i = 0; i < 4; i++)
+            pw_screen_draw_img(&bush, bush_xs[i], bush_ys[i]);
 
-            pw_screen_draw_message(SCREEN_HEIGHT-16, 28, 16); // "find a pokemon!"
+        pw_screen_draw_message(SCREEN_HEIGHT-16, 28, 16); // "find a pokemon!"
 
-            break;
-        }
-        case RADAR_BUSH_OK: {
-            pw_screen_draw_from_eeprom(
-                bush_xs[sv->cursor_2]+16, bush_ys[sv->cursor_2],
-                16, 16,
-                PW_EEPROM_ADDR_IMG_RADAR_CLICK,
-                PW_EEPROM_SIZE_IMG_RADAR_CLICK
-            );
-            break;
-        }
-        case RADAR_FAILED: {
-            pw_screen_draw_message(SCREEN_HEIGHT-16, 30, 16); // "it got away"
-            break;
-        }
-        case RADAR_START_BATTLE: {
-            break;
-        }
+        break;
+    }
+    case RADAR_BUSH_OK: {
+        pw_screen_draw_from_eeprom(
+            bush_xs[sv->cursor_2]+16, bush_ys[sv->cursor_2],
+            16, 16,
+            PW_EEPROM_ADDR_IMG_RADAR_CLICK,
+            PW_EEPROM_SIZE_IMG_RADAR_CLICK
+        );
+        break;
+    }
+    case RADAR_FAILED: {
+        pw_screen_draw_message(SCREEN_HEIGHT-16, 30, 16); // "it got away"
+        break;
+    }
+    case RADAR_START_BATTLE: {
+        break;
+    }
     }
 }
 
@@ -102,123 +102,123 @@ void pw_poke_radar_update_display(state_vars_t *sv) {
 
 
     switch(sv->current_substate) {
-        case RADAR_CHOOSING: {
-            draw_cursor_update(sv);
+    case RADAR_CHOOSING: {
+        draw_cursor_update(sv);
 
-            if(sv->reg_x > 0) {
-                sv->reg_x--;
-                break;
-            }
-
-            pw_screen_draw_from_eeprom(
-                bush_xs[sv->cursor_2]+16, bush_ys[sv->cursor_2],
-                16, 16,
-                PW_EEPROM_ADDR_IMG_RADAR_BUBBLE_ONE + radar_level_to_index[sv->reg_c]*PW_EEPROM_SIZE_IMG_RADAR_BUBBLE_ONE,
-                PW_EEPROM_SIZE_IMG_RADAR_BUBBLE_ONE
-            );
-
-            if(sv->reg_y > 0) {
-                sv->reg_y--;
-                break;
-            }
-
+        if(sv->reg_x > 0) {
+            sv->reg_x--;
             break;
         }
-        case RADAR_BUSH_OK: {
-            draw_cursor_update(sv);
-            if(sv->reg_x > 0)
-                sv->reg_x--;
+
+        pw_screen_draw_from_eeprom(
+            bush_xs[sv->cursor_2]+16, bush_ys[sv->cursor_2],
+            16, 16,
+            PW_EEPROM_ADDR_IMG_RADAR_BUBBLE_ONE + radar_level_to_index[sv->reg_c]*PW_EEPROM_SIZE_IMG_RADAR_BUBBLE_ONE,
+            PW_EEPROM_SIZE_IMG_RADAR_BUBBLE_ONE
+        );
+
+        if(sv->reg_y > 0) {
+            sv->reg_y--;
             break;
         }
-        case RADAR_FAILED: {
-            draw_cursor_update(sv);
-            break;
-        }
-        case RADAR_START_BATTLE: {
-            pw_screen_fill_area(0, sv->reg_x*8, SCREEN_WIDTH, 8, SCREEN_BLACK);
-            pw_screen_fill_area(0, SCREEN_HEIGHT-(sv->reg_x+1)*8, SCREEN_WIDTH, 8, SCREEN_BLACK);
-            sv->reg_x++;
-            break;
-        }
+
+        break;
+    }
+    case RADAR_BUSH_OK: {
+        draw_cursor_update(sv);
+        if(sv->reg_x > 0)
+            sv->reg_x--;
+        break;
+    }
+    case RADAR_FAILED: {
+        draw_cursor_update(sv);
+        break;
+    }
+    case RADAR_START_BATTLE: {
+        pw_screen_fill_area(0, sv->reg_x*8, SCREEN_WIDTH, 8, SCREEN_BLACK);
+        pw_screen_fill_area(0, SCREEN_HEIGHT-(sv->reg_x+1)*8, SCREEN_WIDTH, 8, SCREEN_BLACK);
+        sv->reg_x++;
+        break;
+    }
     }
 }
 
 void pw_poke_radar_handle_input(state_vars_t *sv, uint8_t b) {
     switch(sv->current_substate) {
-        case RADAR_CHOOSING: {
-            switch(b) {
-                case BUTTON_L: {
-                    sv->current_cursor = (sv->current_cursor-1)%4;
-                    break;
-                }
-                case BUTTON_R: {
-                    sv->current_cursor = (sv->current_cursor+1)%4;
-                    break;
-                }
-                case BUTTON_M: {
-                    if(sv->current_cursor == sv->cursor_2) {
-                        sv->current_substate = RADAR_BUSH_OK;
-                        sv->reg_x = sv->reg_y = 3;
-                    } else {
-                        sv->current_substate = RADAR_FAILED;
-                    }
-                    break;
-                }
+    case RADAR_CHOOSING: {
+        switch(b) {
+        case BUTTON_L: {
+            sv->current_cursor = (sv->current_cursor-1)%4;
+            break;
+        }
+        case BUTTON_R: {
+            sv->current_cursor = (sv->current_cursor+1)%4;
+            break;
+        }
+        case BUTTON_M: {
+            if(sv->current_cursor == sv->cursor_2) {
+                sv->current_substate = RADAR_BUSH_OK;
+                sv->reg_x = sv->reg_y = 3;
+            } else {
+                sv->current_substate = RADAR_FAILED;
             }
-            pw_request_redraw();
             break;
         }
-        case RADAR_BUSH_OK: {
-            break;
         }
-        case RADAR_FAILED: {
-            pw_request_state(STATE_SPLASH);
-            break;
-        }
-        case RADAR_START_BATTLE: {
-            pw_request_state(STATE_SPLASH);
-            break;
-        }
+        pw_request_redraw();
+        break;
+    }
+    case RADAR_BUSH_OK: {
+        break;
+    }
+    case RADAR_FAILED: {
+        pw_request_state(STATE_SPLASH);
+        break;
+    }
+    case RADAR_START_BATTLE: {
+        pw_request_state(STATE_BATTLE);
+        break;
+    }
     }
 }
 
 void pw_poke_radar_event_loop(state_vars_t *sv) {
     switch(sv->current_substate) {
-        case RADAR_CHOOSING: {
-            if(sv->reg_x == 0 && sv->reg_y == 0) {
-                sv->current_substate = RADAR_FAILED;
-                pw_request_redraw();
-            }
-            break;
+    case RADAR_CHOOSING: {
+        if(sv->reg_x == 0 && sv->reg_y == 0) {
+            sv->current_substate = RADAR_FAILED;
+            pw_request_redraw();
         }
-        case RADAR_BUSH_OK: {
-            if(sv->reg_x == 0) {
+        break;
+    }
+    case RADAR_BUSH_OK: {
+        if(sv->reg_x == 0) {
 
-                if(sv->reg_c >= sv->reg_b) {
-                    //  move to battle state
-                    sv->reg_x = 0;
-                    sv->current_substate = RADAR_START_BATTLE;
-                    break;
-                }
+            if(sv->reg_c >= sv->reg_b) {
+                //  move to battle state
+                sv->reg_x = 0;
+                sv->current_substate = RADAR_START_BATTLE;
+                break;
+            }
 
-                sv->cursor_2 = pw_rand()%4;
-                sv->reg_c++;                // inc exclamation level
-                sv->current_substate = RADAR_CHOOSING;
-                sv->reg_x = 2+(pw_rand()%10)/invisible_timer_divisors[sv->reg_c];
-                sv->reg_y = active_timers[sv->reg_c];
-                pw_request_redraw();
-            }
-            break;
+            sv->cursor_2 = pw_rand()%4;
+            sv->reg_c++;                // inc exclamation level
+            sv->current_substate = RADAR_CHOOSING;
+            sv->reg_x = 2+(pw_rand()%10)/invisible_timer_divisors[sv->reg_c];
+            sv->reg_y = active_timers[sv->reg_c];
+            pw_request_redraw();
         }
-        case RADAR_FAILED: {
-            break;
+        break;
+    }
+    case RADAR_FAILED: {
+        break;
+    }
+    case RADAR_START_BATTLE: {
+        if(sv->reg_x == 4) {
+            pw_request_state(STATE_BATTLE);
         }
-        case RADAR_START_BATTLE: {
-            if(sv->reg_x == 4) {
-                pw_request_state(STATE_SPLASH);
-            }
-            break;
-        }
+        break;
+    }
     }
 
 }

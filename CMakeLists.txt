@@ -68,6 +68,8 @@ add_executable(picowalker
     src/apps/app_dowsing.h
     src/apps/app_poke_radar.c
     src/apps/app_poke_radar.h
+    src/apps/app_battle.c
+    src/apps/app_battle.h
 )
 
 ## Enable usb, uart etc for stdio

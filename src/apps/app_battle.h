@@ -7,6 +7,12 @@
 #include "../states.h"
 
 enum battle_state {
+    BATTLE_OPENING,
+    BATTLE_APPEARED,
+    BATTLE_CHOOSING,
+    BATTLE_OUR_ACTION,
+    BATTLE_THEIR_ACTION,
+    BATTLE_CATCH,
     N_BATTLE_STATES,
 };
 
