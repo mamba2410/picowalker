@@ -14,6 +14,7 @@
 #include "apps/app_dowsing.h"
 #include "apps/app_poke_radar.h"
 #include "apps/app_battle.h""
+#include "apps/app_first_comms.h"
 
 const char* const state_strings[N_STATES] = {
     [STATE_SCREENSAVER]     = "Screensaver",
@@ -35,14 +36,13 @@ state_event_func_t* const state_init_funcs[N_STATES] = {
     [STATE_MAIN_MENU]       = pw_menu_init,
     [STATE_POKE_RADAR]      = pw_poke_radar_init,
     [STATE_BATTLE]          = pw_battle_init,
-    [STATE_DOWSING]         = pw_empty_event,
-    [STATE_CONNECT]         = pw_comms_init,
     [STATE_DOWSING]         = pw_dowsing_init,
     [STATE_CONNECT]         = pw_comms_init,
     [STATE_TRAINER_CARD]    = pw_trainer_card_init,
     [STATE_INVENTORY]       = pw_inventory_init,
     [STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
+    [STATE_FIRST_CONNECT]   = pw_first_comms_init,
 };
 
 state_event_func_t* const state_event_loop_funcs[N_STATES] = {
@@ -57,6 +57,7 @@ state_event_func_t* const state_event_loop_funcs[N_STATES] = {
     [STATE_INVENTORY]       = pw_empty_event,
     [STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
+    [STATE_FIRST_CONNECT]   = pw_first_comms_event_loop,
 };
 
 state_input_func_t* const state_input_funcs[N_STATES] = {
@@ -71,6 +72,7 @@ state_input_func_t* const state_input_funcs[N_STATES] = {
     [STATE_INVENTORY]       = pw_inventory_handle_input,
     [STATE_SETTINGS]        = pw_send_to_error,
     [STATE_ERROR]           = pw_send_to_splash,
+    [STATE_FIRST_CONNECT]   = pw_first_comms_handle_input,
 };
 
 state_draw_func_t* const state_draw_init_funcs[] = {
@@ -85,6 +87,7 @@ state_draw_func_t* const state_draw_init_funcs[] = {
     [STATE_INVENTORY]       = pw_inventory_init_display,
     [STATE_SETTINGS]        = pw_screen_clear,
     [STATE_ERROR]           = pw_error_init_display,
+    [STATE_FIRST_CONNECT]   = pw_first_comms_init_display,
 };
 
 state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
@@ -99,6 +102,7 @@ state_draw_func_t* const state_draw_update_funcs[N_STATES] = {
     [STATE_INVENTORY]       = pw_inventory_update_display,
     [STATE_SETTINGS]        = pw_empty_event,
     [STATE_ERROR]           = pw_empty_event,
+    [STATE_FIRST_CONNECT]   = pw_first_comms_draw_update,
 };
 
 static pw_state_t pw_current_state = STATE_SCREENSAVER;

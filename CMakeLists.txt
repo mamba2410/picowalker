@@ -43,8 +43,6 @@ add_executable(picowalker
     src/drivers/ssd1327.h
     src/drivers/ir_pico.c
     src/drivers/ir_pico.h
-    src/apps/app_comms.c
-    src/apps/app_comms.h
     src/drivers/pico_buttons.c
     src/drivers/pico_buttons.h
     #src/drivers/eeprom_pico_ram.S
@@ -70,6 +68,10 @@ add_executable(picowalker
     src/apps/app_poke_radar.h
     src/apps/app_battle.c
     src/apps/app_battle.h
+    src/apps/app_comms.c
+    src/apps/app_comms.h
+    src/apps/app_first_comms.c
+    src/apps/app_first_comms.h
 )
 
 ## Enable usb, uart etc for stdio
