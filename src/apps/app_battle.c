@@ -26,6 +26,15 @@ enum {
 
 static uint8_t substate_queue[4];
 
+// what happens to `cur` hp given both actions
+// valid for both us vs. them and them vs. us
+static const uint8_t HP_MATRIX[3][3] = {
+    //                foe attack, foe evade,  foe crit
+    /* cur attack */ {         1,         1,         2},
+    /* cur evade  */ {         0,         0,         0},
+    /* cur crit   */ {         1,         1,         2},
+};
+
 /*
  *  Note: same animations for attack and evade
  *  just flip ours/theirs on evade
@@ -80,6 +89,15 @@ void pw_battle_event_loop(state_vars_t *sv) {
         if(sv->reg_x == 1) {
             uint8_t our_action = (sv->reg_b&OUR_ACTION_MASK)>>OUR_ACTION_OFFSET;
             uint8_t their_action = (sv->reg_b&THEIR_ACTION_MASK)>>THEIR_ACTION_OFFSET;
+
+            uint8_t our_hp = (sv->reg_d&OUR_HP_MASK)>>OUR_HP_OFFSET;
+            uint8_t their_hp = (sv->reg_d&THEIR_HP_MASK)>>THEIR_HP_OFFSET;
+
+            our_hp   -= HP_MATRIX[our_action][their_action];
+            their_hp -= HP_MATRIX[their_action][our_action];
+
+            sv->reg_d = our_hp<<OUR_HP_OFFSET | their_hp<<THEIR_HP_OFFSET;
+
             // TODO: make this a 3x3 matrix/LUT? in=actions, out=substate
             if(our_action == ACTION_EVADE) {
                 if(their_action == ACTION_EVADE) {
@@ -87,6 +105,7 @@ void pw_battle_event_loop(state_vars_t *sv) {
                     substate_queue[0] = BATTLE_CHOOSING;
                     sv->reg_x = 0;
                 } else {
+
                     substate_queue[0] = BATTLE_THEIR_ACTION;
                     substate_queue[1] = BATTLE_OUR_ACTION;
                     substate_queue[2] = BATTLE_CHOOSING;
@@ -108,6 +127,7 @@ void pw_battle_event_loop(state_vars_t *sv) {
             sv->reg_c = 0;
             pw_battle_switch_substate(sv, substate_queue[sv->reg_x-1]);
         }
+        break;
     }
 
     }
@@ -325,6 +345,8 @@ void pw_battle_update_display(state_vars_t *sv) {
                     PW_EEPROM_ADDR_IMG_RADAR_CRITICAL_HIT
                 );
             }
+            uint8_t hp = (sv->reg_d&THEIR_HP_MASK)>>THEIR_HP_OFFSET;
+            pw_screen_clear_area(8*(hp+1), 24, 8*(4-hp), 8);
         } else {
             pw_screen_clear_area(
                 (SCREEN_WIDTH-16)/2, 0,
@@ -351,6 +373,10 @@ void pw_battle_update_display(state_vars_t *sv) {
                 );
             }
             // they can't crit
+
+            uint8_t hp = (sv->reg_d&OUR_HP_MASK)>>OUR_HP_OFFSET;
+            pw_screen_clear_area(SCREEN_WIDTH/2+8*(hp+1), 0, 8*(4-hp), 8);
+
         } else {
             pw_screen_clear_area(
                 (SCREEN_WIDTH-16)/2, 0,
