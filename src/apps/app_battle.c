@@ -36,7 +36,7 @@
 enum {
     ACTION_ATTACK,
     ACTION_EVADE,
-    ACTION_CRIT,
+    ACTION_SPECIAL,
     N_ACTIONS,
 };
 
@@ -115,7 +115,7 @@ void pw_battle_event_loop(state_vars_t *sv) {
             // decide their action
             uint8_t rnd = pw_rand()%100;
             if(rnd < ACTION_CHANCES[choice_index][2]) {
-                their_action = ACTION_CRIT;
+                their_action = ACTION_SPECIAL;
             } else if(rnd < (ACTION_CHANCES[choice_index][2]+ACTION_CHANCES[choice_index][1])) {
                 their_action = ACTION_EVADE;
             } else {
@@ -150,7 +150,7 @@ void pw_battle_event_loop(state_vars_t *sv) {
                     substate_queue[1] = BATTLE_CHOOSING;
                     break;
                 }
-                case ACTION_CRIT: {
+                case ACTION_SPECIAL: {
                     substate_queue[0] = BATTLE_THEY_FLED;
                     break;
                 }
@@ -174,7 +174,7 @@ void pw_battle_event_loop(state_vars_t *sv) {
                     sv->reg_b |= 3<<CHOICE_INDEX_OFFSET; // taken from walker
                     break;
                 }
-                case ACTION_CRIT: {
+                case ACTION_SPECIAL: {
                     our_hp -= 1;
                     their_hp -= 2;
                     sv->reg_b &= ~CHOICE_INDEX_MASK;
@@ -308,29 +308,9 @@ void pw_battle_init_display(state_vars_t *sv) {
     case BATTLE_OUR_ACTION: {
         uint8_t our_action = (sv->reg_b&OUR_ACTION_MASK)>>OUR_ACTION_OFFSET;
         uint8_t their_action = (sv->reg_b&THEIR_ACTION_MASK)>>THEIR_ACTION_OFFSET;
-        if(their_action == ACTION_EVADE) {
-            pw_screen_draw_from_eeprom(
-                0, SCREEN_HEIGHT-32,
-                80, 16,
-                PW_EEPROM_ADDR_TEXT_POKEMON_NAMES + sv->reg_a*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
-                PW_EEPROM_SIZE_TEXT_POKEMON_NAME
-            );
-            pw_screen_draw_from_eeprom(
-                0, SCREEN_HEIGHT-16,
-                SCREEN_WIDTH, 16,
-                PW_EEPROM_ADDR_TEXT_EVADED,
-                PW_EEPROM_SIZE_TEXT_EVADED
-            );
 
-        } else if(their_action == ACTION_CRIT) {
-            pw_screen_draw_from_eeprom(
-                0, SCREEN_HEIGHT-32,
-                SCREEN_WIDTH, 16,
-                PW_EEPROM_ADDR_TEXT_CRITICAL_HIT,
-                PW_EEPROM_SIZE_TEXT_CRITICAL_HIT
-            );
-            pw_screen_clear_area(0, SCREEN_HEIGHT-16, SCREEN_WIDTH, 16);
-        } else {
+        switch(their_action) {
+        case ACTION_ATTACK: {
             pw_screen_draw_from_eeprom(
                 0, SCREEN_HEIGHT-32,
                 80, 16,
@@ -344,6 +324,34 @@ void pw_battle_init_display(state_vars_t *sv) {
                 PW_EEPROM_ADDR_TEXT_ATTACKED,
                 PW_EEPROM_SIZE_TEXT_ATTACKED
             );
+            break;
+        }
+        case ACTION_EVADE: {
+            pw_screen_draw_from_eeprom(
+                0, SCREEN_HEIGHT-32,
+                80, 16,
+                PW_EEPROM_ADDR_TEXT_POKEMON_NAMES + sv->reg_a*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
+                PW_EEPROM_SIZE_TEXT_POKEMON_NAME
+            );
+            pw_screen_draw_from_eeprom(
+                0, SCREEN_HEIGHT-16,
+                SCREEN_WIDTH, 16,
+                PW_EEPROM_ADDR_TEXT_EVADED,
+                PW_EEPROM_SIZE_TEXT_EVADED
+            );
+
+            break;
+        }
+        case ACTION_SPECIAL: {
+            pw_screen_draw_from_eeprom(
+                0, SCREEN_HEIGHT-32,
+                SCREEN_WIDTH, 16,
+                PW_EEPROM_ADDR_TEXT_CRITICAL_HIT,
+                PW_EEPROM_SIZE_TEXT_CRITICAL_HIT
+            );
+            pw_screen_clear_area(0, SCREEN_HEIGHT-16, SCREEN_WIDTH, 16);
+            break;
+        }
         }
         break;
     }
@@ -467,21 +475,22 @@ void pw_battle_update_display(state_vars_t *sv) {
         pw_screen_draw_img(&their_sprite, OUR_ATTACK_XS[1][sv->reg_c], 0);
 
         if(sv->reg_c == (ATTACK_ANIM_LENGTH+1)/2) {
-            if(our_action != ACTION_CRIT && their_action != ACTION_CRIT) {
-                pw_screen_draw_from_eeprom(
-                    (SCREEN_WIDTH-16)/2, 0,
-                    16, 32,
-                    PW_EEPROM_ADDR_IMG_RADAR_ATTACK_HIT,
-                    PW_EEPROM_ADDR_IMG_RADAR_ATTACK_HIT
-                );
-            } else if(their_action == ACTION_CRIT) {
+            if(their_action == ACTION_SPECIAL) {
                 pw_screen_draw_from_eeprom(
                     (SCREEN_WIDTH-16)/2, 0,
                     16, 32,
                     PW_EEPROM_ADDR_IMG_RADAR_CRITICAL_HIT,
                     PW_EEPROM_ADDR_IMG_RADAR_CRITICAL_HIT
                 );
+            } else if(their_action != ACTION_EVADE) {
+                pw_screen_draw_from_eeprom(
+                    (SCREEN_WIDTH-16)/2, 0,
+                    16, 32,
+                    PW_EEPROM_ADDR_IMG_RADAR_ATTACK_HIT,
+                    PW_EEPROM_ADDR_IMG_RADAR_ATTACK_HIT
+                );
             }
+
             uint8_t hp = (sv->reg_d&THEIR_HP_MASK)>>THEIR_HP_OFFSET;
             pw_screen_clear_area(8*(hp+1), 24, 8*(4-hp), 8);
         } else {
@@ -501,7 +510,7 @@ void pw_battle_update_display(state_vars_t *sv) {
         pw_screen_draw_img(&their_sprite, THEIR_ATTACK_XS[1][sv->reg_c], 0);
 
         if(sv->reg_c == (ATTACK_ANIM_LENGTH+1)/2) {
-            if(their_action == ACTION_ATTACK && our_action != ACTION_EVADE) {
+            if(our_action != ACTION_EVADE) {
                 pw_screen_draw_from_eeprom(
                     (SCREEN_WIDTH-16)/2, 0,
                     16, 32,
