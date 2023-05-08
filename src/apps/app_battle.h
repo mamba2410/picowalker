@@ -17,6 +17,7 @@ enum battle_state {
     BATTLE_WE_LOST,
     BATTLE_THEY_FLED,
     BATTLE_CATCH,
+    BATTLE_STAREDOWN,
     N_BATTLE_STATES,
 };
 

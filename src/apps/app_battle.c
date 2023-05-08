@@ -7,6 +7,7 @@
 #include "../eeprom_map.h"
 #include "../globals.h"
 #include "../buttons.h"
+#include "../rand.h"
 
 /** @file apps/app_battle.c
  *
@@ -62,7 +63,7 @@ const screen_pos_t THEIR_ATTACK_XS[2][ATTACK_ANIM_LENGTH] = {
     /* them */ {8,   8, 10, 12, 12, 11, 10,  9,  8}
 };
 
-
+#define STAREDOWN_ANIM_LENGTH 5
 
 
 void pw_battle_switch_substate(state_vars_t *sv, uint8_t s) {
@@ -99,6 +100,12 @@ void pw_battle_event_loop(state_vars_t *sv) {
             uint8_t our_action = (sv->reg_b&OUR_ACTION_MASK)>>OUR_ACTION_OFFSET;
             uint8_t their_action = (sv->reg_b&THEIR_ACTION_MASK)>>THEIR_ACTION_OFFSET;
 
+            // decide their action
+            // TODO: make this better idk
+            their_action = pw_rand()%2;
+            sv->reg_b &= ~THEIR_ACTION_MASK;
+            sv->reg_b |= (their_action<<THEIR_ACTION_OFFSET)&THEIR_ACTION_MASK;
+
             uint8_t our_hp = (sv->reg_d&OUR_HP_MASK)>>OUR_HP_OFFSET;
             uint8_t their_hp = (sv->reg_d&THEIR_HP_MASK)>>THEIR_HP_OFFSET;
 
@@ -110,11 +117,10 @@ void pw_battle_event_loop(state_vars_t *sv) {
             // TODO: make this a 3x3 matrix/LUT? in=actions, out=substate
             if(our_action == ACTION_EVADE) {
                 if(their_action == ACTION_EVADE) {
-                    // staredown
-                    substate_queue[0] = BATTLE_CHOOSING;
-                    sv->reg_x = 0;
+                    substate_queue[0] = BATTLE_STAREDOWN;
+                    substate_queue[1] = BATTLE_CHOOSING;
+                    sv->reg_c = 0;
                 } else {
-
                     substate_queue[0] = BATTLE_THEIR_ACTION;
                     substate_queue[1] = BATTLE_OUR_ACTION;
                     substate_queue[2] = BATTLE_CHOOSING;
@@ -124,6 +130,8 @@ void pw_battle_event_loop(state_vars_t *sv) {
                 substate_queue[1] = BATTLE_THEIR_ACTION;
                 substate_queue[2] = BATTLE_CHOOSING;
             }
+            printf("our action: %d\n", our_action);
+            printf("their action: %d\n", their_action);
             pw_battle_switch_substate(sv, substate_queue[sv->reg_x-1]);
             sv->reg_c = 0;
         }
@@ -146,6 +154,14 @@ void pw_battle_event_loop(state_vars_t *sv) {
                 return;
             }
 
+            sv->reg_x++;
+            sv->reg_c = 0;
+            pw_battle_switch_substate(sv, substate_queue[sv->reg_x-1]);
+        }
+        break;
+    }
+    case BATTLE_STAREDOWN: {
+        if(sv->reg_c == STAREDOWN_ANIM_LENGTH) {
             sv->reg_x++;
             sv->reg_c = 0;
             pw_battle_switch_substate(sv, substate_queue[sv->reg_x-1]);
@@ -324,6 +340,14 @@ void pw_battle_init_display(state_vars_t *sv) {
         pw_screen_draw_message(SCREEN_HEIGHT-16, 34, 16); // "was too strong..."
         break;
     }
+    case BATTLE_STAREDOWN: {
+        pw_screen_clear_area(0, SCREEN_HEIGHT-32, SCREEN_WIDTH, 16);
+        pw_screen_draw_message(SCREEN_HEIGHT-16, 41, 16);
+        break;
+    }
+    default: {
+        break;
+    }
     }
 }
 
@@ -446,8 +470,13 @@ void pw_battle_update_display(state_vars_t *sv) {
         // TODO: animation
         break;
     }
+    case BATTLE_STAREDOWN: {
+        pw_screen_draw_img(&our_sprite,   THEIR_ATTACK_XS[0][0], 8);
+        pw_screen_draw_img(&their_sprite, THEIR_ATTACK_XS[1][0], 0);
+        sv->reg_c++;
+        break;
+    }
     default: {
-
         break;
     }
 
