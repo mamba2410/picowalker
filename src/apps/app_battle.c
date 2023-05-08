@@ -132,10 +132,33 @@ void pw_battle_event_loop(state_vars_t *sv) {
     case BATTLE_THEIR_ACTION:
     case BATTLE_OUR_ACTION: {
         if(sv->reg_c == ATTACK_ANIM_LENGTH) {
+            uint8_t our_hp = (sv->reg_d&OUR_HP_MASK)>>OUR_HP_OFFSET;
+            uint8_t their_hp = (sv->reg_d&THEIR_HP_MASK)>>THEIR_HP_OFFSET;
+
+            if(our_hp == 0 || our_hp > 4) {
+                sv->reg_c = 0;
+                pw_battle_switch_substate(sv, BATTLE_WE_LOST);
+                return;
+            }
+            if(their_hp == 0 || their_hp > 4) {
+                sv->reg_c = 0;
+                pw_battle_switch_substate(sv, BATTLE_THEY_FLED);
+                return;
+            }
+
             sv->reg_x++;
             sv->reg_c = 0;
             pw_battle_switch_substate(sv, substate_queue[sv->reg_x-1]);
         }
+        break;
+    }
+    case BATTLE_THEY_FLED: {
+        break;
+    }
+    case BATTLE_WE_LOST: {
+        break;
+    }
+    default: {
         break;
     }
 
@@ -281,6 +304,26 @@ void pw_battle_init_display(state_vars_t *sv) {
         }
         break;
     }
+    case BATTLE_THEY_FLED: {
+        pw_screen_draw_from_eeprom(
+            0, SCREEN_HEIGHT-32,
+            80, 16,
+            PW_EEPROM_ADDR_TEXT_POKEMON_NAMES + sv->reg_a*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
+            PW_EEPROM_SIZE_TEXT_POKEMON_NAME
+        );
+        pw_screen_draw_message(SCREEN_HEIGHT-16, 33, 16); // "fled..."
+        break;
+    }
+    case BATTLE_WE_LOST: {
+        pw_screen_draw_from_eeprom(
+            0, SCREEN_HEIGHT-32,
+            80, 16,
+            PW_EEPROM_ADDR_TEXT_POKEMON_NAMES + sv->reg_a*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
+            PW_EEPROM_SIZE_TEXT_POKEMON_NAME
+        );
+        pw_screen_draw_message(SCREEN_HEIGHT-16, 34, 16); // "was too strong..."
+        break;
+    }
     }
 }
 
@@ -396,6 +439,17 @@ void pw_battle_update_display(state_vars_t *sv) {
         sv->reg_c++;
         break;
     }
+    case BATTLE_WE_LOST: {
+        break;
+    }
+    case BATTLE_THEY_FLED: {
+        // TODO: animation
+        break;
+    }
+    default: {
+
+        break;
+    }
 
     }
 
@@ -426,6 +480,11 @@ void pw_battle_handle_input(state_vars_t *sv, uint8_t b) {
             break;
         }
         }
+        break;
+    }
+    case BATTLE_THEY_FLED:
+    case BATTLE_WE_LOST: {
+        pw_request_state(STATE_SPLASH);
         break;
     }
     default:
