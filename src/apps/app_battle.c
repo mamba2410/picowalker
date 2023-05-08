@@ -30,6 +30,8 @@
 #define OUR_ACTION_MASK     (0x3<<OUR_ACTION_OFFSET)
 #define THEIR_ACTION_OFFSET 3
 #define THEIR_ACTION_MASK   (0x3<<THEIR_ACTION_OFFSET)
+#define CHOICE_INDEX_OFFSET 5
+#define CHOICE_INDEX_MASK   (0x7<<CHOICE_INDEX_OFFSET)
 
 enum {
     ACTION_ATTACK,
@@ -66,6 +68,15 @@ const screen_pos_t THEIR_ATTACK_XS[2][ATTACK_ANIM_LENGTH] = {
 #define STAREDOWN_ANIM_LENGTH 5
 
 
+const uint8_t ACTION_CHANCES[5][3] = {
+    // atk, evade, crit/flee
+    {   45,    35,        20},
+    {   40,    30,        30},
+    {   50,    40,        10},
+    {   60,    30,        10},
+    {   20,    30,        50},
+};
+
 void pw_battle_switch_substate(state_vars_t *sv, uint8_t s) {
     sv->substate_2 = sv->current_substate;
     sv->current_substate = s;
@@ -99,55 +110,105 @@ void pw_battle_event_loop(state_vars_t *sv) {
         if(sv->reg_x == 1) {
             uint8_t our_action = (sv->reg_b&OUR_ACTION_MASK)>>OUR_ACTION_OFFSET;
             uint8_t their_action = (sv->reg_b&THEIR_ACTION_MASK)>>THEIR_ACTION_OFFSET;
+            uint8_t choice_index = (sv->reg_b&CHOICE_INDEX_MASK)>>CHOICE_INDEX_OFFSET;
 
             // decide their action
-            // TODO: make this better idk
-            their_action = pw_rand()%2;
+            uint8_t rnd = pw_rand()%100;
+            if(rnd < ACTION_CHANCES[choice_index][2]) {
+                their_action = ACTION_CRIT;
+            } else if(rnd < (ACTION_CHANCES[choice_index][2]+ACTION_CHANCES[choice_index][1])) {
+                their_action = ACTION_EVADE;
+            } else {
+                their_action = ACTION_ATTACK;
+            }
+
             sv->reg_b &= ~THEIR_ACTION_MASK;
             sv->reg_b |= (their_action<<THEIR_ACTION_OFFSET)&THEIR_ACTION_MASK;
 
             uint8_t our_hp = (sv->reg_d&OUR_HP_MASK)>>OUR_HP_OFFSET;
             uint8_t their_hp = (sv->reg_d&THEIR_HP_MASK)>>THEIR_HP_OFFSET;
 
-            our_hp   -= HP_MATRIX[our_action][their_action];
-            their_hp -= HP_MATRIX[their_action][our_action];
-
-            sv->reg_d = our_hp<<OUR_HP_OFFSET | their_hp<<THEIR_HP_OFFSET;
-
-            // TODO: make this a 3x3 matrix/LUT? in=actions, out=substate
+            /*
+             * big matrix on what happens based on both actions
+             * we can't "crit" since user input is only attack/evade.
+             * so they choose to "crit" for us.
+             * if we evade and they "crit" then they flee
+             * if we attack and they "crit" then we have a crit hit
+             *
+             */
             if(our_action == ACTION_EVADE) {
-                if(their_action == ACTION_EVADE) {
-                    substate_queue[0] = BATTLE_STAREDOWN;
-                    substate_queue[1] = BATTLE_CHOOSING;
-                    sv->reg_c = 0;
-                } else {
+                switch(their_action) {
+                case ACTION_ATTACK: {
+                    their_hp -= 1;
                     substate_queue[0] = BATTLE_THEIR_ACTION;
                     substate_queue[1] = BATTLE_OUR_ACTION;
                     substate_queue[2] = BATTLE_CHOOSING;
+                    break;
+                }
+                case ACTION_EVADE: {
+                    substate_queue[0] = BATTLE_STAREDOWN;
+                    substate_queue[1] = BATTLE_CHOOSING;
+                    break;
+                }
+                case ACTION_CRIT: {
+                    substate_queue[0] = BATTLE_THEY_FLED;
+                    break;
+                }
                 }
             } else {
                 substate_queue[0] = BATTLE_OUR_ACTION;
                 substate_queue[1] = BATTLE_THEIR_ACTION;
                 substate_queue[2] = BATTLE_CHOOSING;
+
+                switch(their_action) {
+                case ACTION_ATTACK: {
+                    our_hp -= 1;
+                    their_hp -= 1;
+                    sv->reg_b &= ~CHOICE_INDEX_MASK;
+                    sv->reg_b |= 1<<CHOICE_INDEX_OFFSET; // taken from walker
+                    break;
+                }
+                case ACTION_EVADE: {
+                    our_hp -= 1;
+                    sv->reg_b &= ~CHOICE_INDEX_MASK;
+                    sv->reg_b |= 3<<CHOICE_INDEX_OFFSET; // taken from walker
+                    break;
+                }
+                case ACTION_CRIT: {
+                    our_hp -= 1;
+                    their_hp -= 2;
+                    sv->reg_b &= ~CHOICE_INDEX_MASK;
+                    sv->reg_b |= 2<<CHOICE_INDEX_OFFSET; // taken from walker
+                    break;
+                }
+                }
             }
-            printf("our action: %d\n", our_action);
-            printf("their action: %d\n", their_action);
+
+            sv->reg_d = our_hp<<OUR_HP_OFFSET | their_hp<<THEIR_HP_OFFSET;
+
             pw_battle_switch_substate(sv, substate_queue[sv->reg_x-1]);
             sv->reg_c = 0;
         }
         break;
     }
-    case BATTLE_THEIR_ACTION:
-    case BATTLE_OUR_ACTION: {
+    case BATTLE_THEIR_ACTION: {
         if(sv->reg_c == ATTACK_ANIM_LENGTH) {
             uint8_t our_hp = (sv->reg_d&OUR_HP_MASK)>>OUR_HP_OFFSET;
-            uint8_t their_hp = (sv->reg_d&THEIR_HP_MASK)>>THEIR_HP_OFFSET;
-
             if(our_hp == 0 || our_hp > 4) {
                 sv->reg_c = 0;
                 pw_battle_switch_substate(sv, BATTLE_WE_LOST);
                 return;
             }
+
+            sv->reg_x++;
+            sv->reg_c = 0;
+            pw_battle_switch_substate(sv, substate_queue[sv->reg_x-1]);
+        }
+        break;
+    }
+    case BATTLE_OUR_ACTION: {
+        if(sv->reg_c == ATTACK_ANIM_LENGTH) {
+            uint8_t their_hp = (sv->reg_d&THEIR_HP_MASK)>>THEIR_HP_OFFSET;
             if(their_hp == 0 || their_hp > 4) {
                 sv->reg_c = 0;
                 pw_battle_switch_substate(sv, BATTLE_THEY_FLED);
@@ -261,7 +322,7 @@ void pw_battle_init_display(state_vars_t *sv) {
                 PW_EEPROM_SIZE_TEXT_EVADED
             );
 
-        } else if(our_action == ACTION_CRIT) {
+        } else if(their_action == ACTION_CRIT) {
             pw_screen_draw_from_eeprom(
                 0, SCREEN_HEIGHT-32,
                 SCREEN_WIDTH, 16,
@@ -406,14 +467,14 @@ void pw_battle_update_display(state_vars_t *sv) {
         pw_screen_draw_img(&their_sprite, OUR_ATTACK_XS[1][sv->reg_c], 0);
 
         if(sv->reg_c == (ATTACK_ANIM_LENGTH+1)/2) {
-            if(our_action != ACTION_CRIT && their_action != ACTION_EVADE) {
+            if(our_action != ACTION_CRIT && their_action != ACTION_CRIT) {
                 pw_screen_draw_from_eeprom(
                     (SCREEN_WIDTH-16)/2, 0,
                     16, 32,
                     PW_EEPROM_ADDR_IMG_RADAR_ATTACK_HIT,
                     PW_EEPROM_ADDR_IMG_RADAR_ATTACK_HIT
                 );
-            } else if(our_action == ACTION_CRIT) {
+            } else if(their_action == ACTION_CRIT) {
                 pw_screen_draw_from_eeprom(
                     (SCREEN_WIDTH-16)/2, 0,
                     16, 32,
@@ -448,7 +509,6 @@ void pw_battle_update_display(state_vars_t *sv) {
                     PW_EEPROM_ADDR_IMG_RADAR_ATTACK_HIT
                 );
             }
-            // they can't crit
 
             uint8_t hp = (sv->reg_d&OUR_HP_MASK)>>OUR_HP_OFFSET;
             pw_screen_clear_area(SCREEN_WIDTH/2+8*(hp+1), 0, 8*(4-hp), 8);
