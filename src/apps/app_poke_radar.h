@@ -6,6 +6,8 @@
 #include "../states.h"
 #include "../types.h"
 
+/// @file app_poke_radar.h
+
 /*
  *  Copying what the walker does.#
  *  ABC is 1+index in eeprom

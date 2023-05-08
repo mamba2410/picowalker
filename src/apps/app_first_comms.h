@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+/// @file app_first_comms.h
+
 enum {
     FC_SUBSTATE_WAITING,
     FC_SUBSTATE_CONNECTING,

@@ -3,8 +3,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "eeprom.h"
+
+/// @file screen.h
 
 #define SCREEN_REDRAW_DELAY_US  500000
 
@@ -16,13 +19,13 @@
 #define SCREEN_LGREY    1
 #define SCREEN_WHITE    0
 
-typedef uint8_t screen_pos_t;       // 0-95
-typedef uint8_t screen_colour_t;    // 2-bits, pw style
+typedef uint8_t screen_pos_t;       /// 0-95
+typedef uint8_t screen_colour_t;    /// 2-bits, pw style
 
 typedef struct {
     screen_pos_t height, width;
     uint8_t *data;
-    size_t size;
+    size_t size; /// bytes
 } pw_img_t;
 
 typedef struct {

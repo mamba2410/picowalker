@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+/// @file timer.h
+
 extern uint64_t pw_now_us();
 extern void pw_timer_delay_ms(uint64_t ms);
 

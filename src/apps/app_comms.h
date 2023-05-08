@@ -6,6 +6,8 @@
 
 #include "../states.h"
 
+/// @file app_comms.h
+
 void pw_comms_init(state_vars_t *sv);
 void pw_comms_event_loop(state_vars_t *sv);
 void pw_comms_init_display(state_vars_t *sv);

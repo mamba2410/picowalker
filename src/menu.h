@@ -6,6 +6,8 @@
 
 #include "states.h"
 
+/// @file menu.h
+
 /*
  *  Message index + 1
  *  Offset from eeprom 0x4330

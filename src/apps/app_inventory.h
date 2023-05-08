@@ -5,6 +5,8 @@
 
 #include "../states.h"
 
+/// @file app_inventory.h
+
 void pw_inventory_init(state_vars_t *sv);
 void pw_inventory_init_display(state_vars_t *sv);
 void pw_inventory_update_display(state_vars_t *sv);

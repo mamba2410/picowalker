@@ -6,6 +6,7 @@
 
 #include "states.h"
 
+/// @file utils.h
 
 #define INV_WALKING_POKEMON     (1<<0)  // reg_a
 #define INV_CAUGHT_POKEMON_1    (1<<1)

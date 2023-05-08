@@ -11,6 +11,8 @@
 #include "../types.h"
 #include "../globals.h"
 
+/// @file app_splash.c
+
 
 void pw_splash_init(state_vars_t *sv) {
     pw_read_inventory(sv);

@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/// @file eeprom.h
+
 typedef uint16_t eeprom_addr_t;
 
 /*

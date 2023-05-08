@@ -6,6 +6,8 @@
 
 #include "../states.h"
 
+/// @file app_battle.h
+
 enum battle_state {
     BATTLE_OPENING,
     BATTLE_APPEARED,

@@ -6,6 +6,8 @@
 
 #include "../types.h"
 
+/// @file ir/ir.h
+
 #define CMD_EEPROM_READ_REQ     0x0c
 #define CMD_EEPROM_READ_RSP     0x0e
 #define CMD_EEPROM_WRITE_CMP_00 0x00    // eeprom write compressed

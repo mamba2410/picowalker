@@ -1,6 +1,7 @@
 build/*
 rom/*
 lib/*
+doxygen/
 docs/disassembly.asm
 .gdbinit
 tags

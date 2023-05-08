@@ -8,6 +8,8 @@
 #include "../states.h"
 #include "../types.h"
 
+/// @file ir/actions.h
+
 typedef enum {
     COMM_SUBSTATE_NONE,
     COMM_SUBSTATE_FINDING_PEER,

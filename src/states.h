@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/// @file states.h
+
 #define PW_REQUEST_REDRAW       (1<<0)
 #define PW_REQUEST_STATE_CHANGE (1<<1)
 

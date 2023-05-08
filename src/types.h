@@ -5,7 +5,9 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-/*
+/// @file types.h
+
+/**
  *  Pokewalker IR packet.
  *  Using this mess of a struct to allow for easier
  *  conversion between the bytes and named fields.
@@ -187,7 +189,8 @@ typedef struct __attribute__((packed)) {
     uint8_t health_data_checksum;
     uint8_t copy_marker;
     uint8_t padding[16];
-} reliable_data_t;
+}
+reliable_data_t;
 
 typedef struct {
     uint8_t stamp_heart: 1;

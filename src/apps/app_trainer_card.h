@@ -5,6 +5,8 @@
 
 #include "../states.h"
 
+/// @file app_states.h
+
 #define TRAINER_CARD_MAX_DAYS   7
 
 void pw_trainer_card_init(state_vars_t *sv);

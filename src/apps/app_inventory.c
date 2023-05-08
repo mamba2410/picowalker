@@ -9,6 +9,8 @@
 #include "../globals.h"
 #include "../types.h"
 
+/// @file app_inventory.c
+
 struct owned_things_s {
     uint16_t le_found[10];
     uint16_t le_presents[10];

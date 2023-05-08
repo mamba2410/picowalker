@@ -5,6 +5,8 @@
 
 #include "../states.h"
 
+/// @file app_dowsing.h
+
 enum dowsing_state {
     DOWSING_ENTRY,
     DOWSING_CHOOSING,

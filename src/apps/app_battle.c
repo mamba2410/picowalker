@@ -8,6 +8,19 @@
 #include "../globals.h"
 #include "../buttons.h"
 
+/** @file apps/app_battle.c
+ *
+ * ```
+ *  reg_a = chosen_pokemon (0..3)
+ *  reg_b = [0]=?, [1..2]=our_action, [3..4]=their_action, [5..7]=?
+ *  reg_c = anim_frame
+ *  reg_d = [0..3]=our_hp, [4..7]=their_hp
+ *  reg_x = substate_queue index + 1
+ *  reg_y = substate_queue_len
+ * ```
+ *
+ */
+
 #define OUR_HP_OFFSET       0
 #define THEIR_HP_OFFSET     4
 #define OUR_HP_MASK         (0xf<<OUR_HP_OFFSET)
@@ -50,20 +63,16 @@ const screen_pos_t THEIR_ATTACK_XS[2][ATTACK_ANIM_LENGTH] = {
 };
 
 
+
+
 void pw_battle_switch_substate(state_vars_t *sv, uint8_t s) {
     sv->substate_2 = sv->current_substate;
     sv->current_substate = s;
     pw_request_redraw();
 }
 
-/*
- *  reg_a = chosen_pokemon (0..3)
- *  reg_b = [0]=?, [1..2]=our_action, [3..4]=their_action, [5..7]=?
- *  reg_c = anim_frame
- *  reg_d = [0..3]=our_hp, [4..7]=their_hp
- *  reg_x = substate_queue index + 1
- *  reg_y = substate_queue_len
- *
+/**
+ *  Initialises state vars for battle
  */
 void pw_battle_init(state_vars_t *sv) {
     sv->current_substate = BATTLE_OPENING;

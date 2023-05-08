@@ -1,4 +1,4 @@
-// picowalker.c
+/// @file picowalker.c
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -16,11 +16,14 @@
 #include "eeprom.h"
 #include "eeprom_map.h"
 
+/**
+ *  Entry for the picowalker
+ */
 void walker_entry() {
 
-	// Setup IR uart and rx interrupts
+    // Setup IR uart and rx interrupts
     pw_ir_init();
-	pw_button_init();
+    pw_button_init();
     pw_screen_init();
     pw_eeprom_init();
     pw_srand(0x12345678);
@@ -58,9 +61,9 @@ void walker_entry() {
     //health_data_cache.be_current_watts = swap_bytes_u16(9999);
 
 
-	// Event loop
+    // Event loop
     // BEWARE: Could (WILL) receive interrupts during this time
-	while(true) {
+    while(true) {
         // TODO: Things to do regardless of state (eg check steps, battery etc.)
 
         // Run current state's event loop
@@ -74,7 +77,7 @@ void walker_entry() {
             pw_state_draw_update();
         }
 
-	}
+    }
 
 }
 

@@ -3,6 +3,8 @@
 #include "../states.h"
 #include <stdint.h>
 
+/// @file app_splash.h
+
 void pw_splash_init(state_vars_t *sv);
 void pw_splash_handle_input(state_vars_t *sv, uint8_t b);
 void pw_splash_init_display(state_vars_t *sv);

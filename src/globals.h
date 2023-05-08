@@ -5,6 +5,8 @@
 
 #include "types.h"
 
+/// @file globals.h
+
 extern uint8_t eeprom_buf[];
 extern uint8_t decompression_buf[];
 extern pw_packet_t packet_buf;

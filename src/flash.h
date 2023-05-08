@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+/// @file flash.h
+
 typedef enum {
     FLASH_IMG_POKEWALKER,
     FLASH_IMG_FACE_NEUTRAL,

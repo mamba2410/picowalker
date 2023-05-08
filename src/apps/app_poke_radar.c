@@ -13,6 +13,24 @@
 #include "../rand.h"
 #include "../buttons.h"
 
+/** @file app_poke_radar.c
+ * Radar find pokemon game
+ *
+ * ```
+ *
+ * current_cursor = user cursor
+ * cursor_2 = active_bush
+ * current_substate
+ * substate_2 = prev_substate
+ * reg_a = chosen_mon (0..3)
+ * reg_b = radar_level (0..3)
+ * reg_c = current_level (0..3)
+ * reg_x = invisible_timer
+ * reg_y = active_timer
+ * ```
+ *
+ */
+
 static uint8_t radar_level_to_index[4] = {0, 0, 1, 2};
 static screen_pos_t bush_xs[4] = {8, 16, 56, 64};
 static screen_pos_t bush_ys[4] = {0, 24, 0, 24};
@@ -33,19 +51,6 @@ static void draw_cursor_update(state_vars_t *sv) {
     }
 }
 
-/*
- * Radar find pokemon game
- *
- * current_cursor = user cursor
- * cursor_2 = active_bush
- * current_substate
- * substate_2 = prev_substate
- * reg_a = chosen_mon (0..3)
- * reg_b = radar_level (0..3)
- * reg_c = current_level (0..3)
- * reg_x = invisible_timer
- * reg_y = active_timer
- */
 void pw_poke_radar_init(state_vars_t *sv) {
     route_info_t ri;
     pw_eeprom_read(PW_EEPROM_ADDR_ROUTE_INFO, (uint8_t*)&ri, sizeof(ri));
