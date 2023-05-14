@@ -107,6 +107,7 @@ void pw_battle_init(state_vars_t *sv) {
     sv->reg_b = 0;
     sv->reg_c = 4;
     sv->reg_d = (4<<OUR_HP_OFFSET) | (4<<THEIR_HP_OFFSET);
+    printf("Pokemon index: %d\n", sv->reg_a);
 }
 
 void pw_battle_event_loop(state_vars_t *sv) {
@@ -365,7 +366,7 @@ void pw_battle_init_display(state_vars_t *sv) {
 
     eeprom_addr_t addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED +
                          PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                         *(2*(2-sv->reg_a) + sv->anim_frame&1);
+                         *(2*sv->reg_a + (sv->anim_frame&1));
     pw_eeprom_read(addr, their_sprite.data, their_sprite.size);
 
     addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED +
@@ -406,7 +407,7 @@ void pw_battle_init_display(state_vars_t *sv) {
 
         eeprom_addr_t addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED +
                              PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                             *(2*(2-sv->reg_a) + sv->anim_frame&1);
+                             *(2*sv->reg_a + (sv->anim_frame&1));
         pw_screen_draw_from_eeprom(
             8, 0,
             32, 24,
@@ -622,7 +623,7 @@ void pw_battle_update_display(state_vars_t *sv) {
 
     eeprom_addr_t addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED +
                          PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                         *(2*(2-sv->reg_a) + sv->anim_frame&1);
+                         *(2*sv->reg_a + (sv->anim_frame&1));
     pw_eeprom_read(addr, their_sprite.data, their_sprite.size);
 
     addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED +
