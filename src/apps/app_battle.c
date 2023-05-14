@@ -102,6 +102,8 @@ void pw_battle_switch_substate(state_vars_t *sv, uint8_t s) {
  *  Initialises state vars for battle
  */
 void pw_battle_init(state_vars_t *sv) {
+    sv->current_cursor = 0;
+    sv->cursor_2 = 0;
     sv->current_substate = BATTLE_OPENING;
     sv->substate_2 = BATTLE_OPENING;
     sv->reg_b = 0;
@@ -346,6 +348,9 @@ void pw_battle_event_loop(state_vars_t *sv) {
             sv->reg_c = 0;
             pw_battle_switch_substate(sv, substate_queue[sv->reg_x-1]);
         }
+        break;
+    }
+    case BATTLE_SWITCH: {
         break;
     }
     default: {
@@ -818,6 +823,38 @@ void pw_battle_update_display(state_vars_t *sv) {
     case BATTLE_POKEMON_CAUGHT: {
         break;
     }
+    case BATTLE_SWITCH: {
+        for(uint8_t i = 0; i < 3; i++) {
+            pw_screen_clear_area(20+i*(8+16), SCREEN_HEIGHT-32, 8, 8);
+        }
+        if(sv->anim_frame) {
+            pw_screen_draw_from_eeprom(
+                20+sv->current_cursor*(8+16), SCREEN_HEIGHT-32,
+                8, 8,
+                PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL,
+                PW_EEPROM_SIZE_IMG_ARROW
+            );
+        } else {
+            pw_screen_draw_from_eeprom(
+                20+sv->current_cursor*(8+16), SCREEN_HEIGHT-32,
+                8, 8,
+                PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET,
+                PW_EEPROM_SIZE_IMG_ARROW
+            );
+        }
+
+        if(sv->current_cursor != sv->cursor_2) {
+            pw_screen_draw_from_eeprom(
+                0, SCREEN_HEIGHT-16,
+                80, 16,
+                PW_EEPROM_ADDR_TEXT_POKEMON_NAMES + sv->reg_a*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
+                PW_EEPROM_SIZE_TEXT_POKEMON_NAME
+            );
+            sv->cursor_2 = sv->current_cursor;
+        }
+
+        break;
+    }
     default: {
         printf("[ERROR] Unhandled substate draw update: 0x%02x\n", sv->current_substate);
         break;
@@ -897,6 +934,7 @@ void pw_battle_handle_input(state_vars_t *sv, uint8_t b) {
 
             if(i == 3) {
                 // no space
+                sv->cursor_2 = 0xff;
                 pw_battle_switch_substate(sv, BATTLE_SWITCH);
             } else {
                 route_info_t ri;
@@ -924,6 +962,9 @@ void pw_battle_handle_input(state_vars_t *sv, uint8_t b) {
     case BATTLE_SWITCH: {
         switch(b) {
         case BUTTON_L: {
+            if(sv->current_cursor == 0) {
+                pw_request_state(STATE_SPLASH);
+            }
             sv->current_cursor = (sv->current_cursor-1)%3;
             break;
         }
