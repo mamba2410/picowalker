@@ -24,6 +24,7 @@ enum battle_state {
     BATTLE_ALMOST_HAD_IT,
     BATTLE_CATCH_STARS,
     BATTLE_POKEMON_CAUGHT,
+    BATTLE_SWITCH,
     N_BATTLE_STATES,
 };
 

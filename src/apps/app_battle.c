@@ -107,7 +107,6 @@ void pw_battle_init(state_vars_t *sv) {
     sv->reg_b = 0;
     sv->reg_c = 4;
     sv->reg_d = (4<<OUR_HP_OFFSET) | (4<<THEIR_HP_OFFSET);
-    printf("Pokemon index: %d\n", sv->reg_a);
 }
 
 void pw_battle_event_loop(state_vars_t *sv) {
@@ -263,7 +262,6 @@ void pw_battle_event_loop(state_vars_t *sv) {
         substate_queue[1] = BATTLE_CLOUD_ANIM;
 
         uint8_t n_wobbles = pw_rand()%4;
-        printf("max wobbles: %d\n", n_wobbles);
         sv->reg_b = n_wobbles<<MAX_WOBBLE_OFFSET;  // reuse reg_b
         substate_queue[2] = BATTLE_BALL_WOBBLE;
 
@@ -308,7 +306,6 @@ void pw_battle_event_loop(state_vars_t *sv) {
         if(sv->reg_c >= WOBBLE_ANIM_LENGTH) {
             uint8_t current_wobble = sv->reg_b & CURRENT_WOBBLE_MASK;
             uint8_t max_wobble = sv->reg_b >> MAX_WOBBLE_OFFSET;
-            printf("current wobbles: %d\n", current_wobble);
 
             if(current_wobble < max_wobble) {
                 current_wobble++;
@@ -352,7 +349,7 @@ void pw_battle_event_loop(state_vars_t *sv) {
         break;
     }
     default: {
-        printf("[ERROR] Unknown substate init: %02x\n", sv->current_substate);
+        printf("[ERROR] Unhandled substate init: 0x%02x\n", sv->current_substate);
         break;
     }
 
@@ -592,8 +589,40 @@ void pw_battle_init_display(state_vars_t *sv) {
         pw_screen_draw_message(SCREEN_HEIGHT-16, 32, 16); // "was caught!"
         break;
     }
+    case BATTLE_SWITCH: {
+        pw_screen_clear();
+        pw_screen_draw_from_eeprom(
+            0, 0,
+            8, 16,
+            PW_EEPROM_ADDR_IMG_MENU_ARROW_RETURN,
+            PW_EEPROM_SIZE_IMG_MENU_ARROW_RETURN
+        );
+
+        pw_screen_draw_from_eeprom(
+            8, 0,
+            80, 16,
+            PW_EEPROM_ADDR_TEXT_SWITCH,
+            PW_EEPROM_SIZE_TEXT_SWITCH
+        );
+        for(uint8_t i = 0; i < 3; i++) {
+            pw_screen_draw_from_eeprom(
+                20+i*(16+8), SCREEN_HEIGHT-32-8,
+                8, 8,
+                PW_EEPROM_ADDR_IMG_BALL,
+                PW_EEPROM_SIZE_IMG_BALL
+            );
+        }
+
+        pw_screen_draw_from_eeprom(
+            20+sv->current_cursor*(16+8), SCREEN_HEIGHT-32,
+            8, 8,
+            PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL,
+            PW_EEPROM_SIZE_IMG_ARROW
+        );
+        break;
+    }
     default: {
-        printf("[ERROR] Unhandled substate draw: %d\n", sv->current_substate);
+        printf("[ERROR] Unhandled substate draw: 0x%02x\n", sv->current_substate);
         break;
     }
     }
@@ -761,7 +790,6 @@ void pw_battle_update_display(state_vars_t *sv) {
         }
         }
 
-        printf("%d\n", x);
         pw_screen_clear_area(left, 16, right-left+8, 8);
         pw_screen_draw_from_eeprom(
             x, 16,
@@ -791,7 +819,7 @@ void pw_battle_update_display(state_vars_t *sv) {
         break;
     }
     default: {
-        printf("[ERROR] Unhandled substate draw update: %02x\n", sv->current_substate);
+        printf("[ERROR] Unhandled substate draw update: 0x%02x\n", sv->current_substate);
         break;
     }
 
@@ -826,11 +854,101 @@ void pw_battle_handle_input(state_vars_t *sv, uint8_t b) {
         }
         break;
     }
-    case BATTLE_POKEMON_CAUGHT:
+    case BATTLE_POKEMON_CAUGHT: {
+        if(sv->reg_a >= 3) {
+            // event mon
+            pokemon_summary_t caught_poke;
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_EVENT_POKEMON_BASIC_DATA,
+                (uint8_t*)(&caught_poke),
+                sizeof(caught_poke)
+            );
+            if(caught_poke.le_species == 0x0000 || caught_poke.le_species == 0xffff) {
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_SPECIAL_POKEMON_BASIC_DATA,
+                    (uint8_t*)(&caught_poke),
+                    sizeof(caught_poke)
+                );
+                pw_eeprom_write(
+                    PW_EEPROM_ADDR_EVENT_POKEMON_BASIC_DATA,
+                    (uint8_t*)(&caught_poke),
+                    sizeof(caught_poke)
+                );
+                // TODO: rest of info
+                pw_request_state(STATE_SPLASH);
+            } else {
+                // TODO: idk? silently overwrite?
+                pw_request_state(STATE_SPLASH);
+            }
+
+        } else {
+            // normal mon
+            pokemon_summary_t caught_pokes[3];
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY,
+                (uint8_t*)caught_pokes,
+                sizeof(caught_pokes)
+            );
+
+            size_t i = 0;
+            for(i = 0; i < 3; i++) {
+                if(caught_pokes[i].le_species == 0x0000 || caught_pokes[i].le_species == 0xffff) break;
+            }
+
+            if(i == 3) {
+                // no space
+                pw_battle_switch_substate(sv, BATTLE_SWITCH);
+            } else {
+                route_info_t ri;
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_ROUTE_INFO,
+                    (uint8_t*)(&ri),
+                    sizeof(ri)
+                );
+                caught_pokes[i] = ri.route_pokemon[sv->reg_a];
+                pw_eeprom_write(
+                    PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY,
+                    (uint8_t*)caught_pokes,
+                    sizeof(caught_pokes)
+                );
+                pw_request_state(STATE_SPLASH);
+            }
+        }
+        break;
+    }
     case BATTLE_THEY_FLED:
     case BATTLE_WE_LOST: {
         pw_request_state(STATE_SPLASH);
         break;
+    }
+    case BATTLE_SWITCH: {
+        switch(b) {
+        case BUTTON_L: {
+            sv->current_cursor = (sv->current_cursor-1)%3;
+            break;
+        }
+        case BUTTON_R: {
+            sv->current_cursor = (sv->current_cursor+1)%3;
+            break;
+        }
+        case BUTTON_M: {
+            pokemon_summary_t poke;
+            route_info_t ri;
+            pw_eeprom_read(
+                PW_EEPROM_ADDR_ROUTE_INFO,
+                (uint8_t*)(&ri),
+                sizeof(ri)
+            );
+            poke = ri.route_pokemon[sv->reg_a];
+            pw_eeprom_write(
+                PW_EEPROM_ADDR_CAUGHT_POKEMON_SUMMARY,
+                (uint8_t*)(&poke),
+                sizeof(poke)
+            );
+            pw_request_state(STATE_SPLASH);
+            break;
+        }
+        }
     }
     default:
         break;
