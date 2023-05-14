@@ -212,8 +212,8 @@
 #define PW_EEPROM_SIZE_IMG_RADAR_APPEAR_CLOUD 192
 #define PW_EEPROM_ADDR_IMG_RADAR_HP_BLIP 0x2030  // "hp" item (4 of these make up an hp bar) 8x8
 #define PW_EEPROM_SIZE_IMG_RADAR_HP_BLIP 16
-#define PW_EEPROM_ADDR_IMG_RADAR_CACH_EFFECT 0x2040  // a little 5-pointed star image for when we catch something 8x8
-#define PW_EEPROM_SIZE_IMG_RADAR_CACH_EFFECT 16
+#define PW_EEPROM_ADDR_IMG_RADAR_CATCH_EFFECT 0x2040  // a little 5-pointed star image for when we catch something 8x8
+#define PW_EEPROM_SIZE_IMG_RADAR_CATCH_EFFECT 16
 #define PW_EEPROM_ADDR_TEXT_RADAR_ACTION 0x2050  // "attack/evade/catch" directions placard for battles 96x32
 #define PW_EEPROM_SIZE_TEXT_RADAR_ACTION 768
 #define PW_EEPROM_ADDR_IMG_POKEWALKER_BIG 0x2350  // pokewalker image, blank screen, 32x32
