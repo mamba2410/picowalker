@@ -1047,6 +1047,7 @@ void pw_battle_handle_input(state_vars_t *sv, uint8_t b) {
             break;
         }
         case BUTTON_R: {
+            if(sv->current_cursor >= 2) break;
             sv->current_cursor = (sv->current_cursor+1)%3;
             break;
         }
