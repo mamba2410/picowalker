@@ -62,6 +62,8 @@ static const uint8_t HP_MATRIX[3][3] = {
     /* cur crit   */ {         1,         1,         2},
 };
 
+static const uint8_t WOBBLE_CHANCES[4] = { 97, 79, 66, 56 };
+
 /*
  *  Note: same animations for attack and evade
  *  just flip ours/theirs on evade
@@ -263,19 +265,44 @@ void pw_battle_event_loop(state_vars_t *sv) {
         substate_queue[0] = BATTLE_THREW_BALL;
         substate_queue[1] = BATTLE_CLOUD_ANIM;
 
-        uint8_t n_wobbles = pw_rand()%4;
-        sv->reg_b = n_wobbles<<MAX_WOBBLE_OFFSET;  // reuse reg_b
-        substate_queue[2] = BATTLE_BALL_WOBBLE;
+        uint8_t n_wobbles = 0;
+        int8_t health = (sv->reg_d&THEIR_HP_MASK) >> THEIR_HP_OFFSET;
+        uint8_t wobble_chance = WOBBLE_CHANCES[health-1];
+        if(health <= 0) {
+            substate_queue[0] = BATTLE_THEY_FLED;
+            sv->reg_y = 1;
+            return;
+        }
 
-        // TODO: proper thing
-        bool caught = pw_rand()%2;
+        /*
+         * flow:
+         send to wobble state
+         show wobble
+         check chance
+            if false, show break out, quit
+            if true, wobbles++
+        if wobbles >= 3, we caught it, go to stars state
+        else back to wobble anim
+         */
+        // 1-3 wobbles
+        bool caught = true;
+        for(n_wobbles = 1; n_wobbles < 3; n_wobbles++) {
+            uint8_t pct = pw_rand()%100;
+            if(pct >= wobble_chance) {
+                caught = false;
+                break;
+            }
+        }
+        sv->reg_b = n_wobbles<<MAX_WOBBLE_OFFSET;  // reuse reg_b for wobble count
 
         if(caught) {
+            substate_queue[2] = BATTLE_BALL_WOBBLE;
             substate_queue[3] = BATTLE_CLOUD_ANIM;
             substate_queue[4] = BATTLE_ALMOST_HAD_IT;
             substate_queue[5] = BATTLE_THEY_FLED;
             sv->reg_y = 6;
         } else {
+            substate_queue[2] = BATTLE_BALL_WOBBLE;
             substate_queue[3] = BATTLE_CATCH_STARS;
             substate_queue[4] = BATTLE_POKEMON_CAUGHT;
             sv->reg_y = 5;
