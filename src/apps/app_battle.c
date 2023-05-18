@@ -77,6 +77,11 @@ const screen_pos_t THEIR_ATTACK_XS[2][ATTACK_ANIM_LENGTH] = {
     /* them */ {8,   8, 10, 12, 12, 11, 10,  9,  8}
 };
 
+const screen_pos_t POKEBALL_THROW_XS[6] = { 44, 40, 36, 32, 28, 24 };
+const screen_pos_t POKEBALL_THROW_YS[6] = { 20, 14,  9,  6,  4,  6 };
+const int8_t POKEMON_ENTER_XS[4] = { -16, -4, 8, 8 };
+
+
 #define WOBBLE_INITIAL_X 16
 #define WOBBLE_INITIAL_Y 16
 
@@ -420,6 +425,7 @@ void pw_battle_init_display(state_vars_t *sv) {
             PW_EEPROM_ADDR_TEXT_POKEMON_NAMES + sv->reg_a*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
             PW_EEPROM_SIZE_TEXT_POKEMON_NAME
         );
+        pw_screen_draw_text_box(0, SCREEN_HEIGHT-32, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SCREEN_BLACK);
 
         pw_img_t health_bar = {.width=8, .height=8, .data=eeprom_buf, .size=16};
         pw_eeprom_read(PW_EEPROM_ADDR_IMG_RADAR_HP_BLIP, eeprom_buf, PW_EEPROM_SIZE_IMG_RADAR_HP_BLIP);
@@ -468,6 +474,7 @@ void pw_battle_init_display(state_vars_t *sv) {
         uint8_t our_action = (sv->reg_b&OUR_ACTION_MASK)>>OUR_ACTION_OFFSET;
         uint8_t their_action = (sv->reg_b&THEIR_ACTION_MASK)>>THEIR_ACTION_OFFSET;
 
+        pw_screen_clear_area(80, SCREEN_HEIGHT-32, SCREEN_WIDTH-80, 16);
         switch(their_action) {
         case ACTION_ATTACK: {
             pw_screen_draw_from_eeprom(
@@ -476,7 +483,6 @@ void pw_battle_init_display(state_vars_t *sv) {
                 PW_EEPROM_ADDR_TEXT_POKEMON_NAME,
                 PW_EEPROM_SIZE_TEXT_POKEMON_NAME
             );
-            pw_screen_clear_area(80, SCREEN_HEIGHT-32, SCREEN_WIDTH-80, 16);
             pw_screen_draw_from_eeprom(
                 0, SCREEN_HEIGHT-16,
                 SCREEN_WIDTH, 16,
@@ -512,11 +518,14 @@ void pw_battle_init_display(state_vars_t *sv) {
             break;
         }
         }
+        pw_screen_draw_text_box(0, SCREEN_HEIGHT-32, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SCREEN_BLACK);
         break;
     }
     case BATTLE_THEIR_ACTION: {
         uint8_t our_action = (sv->reg_b&OUR_ACTION_MASK)>>OUR_ACTION_OFFSET;
         uint8_t their_action = (sv->reg_b&THEIR_ACTION_MASK)>>THEIR_ACTION_OFFSET;
+
+        pw_screen_clear_area(80, SCREEN_HEIGHT-32, SCREEN_WIDTH-80, 16);
         if(our_action == ACTION_EVADE) {
             pw_screen_draw_from_eeprom(
                 0, SCREEN_HEIGHT-32,
@@ -538,7 +547,6 @@ void pw_battle_init_display(state_vars_t *sv) {
                 PW_EEPROM_ADDR_TEXT_POKEMON_NAMES + sv->reg_a*PW_EEPROM_SIZE_TEXT_POKEMON_NAME,
                 PW_EEPROM_SIZE_TEXT_POKEMON_NAME
             );
-            pw_screen_clear_area(80, SCREEN_HEIGHT-32, SCREEN_WIDTH-80, 16);
             pw_screen_draw_from_eeprom(
                 0, SCREEN_HEIGHT-16,
                 SCREEN_WIDTH, 16,
@@ -546,9 +554,11 @@ void pw_battle_init_display(state_vars_t *sv) {
                 PW_EEPROM_SIZE_TEXT_ATTACKED
             );
         }
+        pw_screen_draw_text_box(0, SCREEN_HEIGHT-32, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SCREEN_BLACK);
         break;
     }
     case BATTLE_THEY_FLED: {
+        pw_screen_clear_area(80, SCREEN_HEIGHT-32, SCREEN_WIDTH-80, 16);
         pw_screen_draw_from_eeprom(
             0, SCREEN_HEIGHT-32,
             80, 16,
@@ -556,6 +566,7 @@ void pw_battle_init_display(state_vars_t *sv) {
             PW_EEPROM_SIZE_TEXT_POKEMON_NAME
         );
         pw_screen_draw_message(SCREEN_HEIGHT-16, 33, 16); // "fled..."
+        pw_screen_draw_text_box(0, SCREEN_HEIGHT-32, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SCREEN_BLACK);
         break;
     }
     case BATTLE_WE_LOST: {
@@ -566,6 +577,7 @@ void pw_battle_init_display(state_vars_t *sv) {
             PW_EEPROM_SIZE_TEXT_POKEMON_NAME
         );
         pw_screen_draw_message(SCREEN_HEIGHT-16, 34, 16); // "was too strong..."
+        pw_screen_draw_text_box(0, SCREEN_HEIGHT-32, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SCREEN_BLACK);
         break;
     }
     case BATTLE_STAREDOWN: {
@@ -787,7 +799,7 @@ void pw_battle_update_display(state_vars_t *sv) {
     }
     case BATTLE_THREW_BALL: {
         pw_screen_draw_from_eeprom(
-            OUR_ATTACK_XS[0][sv->reg_c], 16,
+            POKEBALL_THROW_XS[sv->reg_c], POKEBALL_THROW_YS[sv->reg_c],
             8, 8,
             PW_EEPROM_ADDR_IMG_BALL,
             PW_EEPROM_SIZE_IMG_BALL
@@ -921,24 +933,63 @@ void pw_battle_handle_input(state_vars_t *sv, uint8_t b) {
     case BATTLE_POKEMON_CAUGHT: {
         if(sv->reg_a >= 3) {
             // event mon
-            pokemon_summary_t caught_poke;
+            pokemon_summary_t *caught_poke = (pokemon_summary_t*)eeprom_buf;
             pw_eeprom_read(
                 PW_EEPROM_ADDR_EVENT_POKEMON_BASIC_DATA,
-                (uint8_t*)(&caught_poke),
-                sizeof(caught_poke)
+                (uint8_t*)(caught_poke),
+                sizeof(*caught_poke)
             );
-            if(caught_poke.le_species == 0x0000 || caught_poke.le_species == 0xffff) {
+            if(caught_poke->le_species == 0x0000 || caught_poke->le_species == 0xffff) {
+
+                // basic data
                 pw_eeprom_read(
                     PW_EEPROM_ADDR_SPECIAL_POKEMON_BASIC_DATA,
-                    (uint8_t*)(&caught_poke),
-                    sizeof(caught_poke)
+                    (uint8_t*)(caught_poke),
+                    sizeof(*caught_poke)
                 );
                 pw_eeprom_write(
                     PW_EEPROM_ADDR_EVENT_POKEMON_BASIC_DATA,
-                    (uint8_t*)(&caught_poke),
-                    sizeof(caught_poke)
+                    (uint8_t*)(caught_poke),
+                    sizeof(*caught_poke)
                 );
-                // TODO: rest of info
+
+                // extra data
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_SPECIAL_POKEMON_EXTRA_DATA,
+                    eeprom_buf,
+                    PW_EEPROM_SIZE_SPECIAL_POKEMON_EXTRA_DATA
+                );
+                pw_eeprom_write(
+                    PW_EEPROM_ADDR_EVENT_POKEMON_EXTRA_DATA,
+                    eeprom_buf,
+                    PW_EEPROM_SIZE_EVENT_POKEMON_EXTRA_DATA
+                );
+
+                // small sprite
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_IMG_SPECIAL_POKEMON_SMALL_ANIMATED,
+                    eeprom_buf,
+                    PW_EEPROM_SIZE_IMG_SPECIAL_POKEMON_SMALL_ANIMATED
+                );
+                pw_eeprom_write(
+                    PW_EEPROM_ADDR_IMG_EVENT_POKEMON_SMALL_ANIMATED,
+                    eeprom_buf,
+                    PW_EEPROM_SIZE_IMG_EVENT_POKEMON_SMALL_ANIMATED
+                );
+
+                // name text
+                pw_eeprom_read(
+                    PW_EEPROM_ADDR_TEXT_SPECIAL_POKEMON_NAME,
+                    eeprom_buf,
+                    PW_EEPROM_SIZE_TEXT_SPECIAL_POKEMON_NAME
+                );
+                pw_eeprom_write(
+                    PW_EEPROM_ADDR_TEXT_EVENT_POKEMON_NAME,
+                    eeprom_buf,
+                    PW_EEPROM_SIZE_TEXT_EVENT_POKEMON_NAME
+                );
+                
+
                 pw_request_state(STATE_SPLASH);
             } else {
                 // TODO: idk? silently overwrite?
