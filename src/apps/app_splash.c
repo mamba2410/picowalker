@@ -118,7 +118,7 @@ void pw_splash_init_display(state_vars_t *sv) {
 void pw_splash_update_display(state_vars_t *sv) {
 
     uint16_t frame_addr;
-    if(sv->anim_frame) {
+    if(sv->anim_frame&ANIM_FRAME_NORMAL_TIME) {
         frame_addr = PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME1;
     } else {
         frame_addr = PW_EEPROM_ADDR_IMG_POKEMON_LARGE_ANIMATED_FRAME2;

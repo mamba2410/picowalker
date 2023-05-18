@@ -9,7 +9,7 @@
 
 /// @file screen.h
 
-#define SCREEN_REDRAW_DELAY_US  500000
+#define SCREEN_REDRAW_DELAY_US  250000  // 250ms
 
 #define SCREEN_WIDTH    96
 #define SCREEN_HEIGHT   64

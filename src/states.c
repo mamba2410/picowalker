@@ -13,7 +13,7 @@
 #include "apps/app_inventory.h"
 #include "apps/app_dowsing.h"
 #include "apps/app_poke_radar.h"
-#include "apps/app_battle.h""
+#include "apps/app_battle.h"
 #include "apps/app_first_comms.h"
 
 const char* const state_strings[N_STATES] = {
@@ -177,7 +177,7 @@ void pw_state_draw_init() {
 }
 
 void pw_state_draw_update() {
-    global_statevars.anim_frame = !global_statevars.anim_frame;
+    global_statevars.anim_frame = (global_statevars.anim_frame+1)%4;
     state_draw_update_funcs[pw_current_state](&global_statevars);
 }
 

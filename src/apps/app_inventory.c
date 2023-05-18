@@ -274,7 +274,7 @@ static void draw_cursor(state_vars_t *sv) {
         break;
     }
 
-    uint16_t addr = (sv->anim_frame)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
+    uint16_t addr = (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)?PW_EEPROM_ADDR_IMG_ARROW_DOWN_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_DOWN_OFFSET;
 
     pw_screen_draw_from_eeprom(
         cx, cy,
@@ -597,7 +597,7 @@ static void pw_inventory_index_to_data(state_vars_t *sv, uint8_t *buf, uint8_t i
     case SEARCH_POKEMON_SPRITE: {
         if(idx < 3) {
             pw_eeprom_read(
-                PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED+(2*idx+sv->anim_frame)*PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME,
+                PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED+(2*idx+((sv->anim_frame>>ANIM_FRAME_NORMAL_TIME)&1))*PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME,
                 buf,
                 PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
             );
@@ -610,7 +610,7 @@ static void pw_inventory_index_to_data(state_vars_t *sv, uint8_t *buf, uint8_t i
         } else {
             // walk pokemon
             pw_eeprom_read(
-                PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED+sv->anim_frame*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME,
+                PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED+((sv->anim_frame>>ANIM_FRAME_NORMAL_TIME)&1)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME,
                 buf,
                 PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
             );

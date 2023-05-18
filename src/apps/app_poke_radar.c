@@ -42,7 +42,7 @@ static void draw_cursor_update(state_vars_t *sv) {
     pw_screen_draw_from_eeprom(
         bush_xs[sv->current_cursor]-8, bush_ys[sv->current_cursor]+8,
         8, 8,
-        sv->anim_frame%2? PW_EEPROM_ADDR_IMG_ARROW_RIGHT_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_RIGHT_OFFSET,
+        (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)? PW_EEPROM_ADDR_IMG_ARROW_RIGHT_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_RIGHT_OFFSET,
         PW_EEPROM_SIZE_IMG_ARROW
     );
     for(uint8_t i = 0; i < 4; i++) {

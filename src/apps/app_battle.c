@@ -400,11 +400,11 @@ void pw_battle_init_display(state_vars_t *sv) {
 
     eeprom_addr_t addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED +
                          PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                         *(2*sv->reg_a + (sv->anim_frame&1));
+                         *(2*sv->reg_a + (sv->anim_frame&ANIM_FRAME_NORMAL_TIME));
     pw_eeprom_read(addr, their_sprite.data, their_sprite.size);
 
     addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED +
-           (sv->anim_frame&1)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
+           (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
     pw_eeprom_read(addr, our_sprite.data, our_sprite.size);
 
     switch(sv->current_substate) {
@@ -442,7 +442,7 @@ void pw_battle_init_display(state_vars_t *sv) {
 
         eeprom_addr_t addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED +
                              PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                             *(2*sv->reg_a + (sv->anim_frame&1));
+                             *(2*sv->reg_a + (sv->anim_frame&ANIM_FRAME_NORMAL_TIME));
         pw_screen_draw_from_eeprom(
             8, 0,
             32, 24,
@@ -451,7 +451,7 @@ void pw_battle_init_display(state_vars_t *sv) {
         );
 
         addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED +
-               (sv->anim_frame&1)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
+               (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
         pw_screen_draw_from_eeprom(
             SCREEN_WIDTH/2+8, 8,
             32, 24,
@@ -696,11 +696,11 @@ void pw_battle_update_display(state_vars_t *sv) {
 
     eeprom_addr_t addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED +
                          PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                         *(2*sv->reg_a + (sv->anim_frame&1));
+                         *(2*sv->reg_a + (sv->anim_frame&ANIM_FRAME_NORMAL_TIME));
     pw_eeprom_read(addr, their_sprite.data, their_sprite.size);
 
     addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED +
-           (sv->anim_frame&1)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
+           (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
     pw_eeprom_read(addr, our_sprite.data, our_sprite.size);
 
     switch(sv->current_substate) {

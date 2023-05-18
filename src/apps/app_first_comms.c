@@ -132,7 +132,7 @@ void pw_first_comms_draw_update(state_vars_t *sv) {
         switch(sv->substate_2) {
         case FC_SUBSTATE_WAITING: {
             pw_img_t img = {.width=8, .height=8, .size=16, .data=eeprom_buf};
-            if(sv->anim_frame&1) {
+            if(sv->anim_frame&ANIM_FRAME_NORMAL_TIME) {
                 pw_flash_read(FLASH_IMG_UP_ARROW, img.data);
                 pw_screen_draw_img(&img, (SCREEN_WIDTH-8)/2, 48);
             } else {
@@ -164,7 +164,7 @@ void pw_first_comms_draw_update(state_vars_t *sv) {
         pw_screen_draw_img(&face, (SCREEN_WIDTH-16)/2, (SCREEN_HEIGHT-8)/2);
         pw_screen_clear_area((SCREEN_WIDTH-8)/2, 48, 8, 8);
 
-        if(sv->anim_frame&1) {
+        if(sv->anim_frame&ANIM_FRAME_NORMAL_TIME) {
             pw_img_t img = {.width=8, .height=8, .size=16, .data=eeprom_buf};
             pw_flash_read(FLASH_IMG_IR_ACTIVE, img.data);
             pw_screen_draw_img(&img, (SCREEN_WIDTH-8)/2, 0);

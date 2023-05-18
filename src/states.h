@@ -47,6 +47,9 @@ typedef struct {
     uint16_t reg_z;
 } state_vars_t;
 
+#define ANIM_FRAME_NORMAL_TIME          (1<<1)  // every half second
+#define ANIM_FRAME_DOUBLE_TIME          (1<<0)  // every quarter second
+
 typedef void (state_draw_func_t)(state_vars_t*);
 typedef void (state_event_func_t)(state_vars_t*);
 typedef void (state_input_func_t)(state_vars_t*, uint8_t);

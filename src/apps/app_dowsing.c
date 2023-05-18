@@ -169,7 +169,7 @@ void pw_dowsing_init_display(state_vars_t *sv) {
     for(uint8_t i = 0; i < 6; i++) {
         pw_screen_draw_img(&grass, 16*i, BUSH_HEIGHT);
         if(i == sv->current_cursor) {
-            if(sv->anim_frame) {
+            if(sv->anim_frame&ANIM_FRAME_NORMAL_TIME) {
                 pw_screen_draw_from_eeprom(
                     16*i+2, SCREEN_HEIGHT-16-8,
                     8, 8,
@@ -232,7 +232,7 @@ static void choosing_draw_init(state_vars_t *sv) {
 
 static void choosing_draw_update(state_vars_t *sv) {
     pw_screen_clear_area(0, SCREEN_HEIGHT-16-8, SCREEN_WIDTH, 8);
-    uint16_t addr = sv->anim_frame?PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET;
+    uint16_t addr = (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)?PW_EEPROM_ADDR_IMG_ARROW_UP_NORMAL:PW_EEPROM_ADDR_IMG_ARROW_UP_OFFSET;
     pw_screen_draw_from_eeprom(
         16*sv->current_cursor+4, SCREEN_HEIGHT-16-8,
         8, 8,
@@ -244,14 +244,14 @@ static void choosing_draw_update(state_vars_t *sv) {
 
 static void selected_draw_update(state_vars_t *sv) {
     sv->reg_d++;
-    uint8_t y = sv->anim_frame?BUSH_HEIGHT+2:BUSH_HEIGHT-2;
+    uint8_t y = (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)?BUSH_HEIGHT+2:BUSH_HEIGHT-2;
     pw_screen_draw_from_eeprom(
         16*sv->current_cursor, y,
         16, 16,
         PW_EEPROM_ADDR_IMG_DOWSING_BUSH_DARK,
         PW_EEPROM_SIZE_IMG_DOWSING_BUSH_DARK
     );
-    y = sv->anim_frame?BUSH_HEIGHT:BUSH_HEIGHT+16-2;
+    y = (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)?BUSH_HEIGHT:BUSH_HEIGHT+16-2;
     pw_screen_clear_area(16*sv->current_cursor, y, 16, 2);
 }
 
@@ -259,7 +259,7 @@ static void replace_item_draw_update(state_vars_t *sv) {
     for(uint8_t i = 0; i < 3; i++) {
         pw_screen_clear_area(20+i*(8+16), SCREEN_HEIGHT-32, 8, 8);
     }
-    if(sv->anim_frame) {
+    if((sv->anim_frame&ANIM_FRAME_NORMAL_TIME)) {
         pw_screen_draw_from_eeprom(
             20+sv->current_cursor*(8+16), SCREEN_HEIGHT-32,
             8, 8,
