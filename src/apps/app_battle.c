@@ -804,6 +804,12 @@ void pw_battle_update_display(state_vars_t *sv) {
             PW_EEPROM_ADDR_IMG_BALL,
             PW_EEPROM_SIZE_IMG_BALL
         );
+        if(sv->reg_c > 0) {
+            pw_screen_clear_area(
+                POKEBALL_THROW_XS[sv->reg_c-1], POKEBALL_THROW_YS[sv->reg_c-1],
+                8, 8
+            );
+        }
         sv->reg_c++;
         break;
     }
