@@ -270,7 +270,6 @@ void pw_battle_event_loop(state_vars_t *sv) {
         substate_queue[0] = BATTLE_THREW_BALL;
         substate_queue[1] = BATTLE_CLOUD_ANIM;
 
-        uint8_t n_wobbles = 0;
         int8_t health = (sv->reg_d&THEIR_HP_MASK) >> THEIR_HP_OFFSET;
         uint8_t wobble_chance = WOBBLE_CHANCES[health-1];
         if(health <= 0) {
@@ -279,25 +278,17 @@ void pw_battle_event_loop(state_vars_t *sv) {
             return;
         }
 
-        /*
-         * flow:
-         send to wobble state
-         show wobble
-         check chance
-            if false, show break out, quit
-            if true, wobbles++
-        if wobbles >= 3, we caught it, go to stars state
-        else back to wobble anim
-         */
-        // 1-3 wobbles
+        // 1-3 wobbles, can flee at three wobbles
         bool caught = true;
-        for(n_wobbles = 1; n_wobbles < 3; n_wobbles++) {
+        uint8_t n_wobbles = 0;
+        while(n_wobbles < 3 && caught) {
+            n_wobbles++;
             uint8_t pct = pw_rand()%100;
             if(pct >= wobble_chance) {
                 caught = false;
-                break;
             }
         }
+
         sv->reg_b = n_wobbles<<MAX_WOBBLE_OFFSET;  // reuse reg_b for wobble count
 
         if(caught) {
