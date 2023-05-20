@@ -83,6 +83,38 @@ void pw_read_inventory(state_vars_t *sv) {
     );
 }
 
+eeprom_addr_t pw_pokemon_index_to_small_sprite(pokemon_index_t idx, uint8_t anim_frame) {
+    eeprom_addr_t addr;
+    uint8_t frame = (anim_frame&ANIM_FRAME_NORMAL_TIME)>>ANIM_FRAME_NORMAL_TIME_OFFSET;
+
+    switch(idx) {
+    case PIDX_WALKING: {
+        addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED +
+               frame*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
+        break;
+    }
+    case PIDX_EVENT: {
+        addr = PW_EEPROM_ADDR_IMG_EVENT_POKEMON_SMALL_ANIMATED +
+               frame*PW_EEPROM_SIZE_IMG_EVENT_POKEMON_SMALL_ANIMATED_FRAME;
+        break;
+    }
+    case PIDX_OPTION_A:
+    case PIDX_OPTION_B:
+    case PIDX_OPTION_C: {
+        uint8_t offs = 2*(idx-1);
+        addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED
+               + (offs+frame)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
+        break;
+    }
+    default: {
+        addr = 0;
+        break;
+    }
+    }
+
+    return addr;
+}
+
 int nintendo_to_ascii(uint8_t *str, char* buf, size_t len) {
     uint16_t c;
     uint16_t nintendo;

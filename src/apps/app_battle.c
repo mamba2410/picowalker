@@ -8,6 +8,7 @@
 #include "../globals.h"
 #include "../buttons.h"
 #include "../rand.h"
+#include "../utils.h"
 
 /** @file apps/app_battle.c
  *
@@ -38,7 +39,7 @@
 
 #define ATTACK_ANIM_LENGTH 9
 #define STAREDOWN_ANIM_LENGTH 5
-#define THREW_BALL_ANIM_LENGTH 7
+#define THREW_BALL_ANIM_LENGTH 6
 #define CLOUD_ANIM_LENGTH 2
 #define WOBBLE_ANIM_LENGTH 5
 #define MESSAGE_DISPLAY_ANIM_LENGTH 4
@@ -329,7 +330,7 @@ void pw_battle_event_loop(state_vars_t *sv) {
     }
     case BATTLE_BALL_WOBBLE: {
         if(sv->reg_c >= WOBBLE_ANIM_LENGTH) {
-            uint8_t current_wobble = sv->reg_b & CURRENT_WOBBLE_MASK;
+            uint8_t current_wobble = sv->reg_b & CURRENT_WOBBLE_MASK+1;
             uint8_t max_wobble = sv->reg_b >> MAX_WOBBLE_OFFSET;
 
             if(current_wobble < max_wobble) {
@@ -389,13 +390,10 @@ void pw_battle_init_display(state_vars_t *sv) {
     pw_img_t our_sprite   = {.width=32, .height=24, .size=192, .data=eeprom_buf};
     pw_img_t their_sprite = {.width=32, .height=24, .size=192, .data=decompression_buf};
 
-    eeprom_addr_t addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED +
-                         PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                         *(2*sv->reg_a + (sv->anim_frame&ANIM_FRAME_NORMAL_TIME));
+    eeprom_addr_t addr = pw_pokemon_index_to_small_sprite(sv->reg_a+1, sv->anim_frame);
     pw_eeprom_read(addr, their_sprite.data, their_sprite.size);
 
-    addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED +
-           (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
+    addr = pw_pokemon_index_to_small_sprite(PIDX_WALKING, sv->anim_frame);
     pw_eeprom_read(addr, our_sprite.data, our_sprite.size);
 
     switch(sv->current_substate) {
@@ -431,24 +429,8 @@ void pw_battle_init_display(state_vars_t *sv) {
             pw_screen_draw_img(&health_bar, SCREEN_WIDTH/2 + 8*(i+1), 0);
         }
 
-        eeprom_addr_t addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED +
-                             PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                             *(2*sv->reg_a + (sv->anim_frame&ANIM_FRAME_NORMAL_TIME));
-        pw_screen_draw_from_eeprom(
-            8, 0,
-            32, 24,
-            addr,
-            PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-        );
-
-        addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED +
-               (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
-        pw_screen_draw_from_eeprom(
-            SCREEN_WIDTH/2+8, 8,
-            32, 24,
-            addr,
-            PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME
-        );
+        pw_screen_draw_img(&their_sprite, THEIR_NORMAL_X, THEIR_NORMAL_Y);
+        pw_screen_draw_img(&our_sprite, OUR_NORMAL_X, OUR_NORMAL_Y);
 
         break;
     }
@@ -685,13 +667,10 @@ void pw_battle_update_display(state_vars_t *sv) {
     pw_img_t our_sprite   = {.width=32, .height=24, .size=192, .data=eeprom_buf};
     pw_img_t their_sprite = {.width=32, .height=24, .size=192, .data=decompression_buf};
 
-    eeprom_addr_t addr = PW_EEPROM_ADDR_IMG_ROUTE_POKEMON_SMALL_ANIMATED +
-                         PW_EEPROM_SIZE_IMG_ROUTE_POKEMON_SMALL_ANIMATED_FRAME
-                         *(2*sv->reg_a + (sv->anim_frame&ANIM_FRAME_NORMAL_TIME));
+    eeprom_addr_t addr = pw_pokemon_index_to_small_sprite(sv->reg_a+1, sv->anim_frame);
     pw_eeprom_read(addr, their_sprite.data, their_sprite.size);
 
-    addr = PW_EEPROM_ADDR_IMG_POKEMON_SMALL_ANIMATED +
-           (sv->anim_frame&ANIM_FRAME_NORMAL_TIME)*PW_EEPROM_SIZE_IMG_POKEMON_SMALL_ANIMATED_FRAME;
+    addr = pw_pokemon_index_to_small_sprite(PIDX_WALKING, sv->anim_frame);
     pw_eeprom_read(addr, our_sprite.data, our_sprite.size);
 
     switch(sv->current_substate) {
@@ -789,18 +768,18 @@ void pw_battle_update_display(state_vars_t *sv) {
         break;
     }
     case BATTLE_THREW_BALL: {
-        pw_screen_draw_from_eeprom(
-            POKEBALL_THROW_XS[sv->reg_c], POKEBALL_THROW_YS[sv->reg_c],
-            8, 8,
-            PW_EEPROM_ADDR_IMG_BALL,
-            PW_EEPROM_SIZE_IMG_BALL
-        );
         if(sv->reg_c > 0) {
             pw_screen_clear_area(
                 POKEBALL_THROW_XS[sv->reg_c-1], POKEBALL_THROW_YS[sv->reg_c-1],
                 8, 8
             );
         }
+        pw_screen_draw_from_eeprom(
+            POKEBALL_THROW_XS[sv->reg_c], POKEBALL_THROW_YS[sv->reg_c],
+            8, 8,
+            PW_EEPROM_ADDR_IMG_BALL,
+            PW_EEPROM_SIZE_IMG_BALL
+        );
         sv->reg_c++;
         break;
     }
@@ -985,7 +964,7 @@ void pw_battle_handle_input(state_vars_t *sv, uint8_t b) {
                     eeprom_buf,
                     PW_EEPROM_SIZE_TEXT_EVENT_POKEMON_NAME
                 );
-                
+
 
                 pw_request_state(STATE_SPLASH);
             } else {

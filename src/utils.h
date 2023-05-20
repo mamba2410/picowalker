@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "states.h"
+#include "eeprom.h"
 
 /// @file utils.h
 
@@ -22,6 +23,15 @@
 #define INV_HAVE_DIAMOND        (1<<2)
 #define INV_HAVE_CLUB           (1<<3)
 
+typedef enum {
+    PIDX_WALKING,
+    PIDX_OPTION_A,
+    PIDX_OPTION_B,
+    PIDX_OPTION_C,
+    PIDX_EVENT,
+    N_PIDX,
+} pokemon_index_t;
+
 inline uint16_t swap_bytes_u16(uint16_t x) {
     uint16_t y = (x>>8) | ((x&0xff)<<8);
     return y;
@@ -33,6 +43,7 @@ inline uint32_t swap_bytes_u32(uint32_t x) {
 }
 
 void pw_read_inventory(state_vars_t *sv);
+eeprom_addr_t pw_pokemon_index_to_small_sprite(pokemon_index_t idx, uint8_t anim_frame);
 
 int nintendo_to_ascii(uint8_t *str, char* buf, size_t len);
 
