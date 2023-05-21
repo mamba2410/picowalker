@@ -14,6 +14,8 @@ add_executable(picowalker
     src/main.c
     src/drivers/screen_pico_ssd1327.c
     src/drivers/screen_pico_ssd1327.h
+    src/drivers/accel_bma400.c
+    src/drivers/accel_bma400.h
     src/drivers/ir_pico.c
     src/drivers/ir_pico.h
     src/drivers/buttons_pico.c

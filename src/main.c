@@ -7,9 +7,9 @@
 
 int main() {
     bi_decl(bi_2pins_with_func(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C));
-	bi_decl(bi_program_description("picowalker"));
+    bi_decl(bi_program_description("picowalker"));
 
-	stdio_init_all();
+    stdio_init_all();
 
     printf("Hello, picowalker!\n");
 
@@ -18,7 +18,12 @@ int main() {
     puts("Default I2C pins were not defined");
 #endif
 
-	walker_entry();
+    //walker_entry();
 
+    pw_accel_init();
+
+    pw_accel_test();
+
+    while(1);
 }
 
