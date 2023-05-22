@@ -18,12 +18,9 @@ int main() {
     puts("Default I2C pins were not defined");
 #endif
 
-    //walker_entry();
+    walker_entry();
 
-    pw_accel_init();
-
-    pw_accel_test();
-
+    // unreachable
     while(1);
 }
 

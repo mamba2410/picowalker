@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
 
 #include "hardware/spi.h"
@@ -8,6 +7,7 @@
 #include "accel_bma400.h"
 
 static spi_inst_t *accel_spi;
+static int32_t prev_steps;
 
 static void pw_accel_cs_enable() {
     gpio_put(ACCEL_CS_PIN, 0);
@@ -37,7 +37,7 @@ static void pw_accel_write_spi(uint8_t *buf, size_t len) {
     pw_accel_cs_disable();
 }
 
-void pw_read_accel(uint8_t *buf, size_t len) {
+void pw_accel_read_accel(uint8_t *buf, size_t len) {
     buf[0] = ACCEL_REG_STATUS;
     pw_accel_read_spi(buf, 1);
     uint8_t power_mode = (buf[0]>>1)&0x03;
@@ -52,15 +52,15 @@ void pw_read_accel(uint8_t *buf, size_t len) {
     pw_accel_read_spi(buf, 6);      // all at once
 }
 
-void pw_accel_read_steps(uint8_t *buf, size_t len) {
+static void pw_accel_read_steps(uint8_t *buf) {
     buf[0] = ACCEL_REG_STATUS;
     pw_accel_read_spi(buf, 1);
-    uint8_t power_mode = (buf[0]>>1)&0x03;
-    if(power_mode == 0x00) {
+    uint8_t power_mode = (buf[0]>>ACCEL_POWER_OFFSET)&ACCEL_POWER_MASK;
+    if(power_mode == ACCEL_POWER_SLEEP) {
         buf[0] = ACCEL_REG_ACC_CONFIG0;
-        buf[1] = 0x02;
+        buf[1] = ACCEL_POWER_NORMAL;
         pw_accel_write_spi(buf, 2);
-        sleep_ms(2);
+        sleep_ms(2);    // 1500 us
     }
 
     buf[0] = ACCEL_REG_STEP_CNT_0;
@@ -68,11 +68,54 @@ void pw_accel_read_steps(uint8_t *buf, size_t len) {
 }
 
 
-void pw_accel_init() {
+
+
+/*
+void pw_accel_test() {
+    uint8_t buf[8];
+
+
+    // if you want interrupt on int pin 1
+    buf[0] = ACCEL_REG_INT1_MAP;
+    pw_accel_read_spi(buf, 3);
+
+    buf[1] = buf[2] | 0x01;
+    buf[0] = ACCEL_REG_INT12_MAP;
+    pw_accel_write_spi(buf, 2);
+
+    buf[1] = STEP_CNT_INT_EN;
+    buf[0] = ACCEL_REG_INT_CONFIG1;
+    pw_accel_write_spi(buf, 2);
+
+    while(1) {
+        pw_accel_read_accel(buf, 6);
+        int16_t x_accel = (buf[0]&0xff) + ((buf[1]&0x0f)<<8);
+        if(x_accel > 2047) x_accel -= 4096;
+
+        pw_accel_read_steps(buf);
+        uint32_t steps = (buf[2]<<16) | (buf[1]<<8) | (buf[0]);
+
+        sleep_ms(1000);
+
+    }
+}
+*/
+
+uint32_t pw_accel_get_new_steps() {
+    uint8_t buf[5];
+    pw_accel_read_steps(buf);
+    int32_t steps = (buf[2]<<16) | (buf[1]<<8) | (buf[0]);
+    int32_t new_steps = steps - prev_steps;
+    prev_steps = steps;
+    if(new_steps < 0) return 0;
+    else return (uint32_t)new_steps;
+}
+
+int8_t pw_accel_init() {
     accel_spi = spi0;
 
     pw_accel_cs_disable();
-    spi_init(accel_spi, 1000*1000);
+    spi_init(accel_spi, ACCEL_SPI_SPEED);
     // inst, bits, polarity, phase, endian
     spi_set_format(accel_spi, 8, 1, 1, SPI_MSB_FIRST);
 
@@ -84,59 +127,16 @@ void pw_accel_init() {
     gpio_put(ACCEL_CS_PIN, 1);
     gpio_set_dir(ACCEL_CS_PIN, GPIO_OUT);
 
-    uint8_t buf[16];
+    uint8_t buf[8];
     buf[0] = ACCEL_REG_CHIPID;
     pw_accel_read_spi(buf, 1);    // dummy read
     buf[0] = ACCEL_REG_CHIPID;
     pw_accel_read_spi(buf, 1);
 
-    printf("chip id: 0x%02x\n", buf[0]);
-
-}
-
-void pw_accel_test() {
-    uint8_t buf[8];
-
-
-    /*
-    // if you want interrupt on int pin 1
-    buf[0] = ACCEL_REG_INT1_MAP;
-    pw_accel_read_spi(buf, 3);
-
-    buf[1] = buf[2] | 0x01;
-    buf[0] = ACCEL_REG_INT12_MAP;
-    pw_accel_write_spi(buf, 2);
-    */
-
-    buf[1] = STEP_CNT_INT_EN;
-    buf[0] = ACCEL_REG_INT_CONFIG1;
-    pw_accel_write_spi(buf, 2);
-
-    while(1) {
-        pw_read_accel(buf, 6);
-        int16_t x_accel = (buf[0]&0xff) + ((buf[1]&0x0f)<<8);
-        if(x_accel > 2047) x_accel -= 4096;
-        printf("accel x: %d\n", x_accel);
-
-        pw_accel_read_steps(buf, 0);
-        uint32_t steps = (buf[2]<<16) | (buf[1]<<8) | (buf[0]);
-        char status[16];
-        switch(buf[3]) {
-        case 0:
-            sprintf(status, "Still");
-            break;
-        case 1:
-            sprintf(status, "Walking");
-            break;
-        case 2:
-            sprintf(status, "Running");
-            break;
-        }
-        printf("steps: %d\nstat: %s\n", steps, status);
-        //printf("steps: %d\nstat: 0x%02x\n", steps, buf[3]);
-
-        sleep_ms(1000);
-
+    if(buf[0] != CHIP_ID) {
+        printf("[ERROR] Couldn't establish accel comms\n");
+        return -1;
     }
-}
 
+    return 0;
+}
