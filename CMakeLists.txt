@@ -12,33 +12,6 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
     src/main.c
-	src/picowalker.c
-    src/picowalker.h
-	src/buttons.c
-	src/buttons.h
-	src/states.c
-	src/states.h
-	src/menu.c
-	src/menu.h
-    src/screen.c
-    src/screen.h
-    src/globals.c
-    src/globals.h
-    src/types.h
-    src/pico_roms.h
-    src/utils.c
-    src/utils.h
-    src/eeprom.c
-    src/eeprom.h
-    src/rand.c
-    src/rand.h
-    src/flash.h
-    src/ir/compression.c
-    src/ir/compression.h
-    src/ir/ir.c
-    src/ir/ir.h
-    src/ir/actions.c
-    src/ir/actions.h
     src/drivers/ssd1327.c
     src/drivers/ssd1327.h
     src/drivers/ir_pico.c
@@ -56,22 +29,6 @@ add_executable(picowalker
     src/drivers/pico_flash.c
     src/drivers/pico_flash.S
     src/drivers/pico_flash.h
-    src/apps/app_splash.c
-    src/apps/app_splash.h
-    src/apps/app_trainer_card.c
-    src/apps/app_trainer_card.h
-    src/apps/app_inventory.c
-    src/apps/app_inventory.h
-    src/apps/app_dowsing.c
-    src/apps/app_dowsing.h
-    src/apps/app_poke_radar.c
-    src/apps/app_poke_radar.h
-    src/apps/app_battle.c
-    src/apps/app_battle.h
-    src/apps/app_comms.c
-    src/apps/app_comms.h
-    src/apps/app_first_comms.c
-    src/apps/app_first_comms.h
 )
 
 ## Enable usb, uart etc for stdio
@@ -87,4 +44,5 @@ target_link_libraries(picowalker
 	pico_stdlib
     hardware_i2c
     hardware_spi
+    ${CMAKE_SOURCE_DIR}/lib/libpicowalker-core.a
 )
