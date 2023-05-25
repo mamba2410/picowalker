@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "../flash.h"
-#include "pico_flash.h"
+#include "flash_pico.h"
 
 static const size_t offsets[] = {0, 0x100, 0x120, 0x140, 0x160, 0x170, 0x180};
 static const size_t sizes[]   = {0x100, 0x20, 0x20, 0x20, 0x10, 0x10};

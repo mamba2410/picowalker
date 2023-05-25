@@ -3,7 +3,7 @@
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
 
-#include "ssd1327.h"
+#include "screen_pico_ssd1327.h"
 #include "../screen.h"
 
 static ssd1327_t oled = {0,};
@@ -16,11 +16,11 @@ static uint8_t *oled_msg_buf = 0; // I2C message buffer
 
 
 int oled_write(ssd1327_t *oled, uint8_t *buf, size_t len) {
-	i2c_write_blocking(oled->i2c, (OLED_ADDR & OLED_WRITE_MODE), buf, len, true);
+    i2c_write_blocking(oled->i2c, (OLED_ADDR & OLED_WRITE_MODE), buf, len, true);
 }
 
 int oled_read(ssd1327_t *oled, uint8_t *buf, size_t len) {
-	i2c_read_blocking(oled->i2c, (OLED_ADDR & OLED_READ_MODE), buf, len, true);
+    i2c_read_blocking(oled->i2c, (OLED_ADDR & OLED_READ_MODE), buf, len, true);
 }
 
 void pw_screen_init() {
@@ -44,27 +44,27 @@ void pw_screen_init() {
     uint8_t *buf = oled_msg_buf;
     size_t cursor = 0;
 
-	i2c_init(oled.i2c, oled.speed);
-	gpio_set_function(oled.sda, GPIO_FUNC_I2C);
-	gpio_set_function(oled.scl, GPIO_FUNC_I2C);
-	gpio_pull_up(oled.sda);
-	gpio_pull_up(oled.scl);
+    i2c_init(oled.i2c, oled.speed);
+    gpio_set_function(oled.sda, GPIO_FUNC_I2C);
+    gpio_set_function(oled.scl, GPIO_FUNC_I2C);
+    gpio_pull_up(oled.sda);
+    gpio_pull_up(oled.scl);
 
-	cursor = 0;
-	buf[cursor++] = 0x00;
-	buf[cursor++] = OLED_CMD_OFF;
-	oled_write(&oled, buf, cursor);
+    cursor = 0;
+    buf[cursor++] = 0x00;
+    buf[cursor++] = OLED_CMD_OFF;
+    oled_write(&oled, buf, cursor);
 
-	cursor = 0;
-	buf[cursor++] = 0x00;
-	buf[cursor++] = OLED_CMD_REMAP;
-	buf[cursor++] = OLED_DEFAULT_MAP;
-	oled_write(&oled, buf, cursor);
+    cursor = 0;
+    buf[cursor++] = 0x00;
+    buf[cursor++] = OLED_CMD_REMAP;
+    buf[cursor++] = OLED_DEFAULT_MAP;
+    oled_write(&oled, buf, cursor);
 
-	cursor = 0;
-	buf[cursor++] = 0x00;
-	buf[cursor++] = OLED_CMD_ON;
-	oled_write(&oled, buf, cursor);
+    cursor = 0;
+    buf[cursor++] = 0x00;
+    buf[cursor++] = OLED_CMD_ON;
+    oled_write(&oled, buf, cursor);
 
     screen.width    = SCREEN_WIDTH;
     screen.height   = SCREEN_HEIGHT;
@@ -136,12 +136,16 @@ int oled_clear_ram(ssd1327_t *oled) {
     memset(oled_msg_buf, 0, OLED_MSG_BUF_SIZE);
 
     oled_img_t img = {
-        width: oled->width,
-        height: oled->height,
+width:
+        oled->width,
+height:
+        oled->height,
         x: 0,
         y: 0,
-        data: oled_msg_buf,
-        size: OLED_MSG_BUF_SIZE,
+data:
+        oled_msg_buf,
+size:
+        OLED_MSG_BUF_SIZE,
     };
 
     int err = oled_draw(oled, &img);
@@ -167,10 +171,10 @@ int oled_draw(ssd1327_t *oled, oled_img_t *img) {
  * Adapted from pw_lcd repo
  */
 void pw_img_to_oled(pw_img_t *pw_img, oled_img_t *oled_img) {
-	uint8_t pixel_value, bit_plane_upper, bit_plane_lower;
-	size_t row, col;
+    uint8_t pixel_value, bit_plane_upper, bit_plane_lower;
+    size_t row, col;
 
-	//size_t pw_len = img_width*img_height *2/8; // 2 bytes = 8 pixels
+    //size_t pw_len = img_width*img_height *2/8; // 2 bytes = 8 pixels
     pw_img->size = pw_img->width * pw_img->height * 2/8;
     oled_img->width = pw_img->width;
     oled_img->height = pw_img->height;
@@ -182,28 +186,28 @@ void pw_img_to_oled(pw_img_t *pw_img, oled_img_t *oled_img) {
         oled_img->data = malloc(oled_img->size);
     }
 
-	// i = number of bytes into pw_img
-	for(size_t i = 0; i < pw_img->size; i += 2) {
-		bit_plane_upper = pw_img->data[i];
-		bit_plane_lower = pw_img->data[i+1];
+    // i = number of bytes into pw_img
+    for(size_t i = 0; i < pw_img->size; i += 2) {
+        bit_plane_upper = pw_img->data[i];
+        bit_plane_lower = pw_img->data[i+1];
 
-		// j = index of pixel in chunk
-		for(size_t j = 0; j < 8; j++) {
-			// PW raw pixel value
-			pixel_value  = ((bit_plane_upper>>j) & 1) << 1;
-			pixel_value |= ((bit_plane_lower>>j) & 1);
+        // j = index of pixel in chunk
+        for(size_t j = 0; j < 8; j++) {
+            // PW raw pixel value
+            pixel_value  = ((bit_plane_upper>>j) & 1) << 1;
+            pixel_value |= ((bit_plane_lower>>j) & 1);
 
-			// TODO: simplify maths to go from pw_img coords to oled coords
-			col = (i/2)%pw_img->width;
-			row = 8*(i/(2*pw_img->width)) + j;
+            // TODO: simplify maths to go from pw_img coords to oled coords
+            col = (i/2)%pw_img->width;
+            row = 8*(i/(2*pw_img->width)) + j;
 
-			// Convert pw 2bpp to oled 4bpp via map
-			// assuming 1 byte per pixel
-			//oled_img->data[ (row*oled_img->width)+col ] = greyscale_map[pixel_value];
-			buf[ (row*oled_img->width)+col ] = greyscale_map[pixel_value];
+            // Convert pw 2bpp to oled 4bpp via map
+            // assuming 1 byte per pixel
+            //oled_img->data[ (row*oled_img->width)+col ] = greyscale_map[pixel_value];
+            buf[ (row*oled_img->width)+col ] = greyscale_map[pixel_value];
 
-		}
-	}
+        }
+    }
 
     for(size_t i = 0; i < oled_img->size; i++) {
         uint8_t v = (buf[2*i]<<4) | (buf[2*i+1]&0x0f);  // merge 2 pixels into one byte
@@ -248,16 +252,22 @@ void pw_screen_clear() {
 }
 
 void pw_screen_fill_area(screen_pos_t x, screen_pos_t y,
-        screen_pos_t width, screen_pos_t height, screen_colour_t colour) {
+                         screen_pos_t width, screen_pos_t height, screen_colour_t colour) {
     size_t size = width * height/2;
 
     oled_img_t area = {
-        x: x+screen.offset_x,
-        y: y+screen.offset_y,
-        width: width,
-        height: height,
-        size: size,
-        data: oled_image_buf,
+x:
+        x+screen.offset_x,
+y:
+        y+screen.offset_y,
+width:
+        width,
+height:
+        height,
+size:
+        size,
+data:
+        oled_image_buf,
     };
 
     memset(oled_image_buf, greyscale_map[colour]<<4 | greyscale_map[colour], size);
@@ -273,12 +283,17 @@ void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, sc
 
 void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t len, screen_colour_t colour) {
     oled_img_t img = {
-        x: x + screen.offset_x,
-        y: y + screen.offset_y,
-        width: len,
+x:
+        x + screen.offset_x,
+y:
+        y + screen.offset_y,
+width:
+        len,
         height: 1,
-        size: len/2,
-        data: oled_image_buf
+size:
+        len/2,
+data:
+        oled_image_buf
     };
 
     colour = oled_convert_colour(colour);

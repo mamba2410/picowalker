@@ -12,23 +12,23 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
     src/main.c
-    src/drivers/ssd1327.c
-    src/drivers/ssd1327.h
+    src/drivers/screen_pico_ssd1327.c
+    src/drivers/screen_pico_ssd1327.h
     src/drivers/ir_pico.c
     src/drivers/ir_pico.h
-    src/drivers/pico_buttons.c
-    src/drivers/pico_buttons.h
+    src/drivers/buttons_pico.c
+    src/drivers/buttons_pico.h
     #src/drivers/eeprom_pico_ram.S
     #src/drivers/eeprom_pico_ram.c
     #src/drivers/eeprom_pico_ram.h
-    src/drivers/eeprom_25lc512.c
-    src/drivers/eeprom_25lc512.h
-    src/drivers/pico_timer.c
-    src/drivers/pico_extra_storage.S
-    src/drivers/pico_extra_storage.h
-    src/drivers/pico_flash.c
-    src/drivers/pico_flash.S
-    src/drivers/pico_flash.h
+    src/drivers/eeprom_pico_25lc512.c
+    src/drivers/eeprom_pico_25lc512.h
+    src/drivers/timer_pico.c
+    src/drivers/extras_pico.S
+    src/drivers/extras_pico.h
+    src/drivers/flash_pico.c
+    src/drivers/flash_pico.S
+    src/drivers/flash_pico.h
 )
 
 ## Enable usb, uart etc for stdio
