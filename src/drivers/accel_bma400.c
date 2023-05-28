@@ -138,5 +138,11 @@ int8_t pw_accel_init() {
         return -1;
     }
 
+    buf[1] = STEP_CNT_INT_EN;
+    buf[0] = ACCEL_REG_INT_CONFIG1;
+    pw_accel_write_spi(buf, 2);
+
+    prev_steps = 0;
+
     return 0;
 }
