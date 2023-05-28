@@ -2,14 +2,14 @@
 
 ## Goals
 
-Faithful recreation of the original Pokewalker with some minor quality of life improvements, such as rechargeable battery etc.
-
 People should be able to build the hardware themselves, then load the code onto the pico and have a working device.
+
+Alternatively, a second version which can fit into the original Pokewalker form-factor.
+This would require SMD components so not so easy to build at home.
 
 ## Software
 
-Pico C code to recreate all of the features of the original Pokewalker.
-The code itself does not need to be as similar to the original as possible, however the output of said code should be.
+Pico C code to add drivers to support `libpicowalker-core.a`.
 
 In the end, it would be nice if multiple peripherals or even boards could be supported so try to keep all specific device/driver code separate, but this isn't a must right now.
 
@@ -41,13 +41,6 @@ Proposed hardware (for prototyping at least):
 
 I would like for multiple types of component to be supported in the future, since some may be easier to get a hold of than others, but for now getting a prototype is the goal.
 
-## What does the code need to emulate?
-
-- Mainly the IR comms. Want a seamless communication with the games and the walker.
-- Pokemon/items/routes consistency with the games.
-- Minigames and micro-apps.
-- Uh some other stuff that I can't think of right now.
-
 ## Wiring diagram
 
 ```raw
@@ -64,4 +57,5 @@ Buttons have a 1k pull-up resistor.
 
 SDA/SCL have a 4k pull-up resistor.
 
-Everything runs on 5V DC.
+Everything runs on 5V DC, but 3V3 should probably be used in the portable version.
+
