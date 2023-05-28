@@ -3,8 +3,8 @@
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
 
+#include "../picowalker-defs.h"
 #include "screen_pico_ssd1327.h"
-#include "../screen.h"
 
 static ssd1327_t oled = {0,};
 static screen_t screen = {0,};

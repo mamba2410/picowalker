@@ -5,8 +5,8 @@
 #include "hardware/gpio.h"
 #include "pico/types.h"
 
+#include "../picowalker-defs.h"
 #include "buttons_pico.h"
-#include "../buttons.h"
 
 uint64_t last_pressed = 0;
 

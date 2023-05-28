@@ -6,7 +6,7 @@
 #ifndef __ASSEMBLER__
 #include <stdint.h>
 
-#include "../flash.h"
+#include "../picowalker-defs.h"
 
 extern uint8_t pw_flash_images[DRIVER_FLASH_IMAGES_SIZE];
 

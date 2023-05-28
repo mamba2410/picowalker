@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "hardware/i2c.h"
 
-#include "../screen.h"
+#include "../picowalker-defs.h"
 
 #define OLED_DEBUG
 
@@ -41,10 +41,10 @@
 
 
 typedef struct {
-	i2c_inst_t* i2c;
-	uint speed;
-	uint8_t sda;
-	uint8_t scl;
+    i2c_inst_t* i2c;
+    uint speed;
+    uint8_t sda;
+    uint8_t scl;
     size_t width;
     size_t height;
 } ssd1327_t;

@@ -1,4 +1,4 @@
-#include "pico_flash.h"
+#include "flash_pico.h"
 
 .section .data.flash_images, "ax", %progbits
 .type pw_flash_images, %object

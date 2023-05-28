@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../flash.h"
+#include "../picowalker-defs.h"
 #include "flash_pico.h"
 
 static const size_t offsets[] = {0, 0x100, 0x120, 0x140, 0x160, 0x170, 0x180};

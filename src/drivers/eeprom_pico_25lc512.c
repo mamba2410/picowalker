@@ -5,8 +5,8 @@
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
+#include "../picowalker-defs.h"
 #include "eeprom_pico_25lc512.h"
-#include "../eeprom.h"
 
 static spi_inst_t *eeprom_spi;
 
