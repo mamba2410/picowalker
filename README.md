@@ -20,13 +20,13 @@ Currently on a breadboard, but PCB schematics are in the works.
 - 25LC512 64k EEPROM
 - Serial debug outputs over pico stdout
 - Debugging on swd
+- BMA400 Accelerometer
 
 The OLED can draw original Pokewalker-encoded images and convert them on-the-fly.
 The new images are 4-bpp so are twice as large in file size unfortunately.
 
 Still to do:
 
-- Accelerometer
 - RTC
 - Battery
 - Get a first (portable) hardware prototype!
