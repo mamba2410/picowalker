@@ -75,32 +75,32 @@ void pw_screen_init() {
 
 
 #ifdef OLED_DEBUG
-    oled_draw_box(&oled, 0, 0, oled.width-1, oled.height-1, 0x01);
+    oled_draw_box(&oled, 0, 0, oled.width, oled.height, 0x01);
 #else
     oled_clear_ram(&oled);
 #endif
 }
 
 
-void oled_draw_box(ssd1327_t *oled, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour) {
+void oled_draw_box(ssd1327_t *oled, uint8_t x1, uint8_t y1, uint8_t width, uint8_t height, uint8_t colour) {
     uint8_t buf[8];
 
     size_t bc = 0;
     buf[bc++] = 0x00;
     buf[bc++] = 0x15; // column address
     buf[bc++] = x1/2;
-    buf[bc++] = x2/2;
+    buf[bc++] = (x1+width-1)/2;
     buf[bc++] = 0x75; // row address
     buf[bc++] = y1;
-    buf[bc++] = y2;
+    buf[bc++] = y1+height-1;
 
     oled_write(oled, buf, bc);
 
     oled_msg_buf[0] = OLED_CMD_DATA;
-    size_t len = (x2-x1+1)*(y2-y1+1);
+    size_t len = width*height/2;
 
     // if we are only 1 pixel wide, only set nibble
-    if(x2 == x1) {
+    if(width == 1) {
         if( x1%2 == 0)
             colour = colour<<4;
     } else {
@@ -136,16 +136,12 @@ int oled_clear_ram(ssd1327_t *oled) {
     memset(oled_msg_buf, 0, OLED_MSG_BUF_SIZE);
 
     oled_img_t img = {
-width:
-        oled->width,
-height:
-        oled->height,
-        x: 0,
-        y: 0,
-data:
-        oled_msg_buf,
-size:
-        OLED_MSG_BUF_SIZE,
+        .width = oled->width,
+        .height = oled->height,
+        .x = 0,
+        .y = 0,
+        .data = oled_msg_buf,
+        .size = OLED_MSG_BUF_SIZE,
     };
 
     int err = oled_draw(oled, &img);
@@ -243,7 +239,7 @@ void pw_screen_clear() {
     oled_draw_box(
         &oled,
         screen.offset_x, screen.offset_y,
-        screen.offset_x+SCREEN_WIDTH-1, screen.offset_y+SCREEN_HEIGHT-1,
+        SCREEN_WIDTH, SCREEN_HEIGHT,
         0x0
     );
 #else
@@ -283,17 +279,12 @@ void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, sc
 
 void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t len, screen_colour_t colour) {
     oled_img_t img = {
-x:
-        x + screen.offset_x,
-y:
-        y + screen.offset_y,
-width:
-        len,
-        height: 1,
-size:
-        len/2,
-data:
-        oled_image_buf
+        .x = x + screen.offset_x,
+        .y = y + screen.offset_y,
+        .width = len,
+        .height = 1,
+        .size = len/2,
+        .data = oled_image_buf
     };
 
     colour = oled_convert_colour(colour);
@@ -306,13 +297,13 @@ data:
 }
 
 
-void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1, screen_pos_t x2, screen_pos_t y2, screen_colour_t colour) {
+void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1, screen_pos_t width, screen_pos_t height, screen_colour_t colour) {
     x1 = x1 + screen.offset_x;
-    x2 = x2 + screen.offset_x;
+    uint8_t x2 = x1 + width;
     y1 = y1 + screen.offset_y;
-    y2 = y2 + screen.offset_y;
-    oled_draw_box(&oled, x1, y1, x1, y2, oled_convert_colour(colour));
-    oled_draw_box(&oled, x2, y1, x2, y2, oled_convert_colour(colour));
-    oled_draw_box(&oled, x1, y1, x2, y1, oled_convert_colour(colour));
-    oled_draw_box(&oled, x1, y2, x2, y2, oled_convert_colour(colour));
+    uint8_t y2 = y1 + height;
+    oled_draw_box(&oled, x1, y1, 1, height, oled_convert_colour(colour));
+    oled_draw_box(&oled, x2, y1, 1, height, oled_convert_colour(colour));
+    oled_draw_box(&oled, x1, y1, width, 1, oled_convert_colour(colour));
+    oled_draw_box(&oled, x1, y2, width, 1, oled_convert_colour(colour));
 }
