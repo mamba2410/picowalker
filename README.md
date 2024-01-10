@@ -6,21 +6,20 @@
 
 See the sister project: [picowalker-core](https://github.com/mamba2410/picowalker-core).
 
-This repo intends to add driver code for the picowalker-core to make a fully functioning pico-based
-pokewalker.
-Some other drivers will be added as well to support different hardware.
+This repo is for people who want to make their own Raspberry pi pico based pokewalker
+using the `picowalker-core` code.
 
 ## Project state
 
-Currently on a breadboard, but PCB schematics are in the works.
+I have a working prototype on a breadboard using the following hardware:
 
 - SSD1327 OLED display with on-the-fly image transcoding
 - IrDA 3-click IR interface
-- Generic interface-based buttons
+- Generic push buttons
 - 25LC512 64k EEPROM
+- BMA400 Accelerometer
 - Serial debug outputs over pico stdout
 - Debugging on swd
-- BMA400 Accelerometer
 
 The OLED can draw original Pokewalker-encoded images and convert them on-the-fly.
 The new images are 4-bpp so are twice as large in file size unfortunately.
@@ -31,6 +30,16 @@ Still to do:
 - Battery
 - Get a first (portable) hardware prototype!
 - Sound
+
+## Building for yourself
+
+I have written a [tutorial](docs/TUTORIAL.md) on how to build this project for yourself.
+First you'll want to check the [design doc](docs/DESIGN.md) to assemble the hardware
+like how I have for the prototype.
+
+If you feel like writing some code so that you can use different parts, then go for it!
+Hopefully the current driver code is a good enough reference to help you understand what
+it is you need to do.
 
 ## Help Wanted
 
@@ -46,8 +55,6 @@ Help is needed to:
 
 If you would like to try out the current implementation or contribute to the project, please read
 the [design doc](./docs/DESIGN.md).
-
-For things that need doing, see the [todo doc](./docs/TODO.md).
 
 ## Resources
 
@@ -68,24 +75,23 @@ See [design doc for now](docs/DESIGN.md)
 
 ## Building and Testing
 
+You can follow the detailed [tutorial](docs/TUTORIAL.md) if you'd like, or below is a quick-start guide.
+
 Make sure you have installed and built the [Raspberry Pi Pico SDK](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf) and can run the simple `blink` program before continuing.
 
-You also need to compile [picowalker-core]() for ARM cortex-m0+ and move the output to
-`lib/libpicowalker-core.a`.
+You also need to compile [picowalker-core](https://github.com/mamba2410/picowalker-core) for ARM cortex-m0+ and move the output to `lib/libpicowalker-core.a`.
 
 ### Linux
 
 It should be as easy as
 
 ```sh
-cd build
-cmake -DCMAKE_BUILD_TYPE=Debug ..
-cd ..
-make
+cmake -B build/ -DCMAKE_BUILD_TYPE=Debug .
+cmake --build build/
 ```
 
 Then copy over the `picowalker.uf2` to the pico and it should work.
-Alternatively, debugging with SWD.
+Alternatively, debugging with gdb and SWD.
 
 ### Mac
 
@@ -99,7 +105,7 @@ The whole buidl system is managed by the original Pico CMake so getting it to bu
 
 See instructions on the [Pico SDK datasheet.](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf)
 
-### Note on my own testing
+## Note on my own testing
 
 Programming over swd with FT2232h.
 See [getting started with pico sec. 6](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf)
