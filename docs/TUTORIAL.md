@@ -100,7 +100,7 @@ cd picowalker-core
 Now we need to compile it into a static library using `cmake`.
 Since we're cross-compiling it, we need to specify which toolchain we want to
 use.
-This is done with the `-DCMAKE_TOOLCHAIN_PATH` flag.
+This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 
 So now, lets run
 
@@ -112,7 +112,7 @@ cmake --build build/arm-cortexm0plus
 if you encounter errors here, it likely means that `cmake` can't find your
 cross-compiler.
 Check the error messages for more details, and try googling the error messages.
-That's what I do when something goes wrong ¯\_(ツ)_/¯
+That's what I do when something goes wrong ¯\\_(ツ)_/¯
 
 If all went well, you should now have a file located at
 `build/arm-cortexm0plus/libpicowalker-core.a`.
