@@ -105,8 +105,8 @@ This is done with the `-DCMAKE_TOOLCHAIN_PATH` flag.
 So now, lets run
 
 ```
-cmake -B build/arm-cortexm0plus -DCMAKE_TOOLCHAIN_FILE .
-cmake --build build/arm-cortexm0-plus
+cmake -B build/arm-cortexm0plus -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico.cmake .
+cmake --build build/arm-cortexm0plus
 ```
 
 if you encounter errors here, it likely means that `cmake` can't find your
