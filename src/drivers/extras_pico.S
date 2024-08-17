@@ -18,4 +18,4 @@ eeprom: .incbin "../rom/pweep.rom"
 */
 
 .global sad_pokewalker
-sad_pokewalker: .incbin "../rom/test_image.bin"
+sad_pokewalker: .incbin "../../rom/test_image.bin"

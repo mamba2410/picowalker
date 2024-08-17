@@ -6,7 +6,7 @@
 #include <hardware/gpio.h>
 #include "pico/time.h"
 
-#include "ir_pico.h"
+#include "ir_pico_uart1.h"
 
 
 int pw_ir_read(uint8_t *buf, size_t max_len) {
@@ -100,5 +100,7 @@ void pw_ir_clear_rx() {
     }
 }
 
-void pw_it_deinit() {}
+void pw_ir_deinit() {
+    /* TODO: power saving (IR shutdown, stop uart1, etc.) */
+}
 

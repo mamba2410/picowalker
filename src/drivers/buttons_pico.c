@@ -10,8 +10,18 @@
 
 uint64_t last_pressed = 0;
 
-
 void pw_button_init() {
+
+    // enable pins
+    gpio_init(PIN_BUTTON_LEFT);
+    gpio_init(PIN_BUTTON_MIDDLE);
+    gpio_init(PIN_BUTTON_RIGHT);
+
+    // Internal pull-up
+    gpio_pull_up(PIN_BUTTON_LEFT);
+    gpio_pull_up(PIN_BUTTON_MIDDLE);
+    gpio_pull_up(PIN_BUTTON_RIGHT);
+
     gpio_set_irq_enabled_with_callback(PIN_BUTTON_LEFT, GPIO_IRQ_EDGE_FALL, true, &pw_pico_button_callback);
     gpio_set_irq_enabled_with_callback(PIN_BUTTON_MIDDLE, GPIO_IRQ_EDGE_FALL, true, &pw_pico_button_callback);
     gpio_set_irq_enabled_with_callback(PIN_BUTTON_RIGHT, GPIO_IRQ_EDGE_FALL, true, &pw_pico_button_callback);

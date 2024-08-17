@@ -12,17 +12,14 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
     src/main.c
-    src/drivers/screen_pico_ssd1327.c
-    src/drivers/screen_pico_ssd1327.h
-    src/drivers/accel_bma400.c
-    src/drivers/accel_bma400.h
-    src/drivers/ir_pico.c
-    src/drivers/ir_pico.h
+    src/drivers/screen_pico2_dwo_hstx.c
+    src/drivers/screen_pico2_dwo_hstx.h
+    src/drivers/accel_pico_bma400.c
+    src/drivers/accel_pico_bma400.h
+    src/drivers/ir_pico_uart1.c
+    src/drivers/ir_pico_uart1.h
     src/drivers/buttons_pico.c
     src/drivers/buttons_pico.h
-    #src/drivers/eeprom_pico_ram.S
-    #src/drivers/eeprom_pico_ram.c
-    #src/drivers/eeprom_pico_ram.h
     src/drivers/eeprom_pico_25lc512.c
     src/drivers/eeprom_pico_25lc512.h
     src/drivers/timer_pico.c
@@ -31,6 +28,7 @@ add_executable(picowalker
     src/drivers/flash_pico.c
     src/drivers/flash_pico.S
     src/drivers/flash_pico.h
+    src/picowalker-defs.h
 )
 
 ## Enable usb, uart etc for stdio
@@ -44,7 +42,6 @@ pico_add_extra_outputs(picowalker)
 ## Link these libs together
 target_link_libraries(picowalker
 	pico_stdlib
-    hardware_i2c
     hardware_spi
     ${CMAKE_SOURCE_DIR}/lib/libpicowalker-core.a
 )

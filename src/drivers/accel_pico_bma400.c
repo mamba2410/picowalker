@@ -4,7 +4,7 @@
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
-#include "accel_bma400.h"
+#include "accel_pico_bma400.h"
 
 static spi_inst_t *accel_spi;
 static int32_t prev_steps;
