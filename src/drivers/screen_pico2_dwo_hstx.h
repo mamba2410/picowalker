@@ -11,12 +11,17 @@
 
 
 /*
+ * (96*4)*(64*4)*2 = 192kiB
+ * 448*368*2 = 322kiB
+ *
  * pico2 has 512kiB ram so we can fit the whole 322kiB (16bpp) or even 483kiB
  * (24bpp) buffers in here with a good amount of room to spare.
  * Might be able to do some shenanegans with the HSTX to always transmit
  * each byte `SCREEN_SCALE` times to save on buffer space.
  */
-#define AMOLED_BUFFER_LEN (192*1024)
+#define AMOLED_BUFFER_SIZE (192*1024)
+
+#define AMOLED_BYTES_PER_PIXEL 2
 
 const uint16_t colour_map[4] = {
     0xe75b, // white
@@ -67,6 +72,7 @@ typedef struct screen_area_s {
     int height;
 } screen_area_t;
 
+
 #define PIN_HSTX_START  13
 #define PIN_HSTX_SCK    13 // GP13, phys 17
 #define PIN_HSTX_SD0    14 // GP14, phys 19
@@ -75,4 +81,5 @@ typedef struct screen_area_s {
 #define PIN_HSTX_SD3    17 // GP17, phys 22
 #define PIN_HSTX_CSB    18 // GP18, phys 24
 
+#define PIN_SCREEN_RST  22 // GP22, phys 29
 #endif /* PW_SCREEN_PICO2_DWO_HSTX_H */
