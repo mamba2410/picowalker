@@ -73,7 +73,7 @@ typedef struct screen_area_s {
 } screen_area_t;
 
 
-#define PIN_HSTX_START  13
+#define PIN_HSTX_START  12
 #define PIN_HSTX_SCK    13 // GP13, phys 17
 #define PIN_HSTX_SD0    14 // GP14, phys 19
 #define PIN_HSTX_SD1    15 // GP15, phys 20

@@ -47,14 +47,18 @@ static uint8_t amoled_buffer[AMOLED_BUFFER_SIZE] = {0};
 static void hstx_configure_1wire() {
     hstx_ctrl_hw->csr = 0; // Disable and reset HSTX CSR
 
+    gpio_set_function(PIN_HSTX_SD1, GPIO_FUNC_NULL);
+    gpio_set_function(PIN_HSTX_SD2, GPIO_FUNC_NULL);
+    gpio_set_function(PIN_HSTX_SD3, GPIO_FUNC_NULL);
+
     /*
      * Set up clock and SD0 for 1 wire MSB transmission
      * Disable pins SD1..3
      */
     hstx_ctrl_hw->bit[PIN_HSTX_SCK - PIN_HSTX_START] = HSTX_CTRL_BIT0_CLK_BITS;
     hstx_ctrl_hw->bit[PIN_HSTX_SD0 - PIN_HSTX_START] = 
-        (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
-        (31<<HSTX_CTRL_BIT0_SEL_N_LSB);
+        (7<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+        (7<<HSTX_CTRL_BIT0_SEL_N_LSB);
     hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] = 0; // Disable other bits
     hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] = 0;
     hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] = 0;
@@ -71,6 +75,10 @@ static void hstx_configure_1wire() {
 static void hstx_configure_4wire() {
     hstx_ctrl_hw->csr = 0; // Disable and reset HSTX CSR
 
+    gpio_set_function(PIN_HSTX_SD1, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD2, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD3, 0/*GPIO_FUNC_HSTX*/);
+
     /*
      * Set up clock and SD0..3 for 4 wire MSB transmission
      * SD3 gets MSB in nibble
@@ -78,17 +86,17 @@ static void hstx_configure_4wire() {
     hstx_ctrl_hw->bit[PIN_HSTX_SCK - PIN_HSTX_START] = HSTX_CTRL_BIT0_CLK_BITS;
 
     hstx_ctrl_hw->bit[PIN_HSTX_SD0 - PIN_HSTX_START] = 
-        (28<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
-        (28<<HSTX_CTRL_BIT0_SEL_N_LSB);
+        (4<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+        (4<<HSTX_CTRL_BIT0_SEL_N_LSB);
     hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] = 
-        (29<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
-        (29<<HSTX_CTRL_BIT0_SEL_N_LSB);
+        (5<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+        (5<<HSTX_CTRL_BIT0_SEL_N_LSB);
     hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] = 
-        (30<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
-        (30<<HSTX_CTRL_BIT0_SEL_N_LSB);
+        (6<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+        (6<<HSTX_CTRL_BIT0_SEL_N_LSB);
     hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] = 
-        (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
-        (31<<HSTX_CTRL_BIT0_SEL_N_LSB);
+        (7<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+        (7<<HSTX_CTRL_BIT0_SEL_N_LSB);
 
     /*
      * Set up HSTX shift register
@@ -108,7 +116,7 @@ static inline void hstx_put_word(uint32_t data) {
     while(hstx_fifo_hw->stat & HSTX_FIFO_STAT_FULL_BITS);
 
     // place single word in fifo
-    hstx_fifo_hw->fifo = data<<24;
+    hstx_fifo_hw->fifo = data;
 }
 
 
@@ -119,13 +127,15 @@ static void amoled_send_1wire(uint8_t cmd, size_t len, uint8_t data[len]) {
     gpio_put(PIN_HSTX_CSB, 0);
     hstx_put_word(0x02);    // 1 wire write
     hstx_put_word(0x00);
-    hstx_put_word(cmd);
+    hstx_put_word(cmd&0xff);
     hstx_put_word(0x00);
 
     // send args
     for(size_t i = 0; i < len; i++) {
         hstx_put_word(data[i]);
     }
+    while(!(hstx_fifo_hw->stat & HSTX_FIFO_STAT_EMPTY_BITS));
+    for(size_t i = 0; i < 64; i++);
     gpio_put(PIN_HSTX_CSB, 1);
 }
 
@@ -294,6 +304,11 @@ void pw_screen_init() {
         CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB << CLOCKS_CLK_HSTX_CTRL_AUXSRC_LSB,
         CLOCKS_CLK_HSTX_CTRL_AUXSRC_BITS
     );
+    hw_write_masked(
+        &clocks_hw->clk[clk_hstx].div,
+        0x03 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
+        CLOCKS_CLK_HSTX_DIV_INT_BITS
+    );
     unreset_block_wait(RESETS_RESET_HSTX_BITS);
 
     /*
@@ -305,9 +320,6 @@ void pw_screen_init() {
 
     gpio_set_function(PIN_HSTX_SCK, 0/*GPIO_FUNC_HSTX*/);
     gpio_set_function(PIN_HSTX_SD0, 0/*GPIO_FUNC_HSTX*/);
-    gpio_set_function(PIN_HSTX_SD1, 0/*GPIO_FUNC_HSTX*/);
-    gpio_set_function(PIN_HSTX_SD2, 0/*GPIO_FUNC_HSTX*/);
-    gpio_set_function(PIN_HSTX_SD3, 0/*GPIO_FUNC_HSTX*/);
 
     gpio_init(PIN_SCREEN_RST);
     gpio_set_dir(PIN_SCREEN_RST, GPIO_OUT);
@@ -320,11 +332,16 @@ void pw_screen_init() {
     gpio_put(PIN_SCREEN_RST, 0);
     sleep_ms(15);
     gpio_put(PIN_SCREEN_RST, 1);
-    sleep_ms(50);
+    sleep_ms(150);
 
     params[0] = 0x00;
     amoled_send_1wire(CMD_SLEEP_OUT, 1, params);
     sleep_ms(120);
+
+    while(1) {
+        amoled_send_1wire(CMD_ALL_ON, 0, params);
+        sleep_ms(1);
+    }
 
     params[0] = 0xd5;
     amoled_send_1wire(CMD_PIXEL_FORMAT, 1, params);
