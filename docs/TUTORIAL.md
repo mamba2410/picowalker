@@ -104,9 +104,9 @@ This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 
 So now, lets run
 
-```
-cmake -B build/arm-cortexm0plus -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico.cmake .
-cmake --build build/arm-cortexm0plus
+```bash
+cmake -B build/arm-cortexm33f -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
+cmake --build build/arm-cortexm33f
 ```
 
 if you encounter errors here, it likely means that `cmake` can't find your
@@ -115,7 +115,7 @@ Check the error messages for more details, and try googling the error messages.
 That's what I do when something goes wrong ¯\\_(ツ)_/¯
 
 If all went well, you should now have a file located at
-`build/arm-cortexm0plus/libpicowalker-core.a`.
+`build/arm-cortexm33f/libpicowalker-core.a`.
 This is our static library!
 
 Now we can move on to compiling the picowalker drivers for our hardware.
@@ -135,13 +135,13 @@ project.
 
 ```
 mkdir lib
-cp ../picowalker-core/build/arm-cortexm0plus/libpicowalker-core.a lib/
+cp ../picowalker-core/build/arm-cortexm33f/libpicowalker-core.a lib/
 ```
 
 And now we get to build it with `cmake`:
 
 ```
-cmake -B build/
+cmake -B build/ -DPICO_BOARD=pico2.
 cmake --build build/
 ```
 
@@ -166,7 +166,6 @@ The pico should reboot and start running the software.
 
 If you don't see an image, try checking your wires and make sure you have
 pull-up resistors on both of the i2c lines.
-
 
 ## Conclusion
 

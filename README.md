@@ -9,27 +9,35 @@ See the sister project: [picowalker-core](https://github.com/mamba2410/picowalke
 This repo is for people who want to make their own Raspberry pi pico based pokewalker
 using the `picowalker-core` code.
 
+**Update regarding the pico 2**
+The pico (rp2040) wasn't really up to the task of this being a serious replacement
+to the Pokewalker due to the lack of a (useable) QSPI bus for the screen, as well
+as the high sleep power usage.
+The rp2350 and the pico 2 solves both of these issues by lowering the sleep
+current draw and adding the HSTX peripheral which would allow a pseudo-QSPI 
+interface. It's only one-way but the screen doesn't need to send data back to
+the host, so its perfect for this use-case.
+
 ## Project state
 
 I have a working prototype on a breadboard using the following hardware:
 
-- SSD1327 OLED display with on-the-fly image transcoding
 - IrDA 3-click IR interface
 - Generic push buttons
 - 25LC512 64k EEPROM
 - BMA400 Accelerometer
-- Serial debug outputs over pico stdout
+- Serial debug outputs over pico stdout on uart0 (ping 0 and 1)
 - Debugging on swd
-
-The OLED can draw original Pokewalker-encoded images and convert them on-the-fly.
-The new images are 4-bpp so are twice as large in file size unfortunately.
 
 Still to do:
 
+- HSTX with DWO oled screen
+- IrDA over PIO (using dmitry gr's code)
 - RTC
+- Secondary flash (for colour images and possibly cries)
+- Sound
 - Battery
 - Get a first (portable) hardware prototype!
-- Sound
 
 ## Building for yourself
 
@@ -40,6 +48,17 @@ like how I have for the prototype.
 If you feel like writing some code so that you can use different parts, then go for it!
 Hopefully the current driver code is a good enough reference to help you understand what
 it is you need to do.
+
+### Debugging with `picoprobe` and openocd
+
+Make sure you get raspberry pi's [openocd build](https://github.com/raspberrypi/openocd) and follow
+the build instructions in [Appendix A of the getting started guide](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf).
+
+From openocd directory:
+
+```bash
+src/openocd -s tcl -f interface/cmsis-dap.cfg -f target/rp2350.cfg -c "adapter speed 5000"
+```
 
 ## Help Wanted
 
