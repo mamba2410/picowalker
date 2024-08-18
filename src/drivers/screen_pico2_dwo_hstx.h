@@ -11,6 +11,16 @@
 #define SCREEN_SCALE 4
 
 /*
+ * Set active area to be scaled up Pokewalker area, rotated by 90 degrees
+ * In AMOLED coordinates
+ */
+#define AMOLED_ACTIVE_WIDTH (SCREEN_HEIGHT*SCREEN_SCALE)
+#define AMOLED_ACTIVE_HEIGHT (SCREEN_WIDTH*SCREEN_SCALE)
+
+#define AMOLED_X_OFFSET ((AMOLED_WIDTH-(AMOLED_ACTIVE_WIDTH))/2)
+#define AMOLED_Y_OFFSET ((AMOLED_HEIGHT-(AMOLED_ACTIVE_HEIGHT))/2)
+
+/*
  * (96*4)*(64*4)*2 = 192kiB
  * 448*368*2 = 322kiB
  *
@@ -20,7 +30,7 @@
  * each byte `SCREEN_SCALE` times to save on buffer space.
  */
 //#define AMOLED_BUFFER_SIZE (192*1024)
-#define AMOLED_BUFFER_SIZE (AMOLED_WIDTH*AMOLED_HEIGHT*AMOLED_BYTES_PER_PIXEL)
+#define AMOLED_BUFFER_SIZE (AMOLED_ACTIVE_WIDTH*AMOLED_ACTIVE_HEIGHT*AMOLED_BYTES_PER_PIXEL)
 
 
 const uint16_t colour_map[4] = {
@@ -36,6 +46,7 @@ enum screen_cmd {
     CMD_READ_ID         = 0x04,
     CMD_READ_SELFTEST   = 0x0f,
     CMD_SLEEP_OUT       = 0x11,
+    CMD_PARTIAL_ON      = 0x12,
     CMD_NORMAL_DSP      = 0x13,
     CMD_INVERT_OFF      = 0x20,
     CMD_INVERT_ON       = 0x21,
@@ -46,6 +57,8 @@ enum screen_cmd {
     CMD_COL_SET         = 0x2a,
     CMD_PAGE_SET        = 0x2b,
     CMD_WRITE_START     = 0x2c,
+    CMD_PARTIAL_ROW_SET = 0x30,
+    CMD_PARTIAL_COL_SET = 0x31,
     CMD_TE_OFF          = 0x34,
     CMD_TE_ON           = 0x35,
     CMD_IDLE_OFF        = 0x38,

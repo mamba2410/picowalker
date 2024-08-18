@@ -377,25 +377,20 @@ void pw_screen_init() {
     amoled_send_1wire(CMD_SET_BRIGHTNESS, 1, params);
     sleep_ms(10);
 
-    amoled_send_1wire(CMD_ALL_ON, 0, params);
-    sleep_ms(1000);
+    // Note: different final row/column to draw areas
+    params[0] = (AMOLED_X_OFFSET)>>8;
+    params[1] = (AMOLED_X_OFFSET)&0xff;
+    params[2] = (AMOLED_X_OFFSET + AMOLED_ACTIVE_WIDTH)>>8;
+    params[3] = (AMOLED_X_OFFSET + AMOLED_ACTIVE_WIDTH)&0xff;
+    amoled_send_1wire(CMD_PARTIAL_COL_SET, 4, params);
 
-    amoled_send_1wire(CMD_NORMAL_DSP, 0, params);
+    params[0] = (AMOLED_Y_OFFSET)>>8;
+    params[1] = (AMOLED_Y_OFFSET)&0xff;
+    params[2] = (AMOLED_Y_OFFSET + AMOLED_ACTIVE_HEIGHT)>>8;
+    params[3] = (AMOLED_Y_OFFSET + AMOLED_ACTIVE_HEIGHT)&0xff;
+    amoled_send_1wire(CMD_PARTIAL_ROW_SET, 4, params);
 
-    // partial row/page set
-    params[0] = 0x00;
-    params[1] = 0x1f;
-    params[2] = 0x01;
-    params[3] = 0x9f;
-    amoled_send_1wire(0x30, 4, params);
-
-    params[0] = 0x00;
-    params[1] = 0x37;
-    params[2] = 0x01;
-    params[3] = 0x37;
-    amoled_send_1wire(0x31, 4, params);
-
-    amoled_send_1wire(0x12, 0, params);
+    amoled_send_1wire(CMD_PARTIAL_ON, 0, params);
 
     printf("Screen configured\n");
 
@@ -403,11 +398,12 @@ void pw_screen_init() {
 
     amoled.true_width = AMOLED_WIDTH;
     amoled.true_height = AMOLED_HEIGHT;
-    amoled.offset_x = (AMOLED_WIDTH-SCREEN_SCALE*SCREEN_HEIGHT)/2;
-    amoled.offset_y = (AMOLED_HEIGHT-SCREEN_SCALE*SCREEN_WIDTH)/2;
+    amoled.offset_x = AMOLED_X_OFFSET;
+    amoled.offset_y = AMOLED_Y_OFFSET;
 
-    amoled_draw_block(amoled.offset_x, amoled.offset_y,
-        SCREEN_SCALE*SCREEN_HEIGHT, SCREEN_SCALE*SCREEN_WIDTH,
+    amoled_draw_block(
+        amoled.offset_x, amoled.offset_y,
+        AMOLED_ACTIVE_WIDTH, AMOLED_ACTIVE_HEIGHT,
         colour_map[SCREEN_BLACK]
     );
 
