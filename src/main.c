@@ -27,12 +27,27 @@ int main() {
 
     printf("Hello, picowalker!\n");
 
-    walker_entry();
+    //walker_entry();
 
-    //while(1) {
-        //pw_screen_init();
-        //sleep_ms(1000);
-    //}
+    uint16_t colours[] = {0xf800, 0x07e0, 0x001f, 0x00ff};
+    uint8_t brightness[] = {0x1f, 0x3f, 0x7f, 0xff};
+    uint8_t i = 0;
+    pw_screen_init();
+
+
+    //amoled_draw_block(0, 0, 368, 447, 0x07e0);
+
+    amoled_send_1wire(0x51, 1, (uint8_t[]){0x3f});
+
+    while(1) {
+
+        //amoled_draw_block(100, 250, 96, 64, colours[i]);
+        amoled_draw_block(0, 0, 96, 64, colours[i]);
+        i = (i+1)%4;
+
+        amoled_send_1wire(0x51, 1, (brightness+i));
+        sleep_ms(1000);
+    }
 
     // unreachable
     while(1);
