@@ -8,7 +8,7 @@
 #define AMOLED_WIDTH 368
 #define AMOLED_HEIGHT 448
 #define AMOLED_BYTES_PER_PIXEL 2
-#define SCREEN_SCALE 2
+#define SCREEN_SCALE 4
 
 /*
  * (96*4)*(64*4)*2 = 192kiB
