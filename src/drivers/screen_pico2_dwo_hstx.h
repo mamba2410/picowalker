@@ -7,8 +7,8 @@
 
 #define AMOLED_WIDTH 368
 #define AMOLED_HEIGHT 448
-#define SCREEN_SCALE 4
-
+#define AMOLED_BYTES_PER_PIXEL 2
+#define SCREEN_SCALE 2
 
 /*
  * (96*4)*(64*4)*2 = 192kiB
@@ -19,9 +19,9 @@
  * Might be able to do some shenanegans with the HSTX to always transmit
  * each byte `SCREEN_SCALE` times to save on buffer space.
  */
-#define AMOLED_BUFFER_SIZE (192*1024)
+//#define AMOLED_BUFFER_SIZE (192*1024)
+#define AMOLED_BUFFER_SIZE (AMOLED_WIDTH*AMOLED_HEIGHT*AMOLED_BYTES_PER_PIXEL)
 
-#define AMOLED_BYTES_PER_PIXEL 2
 
 const uint16_t colour_map[4] = {
     0xe75b, // white
@@ -36,6 +36,7 @@ enum screen_cmd {
     CMD_READ_ID         = 0x04,
     CMD_READ_SELFTEST   = 0x0f,
     CMD_SLEEP_OUT       = 0x11,
+    CMD_NORMAL_DSP      = 0x13,
     CMD_INVERT_OFF      = 0x20,
     CMD_INVERT_ON       = 0x21,
     CMD_ALL_OFF         = 0x22,

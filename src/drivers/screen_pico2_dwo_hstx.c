@@ -131,7 +131,7 @@ static void amoled_send_1wire(uint8_t cmd, size_t len, uint8_t data[len]) {
         hstx_put_word(data[i]);
     }
     while(!(hstx_fifo_hw->stat & HSTX_FIFO_STAT_EMPTY_BITS));
-    for(size_t i = 0; i < 64; i++);
+    for(size_t i = 0; i < 128; i++);
     gpio_put(PIN_HSTX_CSB, 1);
 }
 
@@ -150,6 +150,8 @@ static void amoled_send_4wire(uint8_t cmd, size_t len, uint8_t data[len]) {
     for(size_t i = 0; i < len; i++) {
         hstx_put_word(data[i]);
     }
+    while(!(hstx_fifo_hw->stat & HSTX_FIFO_STAT_EMPTY_BITS));
+    for(size_t i = 0; i < 64; i++);
     gpio_put(PIN_HSTX_CSB, 1);
 }
 
@@ -180,8 +182,11 @@ static void amoled_draw_buffer(int x_start, int y_start, int width, int height,
         return;
     }
 
+    //printf("len: %lu, n_bytes: %lu\n", len, n_bytes);
     amoled_send_4wire(CMD_WRITE_START, n_bytes, buf);       // First send
     amoled_send_4wire(CMD_WRITE_CONTINUE, n_bytes, buf);    // Second send
+    //amoled_send_4wire(CMD_WRITE_START,    len, buf);       // First send
+    //amoled_send_4wire(CMD_WRITE_CONTINUE, len, buf);    // Second send
 
     amoled_send_1wire(CMD_NOP, 0, buf); // Send NOP to say we are done
 }
@@ -189,6 +194,7 @@ static void amoled_draw_buffer(int x_start, int y_start, int width, int height,
 
 static void amoled_draw_block(int x_start, int y_start, int width, int height, uint16_t colour) {
 
+    printf("Drawing block %lu x %lu\n", width, height);
     // amoled_buffer is as large as the Pokewalker render area needs to be
     // If we are doing draws larger than this area, we need to know to do it in chunks
     size_t n_bytes = width*height*AMOLED_BYTES_PER_PIXEL;
@@ -199,8 +205,9 @@ static void amoled_draw_block(int x_start, int y_start, int width, int height, u
     }
 
     // Set colour
-    for(size_t i = 0; i < n_bytes; i++) {
-        ((uint16_t*)amoled_buffer)[i] = colour;
+    for(size_t i = 0; i < n_bytes; i+=2) {
+        amoled_buffer[i+0] = colour>>8;
+        amoled_buffer[i+1] = colour&0xff;
     }
 
     amoled_draw_buffer(x_start, y_start, width, height, AMOLED_BUFFER_SIZE, amoled_buffer);
@@ -269,8 +276,12 @@ static screen_area_t transform_pw_to_amoled(screen_area_t pw_area, amoled_t a) {
 static void amoled_clear_screen() {
 
     // Do it in two blocks since buffer isn't as large
-    amoled_draw_block(0, 0, AMOLED_WIDTH, AMOLED_HEIGHT/2, 0);
-    amoled_draw_block(0, AMOLED_HEIGHT/2, AMOLED_WIDTH, AMOLED_HEIGHT/2, 0);
+    for(size_t i = 0; i < 4; i++){
+        amoled_draw_block(0, i*AMOLED_HEIGHT/4, AMOLED_WIDTH, AMOLED_HEIGHT/4, 0xf81f);
+    }
+    //sleep_ms(10);
+    //amoled_draw_block(0, AMOLED_HEIGHT/2, AMOLED_WIDTH, AMOLED_HEIGHT/2, 0xf81f);
+    //sleep_ms(10);
 
 }
 
@@ -333,8 +344,8 @@ void pw_screen_init() {
     /*
      * Screen initialise sequence
      */
-    //gpio_put(PIN_SCREEN_PWREN, 1);
-    //sleep_ms(10);
+    gpio_put(PIN_SCREEN_PWREN, 1);
+    sleep_ms(10);
     gpio_put(PIN_SCREEN_RST, 0);
     sleep_ms(10);
     gpio_put(PIN_SCREEN_RST, 1);
@@ -351,6 +362,7 @@ void pw_screen_init() {
 
     params[0] = 0xd5;
     amoled_send_1wire(CMD_PIXEL_FORMAT, 1, params);
+    sleep_ms(10);
 
     params[0] = 0x20;
     amoled_send_1wire(CMD_WRITE_CTRL_DSP1, 1, params);
@@ -363,26 +375,34 @@ void pw_screen_init() {
     amoled_send_1wire(CMD_DISPLAY_ON, 0, params);
     sleep_ms(10);
 
-    params[0] = 0xff;
+    params[0] = 0x7f;
     amoled_send_1wire(CMD_SET_BRIGHTNESS, 1, params);
     sleep_ms(10);
 
     amoled_send_1wire(CMD_ALL_ON, 0, params);
-    sleep_ms(500);
+    sleep_ms(1000);
 
-    //amoled_clear_screen();
+    amoled_send_1wire(CMD_NORMAL_DSP, 0, params);
+    sleep_ms(10);
+
+    printf("Screen configured\n");
+
+    amoled_clear_screen();
+    printf("Screen cleared\n");
 
     amoled.true_width = AMOLED_WIDTH;
     amoled.true_height = AMOLED_HEIGHT;
     amoled.offset_x = (AMOLED_WIDTH-SCREEN_SCALE*SCREEN_HEIGHT)/2;
     amoled.offset_y = (AMOLED_HEIGHT-SCREEN_SCALE*SCREEN_WIDTH)/2;
 
-    //amoled_send_1wire(CMD_NOP, 0, params);
+    amoled_send_1wire(CMD_NOP, 0, params);
 
-    //amoled_draw_block(amoled.offset_x, amoled.offset_y,
-    //    SCREEN_SCALE*SCREEN_HEIGHT, SCREEN_SCALE*SCREEN_WIDTH,
-    //    colour_map[SCREEN_BLACK]
-    //);
+    amoled_draw_block(amoled.offset_x, amoled.offset_y,
+        SCREEN_SCALE*SCREEN_HEIGHT, SCREEN_SCALE*SCREEN_WIDTH,
+        colour_map[SCREEN_BLACK]
+    );
+
+    printf("Screen initialised\n");
 }
 
 

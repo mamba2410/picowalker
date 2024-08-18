@@ -27,12 +27,12 @@ int main() {
 
     printf("Hello, picowalker!\n");
 
-    //walker_entry();
+    walker_entry();
 
-    while(1) {
-        pw_screen_init();
-        sleep_ms(1000);
-    }
+    //while(1) {
+        //pw_screen_init();
+        //sleep_ms(1000);
+    //}
 
     // unreachable
     while(1);
