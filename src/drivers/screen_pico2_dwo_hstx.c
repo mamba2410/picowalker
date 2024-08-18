@@ -47,10 +47,6 @@ static uint8_t amoled_buffer[AMOLED_BUFFER_SIZE] = {0};
 static void hstx_configure_1wire() {
     hstx_ctrl_hw->csr = 0; // Disable and reset HSTX CSR
 
-    gpio_set_function(PIN_HSTX_SD1, GPIO_FUNC_NULL);
-    gpio_set_function(PIN_HSTX_SD2, GPIO_FUNC_NULL);
-    gpio_set_function(PIN_HSTX_SD3, GPIO_FUNC_NULL);
-
     /*
      * Set up clock and SD0 for 1 wire MSB transmission
      * Disable pins SD1..3
@@ -59,9 +55,12 @@ static void hstx_configure_1wire() {
     hstx_ctrl_hw->bit[PIN_HSTX_SD0 - PIN_HSTX_START] = 
         (7<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
         (7<<HSTX_CTRL_BIT0_SEL_N_LSB);
-    hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] = 0; // Disable other bits
-    hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] = 0;
-    hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] = 0;
+    hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] = 
+        (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | (31<<HSTX_CTRL_BIT0_SEL_P_LSB) ;
+    hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] = 
+        (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | (31<<HSTX_CTRL_BIT0_SEL_P_LSB) ;
+    hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] = 
+        (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | (31<<HSTX_CTRL_BIT0_SEL_P_LSB) ;
 
     hstx_ctrl_hw->csr = 
         HSTX_CTRL_CSR_EN_BITS |             // Enable HSTX
@@ -75,9 +74,6 @@ static void hstx_configure_1wire() {
 static void hstx_configure_4wire() {
     hstx_ctrl_hw->csr = 0; // Disable and reset HSTX CSR
 
-    gpio_set_function(PIN_HSTX_SD1, 0/*GPIO_FUNC_HSTX*/);
-    gpio_set_function(PIN_HSTX_SD2, 0/*GPIO_FUNC_HSTX*/);
-    gpio_set_function(PIN_HSTX_SD3, 0/*GPIO_FUNC_HSTX*/);
 
     /*
      * Set up clock and SD0..3 for 4 wire MSB transmission
@@ -296,6 +292,28 @@ void pw_screen_init() {
      */
 
     /*
+     * Set up manual CSB
+     */
+    gpio_init(PIN_HSTX_CSB);
+    gpio_init(PIN_SCREEN_PWREN);
+    gpio_init(PIN_SCREEN_RST);
+    gpio_set_dir(PIN_HSTX_CSB, GPIO_OUT);
+    gpio_set_dir(PIN_SCREEN_PWREN, GPIO_OUT);
+    gpio_set_dir(PIN_SCREEN_RST, GPIO_OUT);
+    gpio_put(PIN_HSTX_CSB, 1);
+    gpio_put(PIN_SCREEN_RST, 0);
+    gpio_put(PIN_SCREEN_PWREN, 0);
+
+    gpio_set_function(PIN_HSTX_SCK, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD0, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD1, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD2, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD3, 0/*GPIO_FUNC_HSTX*/);
+
+    sleep_ms(5);
+
+
+    /*
      * Set up clocks to 48MHz
      */
     reset_block(RESETS_RESET_HSTX_BITS);
@@ -306,42 +324,30 @@ void pw_screen_init() {
     );
     hw_write_masked(
         &clocks_hw->clk[clk_hstx].div,
-        0x03 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
+        0x00 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
         CLOCKS_CLK_HSTX_DIV_INT_BITS
     );
     unreset_block_wait(RESETS_RESET_HSTX_BITS);
 
-    /*
-     * Set up manual CSB
-     */
-    gpio_init(PIN_HSTX_CSB);
-    gpio_set_dir(PIN_HSTX_CSB, GPIO_OUT);
-    gpio_put(PIN_HSTX_CSB, 1);
-
-    gpio_set_function(PIN_HSTX_SCK, 0/*GPIO_FUNC_HSTX*/);
-    gpio_set_function(PIN_HSTX_SD0, 0/*GPIO_FUNC_HSTX*/);
-
-    gpio_init(PIN_SCREEN_RST);
-    gpio_set_dir(PIN_SCREEN_RST, GPIO_OUT);
-    gpio_put(PIN_SCREEN_RST, 1);
-    sleep_ms(5);
 
     /*
      * Screen initialise sequence
      */
+    //gpio_put(PIN_SCREEN_PWREN, 1);
+    //sleep_ms(10);
     gpio_put(PIN_SCREEN_RST, 0);
-    sleep_ms(15);
+    sleep_ms(10);
     gpio_put(PIN_SCREEN_RST, 1);
     sleep_ms(150);
 
     params[0] = 0x00;
-    amoled_send_1wire(CMD_SLEEP_OUT, 1, params);
-    sleep_ms(120);
+    amoled_send_1wire(CMD_SLEEP_OUT, 0, params);
+    sleep_ms(150);
 
-    while(1) {
-        amoled_send_1wire(CMD_ALL_ON, 0, params);
-        sleep_ms(1);
-    }
+    //while(1) {
+        //amoled_send_1wire(CMD_ALL_OFF, 0, params);
+        //sleep_ms(500);
+    //}
 
     params[0] = 0xd5;
     amoled_send_1wire(CMD_PIXEL_FORMAT, 1, params);
@@ -361,19 +367,22 @@ void pw_screen_init() {
     amoled_send_1wire(CMD_SET_BRIGHTNESS, 1, params);
     sleep_ms(10);
 
-    amoled_clear_screen();
+    amoled_send_1wire(CMD_ALL_ON, 0, params);
+    sleep_ms(500);
+
+    //amoled_clear_screen();
 
     amoled.true_width = AMOLED_WIDTH;
     amoled.true_height = AMOLED_HEIGHT;
     amoled.offset_x = (AMOLED_WIDTH-SCREEN_SCALE*SCREEN_HEIGHT)/2;
     amoled.offset_y = (AMOLED_HEIGHT-SCREEN_SCALE*SCREEN_WIDTH)/2;
 
-    amoled_send_1wire(CMD_NOP, 0, params);
+    //amoled_send_1wire(CMD_NOP, 0, params);
 
-    amoled_draw_block(amoled.offset_x, amoled.offset_y,
-        SCREEN_SCALE*SCREEN_HEIGHT, SCREEN_SCALE*SCREEN_WIDTH,
-        colour_map[SCREEN_BLACK]
-    );
+    //amoled_draw_block(amoled.offset_x, amoled.offset_y,
+    //    SCREEN_SCALE*SCREEN_HEIGHT, SCREEN_SCALE*SCREEN_WIDTH,
+    //    colour_map[SCREEN_BLACK]
+    //);
 }
 
 

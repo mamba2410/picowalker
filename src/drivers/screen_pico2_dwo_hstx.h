@@ -82,4 +82,5 @@ typedef struct screen_area_s {
 #define PIN_HSTX_CSB    18 // GP18, phys 24
 
 #define PIN_SCREEN_RST  22 // GP22, phys 29
+#define PIN_SCREEN_PWREN    27 // GP27, phys 32
 #endif /* PW_SCREEN_PICO2_DWO_HSTX_H */
