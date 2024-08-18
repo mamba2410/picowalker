@@ -22,6 +22,7 @@ the host, so its perfect for this use-case.
 
 I have a working prototype on a breadboard using the following hardware:
 
+- DO180PFST05 screen with rp2350 HSTX (SH8601Z driver)
 - IrDA 3-click IR interface
 - Generic push buttons
 - 25LC512 64k EEPROM
@@ -31,7 +32,6 @@ I have a working prototype on a breadboard using the following hardware:
 
 Still to do:
 
-- HSTX with DWO oled screen
 - IrDA over PIO (using dmitry gr's code)
 - RTC
 - Secondary flash (for colour images and possibly cries)

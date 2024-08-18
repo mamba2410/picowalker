@@ -5,9 +5,9 @@
 This tutorial aims to help you:
 
 - Set up a cross-compiling toolchain.
-- Compile the [picowalker-core]() code for the cortex-m0+ processor
-    (the processor in the rp2048 chip).
-- Compile the [picowalker]() code for the default hardware contiguration
+- Compile the [picowalker-core]() code for the cortex-m33 processor
+    (the processor in the pico 2/rp2350 chip).
+- Compile the [picowalker]() code for the default hardware configuration
     (see [design.md](./design.md)).
 - Upload the code to the pico
 
@@ -145,7 +145,7 @@ cmake -B build/ -DPICO_BOARD=pico2.
 cmake --build build/
 ```
 
-If that all went well, you should have a file called `buid/picowalker.uf2`.
+If that all went well, you should have a file called `build/picowalker.uf2`.
 This is the file you'll want to copy to your pico.
 
 If that didn't work out for you, make sure that you have installed the
@@ -170,13 +170,11 @@ pull-up resistors on both of the i2c lines.
 ## Conclusion
 
 There you have it, you should now be able to run the picowalker software on
-your raspberry pi pico!
+your raspberry pi pico 2!
 For now, there are only drivers for the specific hardware that I have been
 prototyping with, but with some extra help, we can make drivers for lots
 of different hardware so that people can mix-and-match with what they have.
 
 Any questions you have, shoot me a message on the Pokewalker Discord and I'll
 be happy to help!
-
-
 

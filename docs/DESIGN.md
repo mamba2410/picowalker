@@ -11,10 +11,11 @@ This would require SMD components so not so easy to build at home.
 
 The current hardware I'm using to prototype this:
 
-- Main controller (Pico)
-- LCD screen 96x64 2-bit greyscale
-  - SSD1327 128x128 4-bit greyscale oled (via i2c) is best I can find for now.
-  - [AliExpress SPI](https://www.aliexpress.com/item/32920538010.html)
+- Main controller (Pico 2)
+- OLED screen SH8601Z driver (DO0180PFST05 module)
+    - [Module (Chinese website)](https://www.dwo.net.cn/pd.jsp?id=11924#_jcp=3_38)
+    - [Panel (Chinese website)](https://www.dwo.net.cn/pd.jsp?fromColId=2&id=11921#_pp=2_322)
+- Optional SSD1327 drivers for different screen
 - IrDA interface
   - Mikroe IrDA 3-click (breadboard development) [Mouser](https://www.mouser.co.uk/ProductDetail/Mikroe/MIKROE-2871?qs=f9yNj16SXrKCBoWeEAc2vQ%3D%3D)
 - Alternative IrDA interface that will need some manual building (not recommended)
@@ -42,23 +43,33 @@ Chart for the [pico pinout](https://www.raspberrypi.com/documentation/microcontr
 ```raw
 Pico           Peripheral
 ----------------------------
-17 (GP13) ---- Button left
-19 (GP14) ---- Button middle
-20 (GP15) ---- Button right
-21 (GP16) ---- OLED SDA
-22 (GP17) ---- OLED SCL
- 4 (GP2) ----- Accel SCK, eeprom SCK
- 5 (GP3) ----- Accel MOSI, eeprom MOSI
- 6 (GP4) ----- Accel MISO, eeprom MISO
- 7 (GP5) ----- eeprom CSB
- 9 (GP6) ----- Accel CSB
-11 (GP8) ----- IR TX
-12 (GP9) ----- IR RX
+ 1 GP00 -- DBG_TX
+ 2 GP01 -- DBG_RX
+ 4 GP02 -- SPI_SCK
+ 5 GP03 -- SPI_MOSI
+ 6 GP04 -- SPI_MISO
+ 7 GP05 -- EEPROM_CSB
+10 GP07 -- IR_SHUTDOWN
+11 GP08 -- IR_TX
+12 GP09 -- IR_RX
+14 GP10 -- BUTTON_L
+15 GP11 -- BUTTON_M
+16 GP12 -- BUTTON_R
+17 GP13 -- SCREEN_HSTX_CLK
+19 GP14 -- SCREEN_HSTX_SD0
+20 GP15 -- SCREEN_HSTX_SD1
+21 GP16 -- SCREEN_HSTX_SD2
+22 GP17 -- SCREEN_HSTX_SD3
+24 GP18 -- SCREEN_CSB
+25 GP19 -- ACCEL_INT1
+26 GP20 -- ACCEL_CSB
+27 GP21 -- FLASH_CSB
+29 GP22 -- SCREEN_RST
+31 GP26 -- SPEAKER
+32 GP27 -- SCREEN_POWER_ENABLE
+3v3 ------ 3.3V rail
+GND ------ Ground rail
 ```
 
-Buttons have a 1k pull-up resistor (connected to 5V).
-
-SDA/SCL have a 10k pull-up resistor (connected to 5V).
-
-Everything runs on 5V DC.
+Everything runs on 3.3V DC.
 
