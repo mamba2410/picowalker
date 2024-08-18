@@ -44,7 +44,7 @@ static uint8_t amoled_buffer[AMOLED_BUFFER_SIZE] = {0};
  * - Maybe expander can help with decoding RLE images
  */
 
-static void decode_img(pw_img_t *pw_img, size_t out_len, size_t out_buf[out_len]) {
+static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len]) {
     
     uint8_t pixel_value, bpu, bpl;
     size_t row, col, stride = pw_img->height;
@@ -257,7 +257,6 @@ void amoled_draw_buffer(int x_start, int y_start, int width, int height,
 
 void amoled_draw_block(int x_start, int y_start, int width, int height, uint16_t colour) {
 
-    printf("Drawing block %lu x %lu\n", width, height);
     // amoled_buffer is as large as the Pokewalker render area needs to be
     // If we are doing draws larger than this area, we need to know to do it in chunks
     size_t n_bytes = width*height*AMOLED_BYTES_PER_PIXEL;
@@ -412,27 +411,116 @@ void pw_screen_init() {
 
 
 void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y) {
+    // TODO: checks image isn't too large
+    decode_img(img, AMOLED_BUFFER_SIZE, amoled_buffer);
 
+    // Put decoded, transformed image in `amoled_buffer`
+    decode_img(img, AMOLED_BUFFER_SIZE, amoled_buffer);
+
+    // Transform image area to amoled coordinates
+    screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){
+        .x = x,
+        .y = y,
+        .width = img->width,
+        .height = img->height,
+    }, amoled);
+    amoled_draw_buffer(
+            //((SCREEN_HEIGHT-img->height-y)*SCREEN_SCALE)+amoled.offset_x, (x*SCREEN_SCALE)+amoled.offset_y,
+            //img->height*SCREEN_SCALE, img->width*SCREEN_SCALE,
+            amoled_area.x, amoled_area.y,
+            amoled_area.width, amoled_area.height,
+            2*amoled_area.width*amoled_area.height,
+            amoled_buffer);
 }
 
 
 void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_pos_t h) {
 
+    screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){
+        .x = x,
+        .y = y,
+        .width = w,
+        .height = h,
+    }, amoled);
+
+    amoled_draw_block(
+        amoled_area.x, amoled_area.y,
+        amoled_area.width, amoled_area.height,
+        colour_map[SCREEN_WHITE]
+    );
+
 }
 
 void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_colour_t c) {
+    screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){
+        .x = x,
+        .y = y,
+        .width = w,
+        .height = 1,
+    }, amoled);
+    amoled_draw_block(
+        amoled_area.x, amoled_area.y,
+        amoled_area.width, amoled_area.height,
+        colour_map[c]);
 
 }
 
 
-void pw_screen_draw_text_box(screen_pos_t x, screen_pos_t y, 
-                             screen_pos_t w, screen_pos_t h,
+void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1, 
+                             screen_pos_t width, screen_pos_t height,
                              screen_colour_t c) {
+
+    // assume y2 > y1 and x2 > x1
+    screen_pos_t x2 = x1 + width - 1;
+    screen_pos_t y2 = y1 + height - 1;
+
+    screen_area_t amoled_area = {0}, pw_area = {0};
+
+    // top bar
+    pw_area = (screen_area_t){.x = x1, .y = y1, .width = width, .height = 1};
+    amoled_area = transform_pw_to_amoled(pw_area, amoled);
+    amoled_draw_block(
+        amoled_area.x, amoled_area.y,
+        amoled_area.width, amoled_area.height,
+        colour_map[c]);
+
+    // bottom bar
+    pw_area = (screen_area_t){.x = x1, .y = y2, .width = width, .height = 1};
+    amoled_area = transform_pw_to_amoled(pw_area, amoled);
+    amoled_draw_block(
+        amoled_area.x, amoled_area.y,
+        amoled_area.width, amoled_area.height,
+        colour_map[c]);
+
+    // left bar
+    pw_area = (screen_area_t){.x = x1, .y = y1, .width = 1, .height = height};
+    amoled_area = transform_pw_to_amoled(pw_area, amoled);
+    amoled_draw_block(
+        amoled_area.x, amoled_area.y,
+        amoled_area.width, amoled_area.height,
+        colour_map[c]);
+
+    // right bar
+    pw_area = (screen_area_t){.x = x2, .y = y1, .width = 1, .height = height};
+    amoled_area = transform_pw_to_amoled(pw_area, amoled);
+    amoled_draw_block(
+        amoled_area.x, amoled_area.y,
+        amoled_area.width, amoled_area.height,
+        colour_map[c]);
 
 }
 
 
 void pw_screen_clear() {
+    screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){
+        .x=0, .y=0, 
+        .width=SCREEN_WIDTH, .height=SCREEN_HEIGHT
+    }, amoled);
+    amoled_draw_block(
+        amoled_area.x, amoled_area.y,
+        amoled_area.width, amoled_area.height,
+        colour_map[SCREEN_WHITE]
+    );
 
 }
 
@@ -440,6 +528,12 @@ void pw_screen_clear() {
 void pw_screen_fill_area(screen_pos_t x, screen_pos_t y,
                          screen_pos_t w, screen_pos_t h,
                          screen_colour_t c) {
+    screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){.x=x, .y=y, .width=w, .height=h}, amoled);
+    amoled_draw_block(
+        amoled_area.x, amoled_area.y,
+        amoled_area.width, amoled_area.height,
+        colour_map[c]
+    );
 
 }
 
