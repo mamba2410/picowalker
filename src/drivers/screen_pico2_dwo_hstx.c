@@ -7,6 +7,7 @@
 
 #include "hardware/gpio.h"
 #include "hardware/resets.h"
+#include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
 #include "hardware/structs/hstx_ctrl.h"
 #include "hardware/structs/hstx_fifo.h"
@@ -326,14 +327,16 @@ void pw_screen_init() {
     gpio_set_function(PIN_HSTX_SD3, 0/*GPIO_FUNC_HSTX*/);
 
     /*
-     * Set up clocks to 48MHz
+     * Use the sys_clk and a divider of 2 to get 24MHz HSTX clock
+     * Screen only seems to play nice at 24 and scale of 3?
+     * TODO: in future use GPIN0 clock but this works fine enough
      */
     reset_block(RESETS_RESET_HSTX_BITS);
-    hw_write_masked(
-        &clocks_hw->clk[clk_hstx].ctrl,
-        CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB << CLOCKS_CLK_HSTX_CTRL_AUXSRC_LSB,
-        CLOCKS_CLK_HSTX_CTRL_AUXSRC_BITS
-    );
+    //hw_write_masked(
+    //    &clocks_hw->clk[clk_hstx].ctrl,
+    //    CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB << CLOCKS_CLK_HSTX_CTRL_AUXSRC_LSB,
+    //    CLOCKS_CLK_HSTX_CTRL_AUXSRC_BITS
+    //);
     hw_write_masked(
         &clocks_hw->clk[clk_hstx].div,
         0x02 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
@@ -341,6 +344,8 @@ void pw_screen_init() {
     );
     unreset_block_wait(RESETS_RESET_HSTX_BITS);
 
+    uint f_clk_hstx = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_HSTX);
+    printf("Running HSTX at %lukHz\n", f_clk_hstx);
 
     /*
      * Screen initialise sequence

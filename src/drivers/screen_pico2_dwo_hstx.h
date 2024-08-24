@@ -8,7 +8,7 @@
 #define AMOLED_WIDTH 368
 #define AMOLED_HEIGHT 448
 #define AMOLED_BYTES_PER_PIXEL 2
-#define SCREEN_SCALE 4
+#define SCREEN_SCALE 3
 
 /*
  * Set active area to be scaled up Pokewalker area, rotated by 90 degrees
@@ -29,8 +29,8 @@
  * Might be able to do some shenanegans with the HSTX to always transmit
  * each byte `SCREEN_SCALE` times to save on buffer space.
  */
-//#define AMOLED_BUFFER_SIZE (192*1024)
-#define AMOLED_BUFFER_SIZE (AMOLED_ACTIVE_WIDTH*AMOLED_ACTIVE_HEIGHT*AMOLED_BYTES_PER_PIXEL)
+#define AMOLED_BUFFER_SIZE (192*1024)
+//#define AMOLED_BUFFER_SIZE (AMOLED_ACTIVE_WIDTH*AMOLED_ACTIVE_HEIGHT*AMOLED_BYTES_PER_PIXEL)
 
 
 const uint16_t colour_map[4] = {
