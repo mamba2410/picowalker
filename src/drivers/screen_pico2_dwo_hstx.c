@@ -71,7 +71,7 @@ static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len
             // transform coords
             size_t x_normal = (i/2)%pw_img->width;
             size_t y_normal = 8*(i/(2*pw_img->width)) + j;
-            col = pw_img->height - y_normal;
+            col = pw_img->height - y_normal - 1;
             row = x_normal;
 
             // now we have pixel coordinate, write to all pixels
@@ -336,7 +336,7 @@ void pw_screen_init() {
     );
     hw_write_masked(
         &clocks_hw->clk[clk_hstx].div,
-        0x00 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
+        0x02 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
         CLOCKS_CLK_HSTX_DIV_INT_BITS
     );
     unreset_block_wait(RESETS_RESET_HSTX_BITS);
