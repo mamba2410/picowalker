@@ -89,12 +89,13 @@ typedef struct screen_area_s {
 
 #define PIN_HSTX_START  12
 #define PIN_HSTX_SCK    13 // GP13, phys 17
-#define PIN_HSTX_SD0    14 // GP14, phys 19
-#define PIN_HSTX_SD1    15 // GP15, phys 20
-#define PIN_HSTX_SD2    16 // GP16, phys 21
-#define PIN_HSTX_SD3    17 // GP17, phys 22
+#define PIN_HSTX_SD0    15 // GP14, phys 20
+#define PIN_HSTX_SD1    14 // GP14, phys 19
+#define PIN_HSTX_SD2    17 // GP17, phys 22
+#define PIN_HSTX_SD3    16 // GP16, phys 21
 #define PIN_HSTX_CSB    18 // GP18, phys 24
 
-#define PIN_SCREEN_RST  22 // GP22, phys 29
-#define PIN_SCREEN_PWREN    27 // GP27, phys 32
+#define PIN_SCREEN_RST  12 // GP12, phys 16
+//#define PIN_SCREEN_PWREN    0xff // Manual
+
 #endif /* PW_SCREEN_PICO2_DWO_HSTX_H */

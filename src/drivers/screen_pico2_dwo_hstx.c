@@ -311,14 +311,11 @@ void pw_screen_init() {
      * Set up manual CSB
      */
     gpio_init(PIN_HSTX_CSB);
-    gpio_init(PIN_SCREEN_PWREN);
     gpio_init(PIN_SCREEN_RST);
     gpio_set_dir(PIN_HSTX_CSB, GPIO_OUT);
-    gpio_set_dir(PIN_SCREEN_PWREN, GPIO_OUT);
     gpio_set_dir(PIN_SCREEN_RST, GPIO_OUT);
     gpio_put(PIN_HSTX_CSB, 1);
     gpio_put(PIN_SCREEN_RST, 0);
-    gpio_put(PIN_SCREEN_PWREN, 0);
 
     gpio_set_function(PIN_HSTX_SCK, 0/*GPIO_FUNC_HSTX*/);
     gpio_set_function(PIN_HSTX_SD0, 0/*GPIO_FUNC_HSTX*/);
@@ -350,7 +347,6 @@ void pw_screen_init() {
     /*
      * Screen initialise sequence
      */
-    gpio_put(PIN_SCREEN_PWREN, 1);
     sleep_ms(10);
     gpio_put(PIN_SCREEN_RST, 0);
     sleep_ms(10);

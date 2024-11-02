@@ -16,15 +16,17 @@ add_executable(picowalker
     src/drivers/screen_pico2_dwo_hstx.h
     src/drivers/accel_pico_bma400.c
     src/drivers/accel_pico_bma400.h
-    src/drivers/ir_pico_uart1.c
-    src/drivers/ir_pico_uart1.h
+    src/drivers/ir_pico_pio.c
+    src/drivers/ir_pico_pio.h
     src/drivers/buttons_pico.c
     src/drivers/buttons_pico.h
-    src/drivers/eeprom_pico_25lc512.c
-    src/drivers/eeprom_pico_25lc512.h
+    src/drivers/eeprom_pico_m95512.c
+    src/drivers/eeprom_pico_m95512.h
     src/drivers/timer_pico.c
     src/drivers/extras_pico.S
     src/drivers/extras_pico.h
+    src/drivers/extra_flash_w25q128.c
+    src/drivers/extra_flash_w25q128.h
     src/drivers/flash_pico.c
     src/drivers/flash_pico.S
     src/drivers/flash_pico.h
