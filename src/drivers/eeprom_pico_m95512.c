@@ -19,20 +19,21 @@ static void pw_eeprom_cs_disable() {
 }
 
 static void pw_eeprom_wait_for_ready() {
-    uint8_t buf[2];
+    uint8_t buf[2] = {0, 0};
     do {
         buf[0] = CMD_RDSR;
         pw_eeprom_cs_enable();
         spi_write_blocking(eeprom_spi, buf, 1);
         spi_read_blocking(eeprom_spi, 0, buf, 1);
         pw_eeprom_cs_disable();
+        //printf("[Info] Waiting for eeprom. Status: 0x%02x 0x%02x\n", buf[0], buf[1]);
     } while(buf[0] & STATUS_WIP);
 }
 
 void pw_eeprom_init() {
     eeprom_spi = spi0;
 
-    spi_init(eeprom_spi, 1000*1000);
+    spi_init(eeprom_spi, 1*1000*1000);
     // inst, bits, polarity, phase, endian
     spi_set_format(eeprom_spi, 8, 1, 1, SPI_MSB_FIRST);
 

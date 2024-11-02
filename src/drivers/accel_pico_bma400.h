@@ -6,6 +6,7 @@
 #define ACCEL_MISO_PIN      4 // GP 4, phys 6
 #define ACCEL_CS_PIN        7 // GP 7, phys 10
 #define ACCEL_SPI_SPEED     1000000 // 1MHz
+#define ACCEL_INT_PIN       8 // GP8, phys 11
 
 #define ACCEL_READ_MASK     0x80
 #define ACCEL_WRITE_MASK    0x7f

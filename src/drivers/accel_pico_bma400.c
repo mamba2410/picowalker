@@ -115,13 +115,13 @@ int8_t pw_accel_init() {
     accel_spi = spi0;
 
     pw_accel_cs_disable();
-    spi_init(accel_spi, ACCEL_SPI_SPEED);
-    // inst, bits, polarity, phase, endian
-    spi_set_format(accel_spi, 8, 1, 1, SPI_MSB_FIRST);
+    //spi_init(accel_spi, ACCEL_SPI_SPEED);
+    //// inst, bits, polarity, phase, endian
+    //spi_set_format(accel_spi, 8, 1, 1, SPI_MSB_FIRST);
 
-    gpio_set_function(ACCEL_SCL_PIN, GPIO_FUNC_SPI);
-    gpio_set_function(ACCEL_MOSI_PIN, GPIO_FUNC_SPI);
-    gpio_set_function(ACCEL_MISO_PIN, GPIO_FUNC_SPI);
+    //gpio_set_function(ACCEL_SCL_PIN, GPIO_FUNC_SPI);
+    //gpio_set_function(ACCEL_MOSI_PIN, GPIO_FUNC_SPI);
+    //gpio_set_function(ACCEL_MISO_PIN, GPIO_FUNC_SPI);
 
     gpio_init(ACCEL_CS_PIN);
     gpio_put(ACCEL_CS_PIN, 1);

@@ -155,4 +155,28 @@ void pw_ir_init();
 int pw_ir_read(uint8_t *buf, size_t len);
 int pw_ir_write(uint8_t *buf, size_t len);
 
+/*
+ *  ==================================================================================
+ *  BATTERY
+ *  ==================================================================================
+ */
+
+/*
+ * Types and defines
+ */
+#define PW_BATTERY_STATUS_FLAGS_CHARGING    (1<<0)
+#define PW_BATTERY_STATUS_FLAGS_FAULT       (1<<1)
+#define PW_BATTERY_LOW_THRESHOLD            (10)
+
+typedef struct pw_battery_status_s {
+    uint8_t  percent;
+    uint8_t flags;
+} pw_battery_status_t;
+
+/*
+ *  Functions defined by the driver
+ */
+void pw_battery_init();
+pw_battery_status_t pw_battery_get_status();
+
 #endif /* PW_PICOWALKER_INCLUDE_H */

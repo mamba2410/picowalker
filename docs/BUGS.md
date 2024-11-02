@@ -4,12 +4,16 @@ May or may not be in `picowalker-core` instead.
 
 ## Screen
 
-- Home screen doesn't show bar across numbers (gets overwritten)
-- Menu arrow shows double on top of dowsing and settings
-- Leaving menu from left/right clears screen incorrectly
-- Menu trainer card icon renders/decodes incorrectly
-- Connect screen doesn't clear the whole width
-- Connect screen text is wonky
-- Dowsing doesn't clear screen properly
-- More
+- Clocks
+    - Screen runs well enough on 24MHz at 3x resolution, but not ideal
+    - Might need to have shorter wires, long leads are definitely introducing
+        clock interference
+    - Last-ditch use GPIO relaxation oscillator to feed into HSTX (sacrfices 
+        2 gpio pins which is really not ideal)
+- Rotation
+    - Rotate the other way for hardware v0.1
+
+## SPI
+
+- SPI is initialised by all peripherals. Add a lock and common clock speed.
 
