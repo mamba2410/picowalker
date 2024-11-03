@@ -26,7 +26,6 @@ static void pw_eeprom_wait_for_ready() {
         spi_write_blocking(eeprom_spi, buf, 1);
         spi_read_blocking(eeprom_spi, 0, buf, 1);
         pw_eeprom_cs_disable();
-        //printf("[Info] Waiting for eeprom. Status: 0x%02x 0x%02x\n", buf[0], buf[1]);
     } while(buf[0] & STATUS_WIP);
 }
 
@@ -42,7 +41,6 @@ void pw_eeprom_init() {
     gpio_set_function(EEPROM_MISO_PIN, GPIO_FUNC_SPI);
 
     gpio_init(EEPROM_CS_PIN);
-    gpio_put(EEPROM_CS_PIN, 1);
     gpio_set_dir(EEPROM_CS_PIN, GPIO_OUT);
 
     uint8_t msg[3];
