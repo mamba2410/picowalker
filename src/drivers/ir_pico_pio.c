@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <hardware/uart.h>
 #include <hardware/gpio.h>
+#include <hardware/pio.h>
+#include <hardware/irq.h>
 #include "pico/time.h"
 
 #include "ir_pico_pio.h"
@@ -17,137 +19,202 @@
 #include "pioAsm.h"
 #undef DEFINE_PIO_INSTRS
 
+#define CPU_CLOCK_RATE 48000000 // 48MHz set in main.c
 #define RX_MACHINERY_CLOCK				10000000		//fast enough for high rates, slow enough that in-pio-instr delays are enough for 1us
 
 #define NUM_INSTRS_WE_NEED				9
 #define NUM_SMS_WE_NEED					1
 #define NUM_DMAS_WE_NEED				0
 
-#define CIRC_BUF_SZ						64
+//#define CIRC_BUF_SZ						64
+#define CIRC_BUF_LEN    64
+
+// Callback function analogous to `RepalmUartRxF`
+// the first void* is the `mIrRxD` context, likely unused
+typedef void (*rx_callback_t)(void*, uint16_t*, size_t);
+
+struct pw_ir_circ_buf_s {
+    uint16_t write;
+    uint16_t read;
+    uint16_t data[CIRC_BUF_LEN];
+};
+static volatile struct pw_ir_circ_buf_s g_ir_pio_circ_buf;
+
+struct pw_ir_pio_state_s {
+    // PIO and DMA admin
+    uint8_t pio_sm;
+    uint8_t pio_first_dma_channel;
+    uint8_t pio_start_pc;
+    pio_hw_t *pio_hw;
+    
+    // Serial things
+    // probably gonna be hardcoded
+    uint8_t data_bits;
+    uint8_t parity;
+    uint8_t stop_bits;
+    uint32_t baudrate;
+
+    // Module state
+    bool state_tx;
+    bool state_rx;
+
+    // User config stuff
+    rx_callback_t user_rx_callback;
+};
+static volatile struct pw_ir_pio_state_s g_ir_pio_state;
 
 
-static uint8_t mMySm, mMyFirstDmaChannel, mMyStartPc;
-static uint_fast8_t (*mParityFunc)(uint_fast8_t val);
-static volatile uint16_t mCircBuf[CIRC_BUF_SZ];
-static volatile uint8_t mCircBufW, mCircBufR;	//equals means empty
-static uint8_t mDataBits, mStopBits;
-static RepalmUartRxF mIrRxF;
-static volatile bool mCurTx, mCurRx;
-static void *mIrRxD;
-
-
-static bool palmcardIrPrvCircBufIsFull(void)
-{
-	uint8_t mCircBufWnext = (mCircBufW + 1 == CIRC_BUF_SZ ? 0 : mCircBufW + 1);
-	
-	return mCircBufWnext != mCircBufR;
+/*
+ * Checks if the global TX circular buffer is full
+ * Equivalent of `palmcardIrPrvCircBufIsFull()`
+ */
+static bool pw_ir_pio_circ_buf_is_full(void) {
+    uint8_t next_write = ((g_ir_pio_circ_buf.write + 1) == CIRC_BUF_LEN) ? 0 : (g_ir_pio_circ_buf.write + 1);
+    return next_write != g_ir_pio_circ_buf.read;
 }
 
-static bool palmcardIrPrvCircBufAdd(uint_fast16_t val)
-{
-	uint_fast8_t cirBufWnow = mCircBufW, circBufWnext = (cirBufWnow + 1 == CIRC_BUF_SZ ? 0 : cirBufWnow + 1);
-	
-	if (circBufWnext == mCircBufR)
-		return false;
-	
-	mCircBuf[cirBufWnow] = val;
-	mCircBufW = circBufWnext;
-
-	return true;
+/*
+ * Cecks if the global circular buffer is empty
+ */
+static bool pw_ir_pio_circ_buf_is_empty(void) {
+    return g_ir_pio_circ_buf.write == g_ir_pio_circ_buf.read;
 }
 
-static int32_t palmcardIrPrvCircBufGet(void)
-{
-	uint_fast8_t cirBufRnow = mCircBufR;
-	uint_fast16_t ret;
-	
-	if (cirBufRnow == mCircBufW)
-		return -1;
-	
-	ret = mCircBuf[cirBufRnow];
-	mCircBufR = (cirBufRnow + 1 == CIRC_BUF_SZ ? 0 : cirBufRnow + 1);
-	
-	return (uint32_t)ret;
+/*
+ * Adds a singular value to the global TX circular buffer
+ * Equivalent of `palmcardIrPrvCircBufAdd()`
+ */
+static bool pw_ir_pio_circ_buf_add(uint16_t val) {
+    uint8_t next_write = ((g_ir_pio_circ_buf.write + 1) == CIRC_BUF_LEN) ? 0 : (g_ir_pio_circ_buf.write + 1);
+
+    if(next_write -= g_ir_pio_circ_buf.read) { return false; }
+
+    g_ir_pio_circ_buf.data[next_write] = val;
+    g_ir_pio_circ_buf.write = next_write;
+
+    return true;
 }
 
-static void palmcardIrPrvUnsetup(void)
-{
-	NVIC_DisableIRQ(PIO1_0_IRQn);
+/*
+ * Removes and returns a single value from the global TX circular buffer
+ * Returns `-1` as `int32_t` if the buffer was empty, else returns the 
+ * `uint16_t` as a `uint32_t`
+ * Equivalent of `palmcardIrPrvCircBufGet()`
+ */
+static int32_t pw_ir_pio_circ_buf_get(void) {
+    uint8_t next_read = g_ir_pio_circ_buf.write;
+
+    if(next_read == g_ir_pio_circ_buf.write) { return -1; }
+
+    uint16_t ret = g_ir_pio_circ_buf.data[next_read];
+    g_ir_pio_circ_buf.read = ((next_read + 1) == CIRC_BUF_LEN) ? 0 : (next_read + 1);
+
+    return (uint32_t)ret;
+
+}
+
+/*
+ * Resets the PIO and module state
+ * TODO: Dependancy on PIO1 for IRQ
+ * Equivalent of `palmcardIrPrvUnsetup()`
+ */
+static void pw_ir_pio_reset_state() {
+	//NVIC_DisableIRQ(PIO1_0_IRQn);
+    irq_set_enabled(PIO1_IRQ_0, false);
 	
 	//stop SM
-	pio1_hw->ctrl &=~ ((1 << PIO_CTRL_SM_ENABLE_LSB) << mMySm);
+	g_ir_pio_state.pio_hw->ctrl &=~ ((1 << PIO_CTRL_SM_ENABLE_LSB) << g_ir_pio_state.pio_sm);
 	
 	//reset SM
-	pio1_hw->ctrl |= ((1 << PIO_CTRL_SM_RESTART_LSB) << mMySm);
+	g_ir_pio_state.pio_hw->ctrl |= ((1 << PIO_CTRL_SM_RESTART_LSB) << g_ir_pio_state.pio_sm);
 	
 	//wait
-	while (pio1_hw->ctrl & ((1 << PIO_CTRL_SM_RESTART_LSB) << mMySm))
+	while (g_ir_pio_state.pio_hw->ctrl & ((1 << PIO_CTRL_SM_RESTART_LSB) << g_ir_pio_state.pio_sm))
 
 	//nop
-	pio1_hw->sm[mMySm].instr = I_MOV(0, 0, MOV_DST_X, MOV_OP_COPY, MOV_SRC_X);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].instr = I_MOV(0, 0, MOV_DST_X, MOV_OP_COPY, MOV_SRC_X);
 
 	//clear fifos
-	pio1_hw->sm[mMySm].shiftctrl = PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS;
-	pio1_hw->sm[mMySm].shiftctrl = PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS;
-	pio1_hw->sm[mMySm].shiftctrl = 0;
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl = PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS;
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl = PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS;
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl = 0;
 	
 	//clear buffer
-	mCircBufW = 0;
-	mCircBufR = 0;
+	g_ir_pio_circ_buf.write = 0;
+	g_ir_pio_circ_buf.read = 0;
 	
 	//clear state
-	mCurTx = false;
-	mCurRx = false;
+	g_ir_pio_state.state_tx = false;
+	g_ir_pio_state.state_rx = false;
 	
-	pio1_hw->inte0 = 0;
-	NVIC_ClearPendingIRQ(PIO1_0_IRQn);
+	g_ir_pio_state.pio_hw->inte0 = 0;
+	//NVIC_ClearPendingIRQ(PIO1_0_IRQn);
+    irq_clear(PIO1_IRQ_0);
 }
 
-static void palmcardIrPrvSetupTx(uint32_t baudrate, uint_fast8_t dataBits, uint_fast8_t parityBits, uint_fast8_t stopBits)
-{
-	uint_fast8_t pc = mMyStartPc, startPC, restartPC, endPC, jmpDest;
-	
+/*
+ * Sets up PIO SM to run in TX mode and starts the SM
+ * Feed it with `pw_ir_pio_send_data()` 
+ * Equivalent of `palmcardIrPrvSetupTx()`
+ */
+static void pw_ir_pio_setup_tx() {
+
+	uint_fast8_t pc = g_ir_pio_state.pio_start_pc, start_pc, restart_pc, end_pc, jmp_dst;
+    uint32_t baudrate = g_ir_pio_state.baudrate;
 	
 	//TX operates in non-low-power mode and needs a clock of 16x bandwidth
 	//data needs to be inserted precisely as sent, eg for 8n1, insert (0x01 + ~data << 1) where 1 is the start bit, total bitlength should be programmed into PIO, shift right
 	//code is more complex than you'd think to allow a SURE determination when TX is done (by examining pc)
 	
-	startPC = restartPC = pc;
-	pio1_hw->instr_mem[pc++] = I_PULL(0, 0, 0, 1);
-	pio1_hw->instr_mem[pc++] = I_SET(0, 0, SET_DST_X, dataBits + parityBits + stopBits + 1 /* start bit */ - 1);
+	start_pc = restart_pc = pc;
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_PULL(0, 0, 0, 1);
+    //                                                8   N   1   Start
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_SET(0, 0, SET_DST_X, 8 + 0 + 1 + 1 - 1);
 	
-	jmpDest = pc;
-	pio1_hw->instr_mem[pc++] = I_OUT(2, 0, OUT_DST_PINS, 1);
-	pio1_hw->instr_mem[pc++] = I_SET(11, 0, SET_DST_PINS, 0);
-	pio1_hw->instr_mem[pc++] = I_JMP(0, 0, JMP_X_POSTDEC, jmpDest);
-	endPC = pc - 1;
+	jmp_dst = pc;
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_OUT(2, 0, OUT_DST_PINS, 1);
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_SET(11, 0, SET_DST_PINS, 0);
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_JMP(0, 0, JMP_X_POSTDEC, jmp_dst);
+	end_pc = pc - 1;
 	
-	//configure sm0
-	pio1_hw->sm[mMySm].clkdiv = ((CPU_CLOCK_RATE / 16 * 256ull + baudrate / 2) / baudrate) << PIO_SM0_CLKDIV_FRAC_LSB;
-	pio1_hw->ctrl |= ((1 << PIO_CTRL_CLKDIV_RESTART_LSB) << mMySm);
-	pio1_hw->sm[mMySm].execctrl = (pio1_hw->sm[mMySm].execctrl &~ (PIO_SM0_EXECCTRL_WRAP_TOP_BITS | PIO_SM0_EXECCTRL_WRAP_BOTTOM_BITS | PIO_SM2_EXECCTRL_SIDE_EN_BITS)) |(endPC << PIO_SM0_EXECCTRL_WRAP_TOP_LSB) | (restartPC << PIO_SM0_EXECCTRL_WRAP_BOTTOM_LSB) | (SIDE_SET_HAS_ENABLE_BIT ? PIO_SM2_EXECCTRL_SIDE_EN_BITS : 0);
-	pio1_hw->sm[mMySm].shiftctrl = (pio1_hw->sm[mMySm].shiftctrl &~ (PIO_SM1_SHIFTCTRL_PULL_THRESH_BITS | PIO_SM1_SHIFTCTRL_PUSH_THRESH_BITS | PIO_SM0_SHIFTCTRL_IN_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPUSH_BITS | PIO_SM0_SHIFTCTRL_AUTOPULL_BITS)) | PIO_SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS;
-	pio1_hw->sm[mMySm].pinctrl = (SIDE_SET_BITS_USED << PIO_SM1_PINCTRL_SIDESET_COUNT_LSB) | (1 << PIO_SM1_PINCTRL_OUT_COUNT_LSB) | (PIN_IRDA_OUT << PIO_SM1_PINCTRL_OUT_BASE_LSB) | (1 << PIO_SM1_PINCTRL_SET_COUNT_LSB)| (PIN_IRDA_OUT << PIO_SM1_PINCTRL_SET_BASE_LSB);
+	//configure.pio_sm0
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].clkdiv = ((CPU_CLOCK_RATE / 16 * 256ull + baudrate / 2) / baudrate) << PIO_SM0_CLKDIV_FRAC_LSB;
+	g_ir_pio_state.pio_hw->ctrl |= ((1 << PIO_CTRL_CLKDIV_RESTART_LSB) << g_ir_pio_state.pio_sm);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].execctrl = (g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].execctrl &~ (PIO_SM0_EXECCTRL_WRAP_TOP_BITS | PIO_SM0_EXECCTRL_WRAP_BOTTOM_BITS | PIO_SM2_EXECCTRL_SIDE_EN_BITS)) |(end_pc << PIO_SM0_EXECCTRL_WRAP_TOP_LSB) | (restart_pc << PIO_SM0_EXECCTRL_WRAP_BOTTOM_LSB) | (SIDE_SET_HAS_ENABLE_BIT ? PIO_SM2_EXECCTRL_SIDE_EN_BITS : 0);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl = (g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl &~ (PIO_SM1_SHIFTCTRL_PULL_THRESH_BITS | PIO_SM1_SHIFTCTRL_PUSH_THRESH_BITS | PIO_SM0_SHIFTCTRL_IN_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPUSH_BITS | PIO_SM0_SHIFTCTRL_AUTOPULL_BITS)) | PIO_SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS;
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].pinctrl = (SIDE_SET_BITS_USED << PIO_SM1_PINCTRL_SIDESET_COUNT_LSB) | (1 << PIO_SM1_PINCTRL_OUT_COUNT_LSB) | (PIN_IRDA_OUT << PIO_SM1_PINCTRL_OUT_BASE_LSB) | (1 << PIO_SM1_PINCTRL_SET_COUNT_LSB)| (PIN_IRDA_OUT << PIO_SM1_PINCTRL_SET_BASE_LSB);
 
 	//set out direction
-	pio1_hw->sm[mMySm].instr = I_SET(0, 0, SET_DST_PINDIRS, 1);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].instr = I_SET(0, 0, SET_DST_PINDIRS, 1);
 	
 	//logi("starting TX SM\n");
-	pio1_hw->sm[mMySm].instr = I_JMP(0, 0, JMP_ALWAYS, startPC);
-	pio1_hw->ctrl |= ((1 << PIO_CTRL_SM_ENABLE_LSB) << mMySm);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].instr = I_JMP(0, 0, JMP_ALWAYS, start_pc);
+	g_ir_pio_state.pio_hw->ctrl |= ((1 << PIO_CTRL_SM_ENABLE_LSB) << g_ir_pio_state.pio_sm);
 	
 	//irq on TX not full, but not enabled since it is empty now and we have no data
-	pio1_hw->inte0 = 0;
-	NVIC_ClearPendingIRQ(PIO1_0_IRQn);
-	NVIC_EnableIRQ(PIO1_0_IRQn);
-	pio1_hw->inte0 = PIO_IRQ0_INTE_SM0_TXNFULL_BITS << mMySm;
+	g_ir_pio_state.pio_hw->inte0 = 0;
+	//NVIC_ClearPendingIRQ(PIO1_0_IRQn);
+	//NVIC_EnableIRQ(PIO1_0_IRQn);
+    irq_set_enabled(PIO1_IRQ_0, true);
+    irq_clear(PIO1_IRQ_0);
+	g_ir_pio_state.pio_hw->inte0 = PIO_IRQ0_INTE_SM0_TXNFULL_BITS << g_ir_pio_state.pio_sm;
 }
 
-static void palmcardIrPrvSetupRx(uint32_t baudrate, uint_fast8_t dataBits, uint_fast8_t parityBits, uint_fast8_t stopBits)
-{
-	uint32_t bitcounterValue = (RX_MACHINERY_CLOCK + baudrate / 2) / baudrate - 4;
-	uint_fast8_t pc = mMyStartPc, startPC, restartPC, endPC, jmpDest1, jmpDest2;
+
+/*
+ * Sets up PIO SM to run in RX mode and starts the SM
+ * Data gets sent out via an interrupt.
+ * Timeouts and determining when air is empty is up to the caller.
+ * Equivalent of `palmcardIrPrvSetupRx()`
+ */
+static void pw_ir_pio_setup_rx() {
+	uint32_t bitcounterValue = (RX_MACHINERY_CLOCK + g_ir_pio_state.baudrate / 2) / g_ir_pio_state.baudrate - 4;
+	uint_fast8_t pc = g_ir_pio_state.pio_start_pc, startPC, restartPC, endPC, jmpDest1, jmpDest2;
 	
+    // 8N1
+    uint8_t dataBits = 8;
+    uint8_t parityBits = 0;
+    uint8_t stopBits = 1;
 	
 	//1.6276 us is the pulse width of 115,200 and of low power IrDA, so we wait for a low, check again in 1.5 us, and if it is still low, we consider this a start bit
 	//clock should be ~20MHz, shifter should be to the right, autopush at 32 bits. autopull at 32 bits, input should be an infinite stream of words that represent the
@@ -156,217 +223,193 @@ static void palmcardIrPrvSetupRx(uint32_t baudrate, uint_fast8_t dataBits, uint_
 	
 	restartPC = startPC = pc;
 	jmpDest1 = pc;
-	pio1_hw->instr_mem[pc++] = I_WAIT(10, 0, 0, WAIT_FOR_GPIO, PIN_IRDA_IN);			//wait for low
-	pio1_hw->instr_mem[pc++] = I_JMP(0, 0, JMP_PIN, jmpDest1);							//1us later, if high now, consider it a glitch
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_WAIT(10, 0, 0, WAIT_FOR_GPIO, PIN_IRDA_IN);			//wait for low
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_JMP(0, 0, JMP_PIN, jmpDest1);							//1us later, if high now, consider it a glitch
 		
-	pio1_hw->instr_mem[pc++] = I_SET(0, 0, SET_DST_Y, dataBits + stopBits + parityBits - 1);			//num bits per transport unit minus two
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_SET(0, 0, SET_DST_Y, dataBits + stopBits + parityBits - 1);			//num bits per transport unit minus two
 	
 	jmpDest1 = pc;
-	pio1_hw->instr_mem[pc++] = I_MOV(0, 0, MOV_DST_X, MOV_OP_COPY, IN_SRC_OSR);
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_MOV(0, 0, MOV_DST_X, MOV_OP_COPY, IN_SRC_OSR);
 	
 	jmpDest2 = pc;
-	pio1_hw->instr_mem[pc++] = I_JMP(0, 0, JMP_X_POSTDEC, jmpDest2);					//delay
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_JMP(0, 0, JMP_X_POSTDEC, jmpDest2);					//delay
 	
-	pio1_hw->instr_mem[pc++] = I_IN(0, 0, IN_SRC_PINS, 1);
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_IN(0, 0, IN_SRC_PINS, 1);
 	
-	pio1_hw->instr_mem[pc++] = I_JMP(0, 0, JMP_Y_POSTDEC, jmpDest1);
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_JMP(0, 0, JMP_Y_POSTDEC, jmpDest1);
 	
-	pio1_hw->instr_mem[pc++] = I_IN(0, 0, IN_SRC_ZEROES, 32 - dataBits - stopBits - parityBits);
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_IN(0, 0, IN_SRC_ZEROES, 32 - dataBits - stopBits - parityBits);
 	
-	pio1_hw->instr_mem[pc++] = I_WAIT(4, 0, 1, WAIT_FOR_GPIO, PIN_IRDA_IN);				//wait for high
+	g_ir_pio_state.pio_hw->instr_mem[pc++] = I_WAIT(4, 0, 1, WAIT_FOR_GPIO, PIN_IRDA_IN);				//wait for high
 	endPC = pc - 1;
 	
-	pio1_hw->sm[mMySm].clkdiv = ((CPU_CLOCK_RATE * 256ull + RX_MACHINERY_CLOCK / 2) / RX_MACHINERY_CLOCK) << PIO_SM0_CLKDIV_FRAC_LSB;
-	pio1_hw->ctrl |= ((1 << PIO_CTRL_CLKDIV_RESTART_LSB) << mMySm);
-	pio1_hw->sm[mMySm].execctrl = (pio1_hw->sm[mMySm].execctrl &~ (PIO_SM0_EXECCTRL_WRAP_TOP_BITS | PIO_SM0_EXECCTRL_WRAP_BOTTOM_BITS | PIO_SM2_EXECCTRL_SIDE_EN_BITS)) |(endPC << PIO_SM0_EXECCTRL_WRAP_TOP_LSB) | (restartPC << PIO_SM0_EXECCTRL_WRAP_BOTTOM_LSB) | (SIDE_SET_HAS_ENABLE_BIT ? PIO_SM2_EXECCTRL_SIDE_EN_BITS : 0) | (PIN_IRDA_IN << PIO_SM2_EXECCTRL_JMP_PIN_LSB);
-	pio1_hw->sm[mMySm].shiftctrl = (pio1_hw->sm[mMySm].shiftctrl &~ (PIO_SM1_SHIFTCTRL_PULL_THRESH_BITS | PIO_SM1_SHIFTCTRL_PUSH_THRESH_BITS | PIO_SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPULL_BITS)) | PIO_SM0_SHIFTCTRL_IN_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPUSH_BITS;
-	pio1_hw->sm[mMySm].pinctrl = (SIDE_SET_BITS_USED << PIO_SM1_PINCTRL_SIDESET_COUNT_LSB) | (PIN_IRDA_IN << PIO_SM1_PINCTRL_IN_BASE_LSB);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].clkdiv = ((CPU_CLOCK_RATE * 256ull + RX_MACHINERY_CLOCK / 2) / RX_MACHINERY_CLOCK) << PIO_SM0_CLKDIV_FRAC_LSB;
+	g_ir_pio_state.pio_hw->ctrl |= ((1 << PIO_CTRL_CLKDIV_RESTART_LSB) << g_ir_pio_state.pio_sm);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].execctrl = (g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].execctrl &~ (PIO_SM0_EXECCTRL_WRAP_TOP_BITS | PIO_SM0_EXECCTRL_WRAP_BOTTOM_BITS | PIO_SM2_EXECCTRL_SIDE_EN_BITS)) |(endPC << PIO_SM0_EXECCTRL_WRAP_TOP_LSB) | (restartPC << PIO_SM0_EXECCTRL_WRAP_BOTTOM_LSB) | (SIDE_SET_HAS_ENABLE_BIT ? PIO_SM2_EXECCTRL_SIDE_EN_BITS : 0) | (PIN_IRDA_IN << PIO_SM2_EXECCTRL_JMP_PIN_LSB);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl = (g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl &~ (PIO_SM1_SHIFTCTRL_PULL_THRESH_BITS | PIO_SM1_SHIFTCTRL_PUSH_THRESH_BITS | PIO_SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPULL_BITS)) | PIO_SM0_SHIFTCTRL_IN_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPUSH_BITS;
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].pinctrl = (SIDE_SET_BITS_USED << PIO_SM1_PINCTRL_SIDESET_COUNT_LSB) | (PIN_IRDA_IN << PIO_SM1_PINCTRL_IN_BASE_LSB);
 	
 	
 	//prepare OSR for SM1
-	pio1_hw->txf[mMySm] = bitcounterValue;
-	pio1_hw->sm[mMySm].instr = I_PULL(0, 0, 0, 0);
-	pio1_hw->sm[mMySm].shiftctrl |= PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS;
+	g_ir_pio_state.pio_hw->txf[g_ir_pio_state.pio_sm] = bitcounterValue;
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].instr = I_PULL(0, 0, 0, 0);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl |= PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS;
 	
 	//logi("starting RX SM\n");
-	pio1_hw->sm[mMySm].instr = I_JMP(0, 0, JMP_ALWAYS, startPC);
-	pio1_hw->ctrl |= ((1 << PIO_CTRL_SM_ENABLE_LSB) << mMySm);
+	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].instr = I_JMP(0, 0, JMP_ALWAYS, startPC);
+	g_ir_pio_state.pio_hw->ctrl |= ((1 << PIO_CTRL_SM_ENABLE_LSB) << g_ir_pio_state.pio_sm);
 	
 	//irq on RX not empty
-	pio1_hw->inte0 = 0;
-	NVIC_ClearPendingIRQ(PIO1_0_IRQn);
-	NVIC_EnableIRQ(PIO1_0_IRQn);
-	pio1_hw->inte0 = PIO_IRQ0_INTE_SM0_RXNEMPTY_BITS << mMySm;
+	g_ir_pio_state.pio_hw->inte0 = 0;
+	//NVIC_ClearPendingIRQ(PIO1_0_IRQn);
+	//NVIC_EnableIRQ(PIO1_0_IRQn);
+    irq_set_enabled(PIO1_IRQ_0, true);
+    irq_clear(PIO1_IRQ_0);
+	g_ir_pio_state.pio_hw->inte0 = PIO_IRQ0_INTE_SM0_RXNEMPTY_BITS << g_ir_pio_state.pio_sm;
+
 }
 
-static uint_fast16_t palmcardIrPrvProcessInput(uint32_t rawVal)		//data is missing start bit, but otherwise is correct
-{
-	uint_fast16_t ret = 0, stopBitMask, dataValMask = (1 << mDataBits) - 1, dataVal = rawVal & dataValMask;
-	uint_fast8_t i;
-	
-	//pre-calc stop bit mask
-	stopBitMask = ((1 << mStopBits) - 1) << mDataBits;
-	
-	//calc parity
-	if (mParityFunc) {
-		
-		uint_fast16_t corectParity = mParityFunc(dataVal) << mDataBits, parityMask = 1 << mDataBits;
-		
-		if ((rawVal ^ corectParity) & parityMask)
-			ret |= UART_BIT_MASK_PAR_ERR;
-		
-		stopBitMask <<= 1;	//stop bits come after parity
-	}
-	
-	//verify stop bits
-	if ((rawVal & stopBitMask) != stopBitMask)
-		ret |= UART_BIT_MASK_FRM_ERR;
-	
-	//add data val to return value
-	ret += dataVal;
-	
-	return ret;
+/*
+ * Process input from PIO RX machine which has stop and potentially parity bits
+ * In 8N1 mode, the bottom 8 bits will be the data and the top bits contain flags which the caller can choose to accept or reject
+ * TODO: rename to decode
+ * Equivalent of `palmcardIrPrvProcessInput()`
+ */
+static uint16_t pw_ir_pio_process_input(uint32_t val) {
+    uint16_t ret = 0;
+    uint16_t stop_bit_mask = ((1<<g_ir_pio_state.stop_bits) - 1) << g_ir_pio_state.data_bits;
+    uint16_t data_val_mask = (1<<g_ir_pio_state.data_bits) - 1;
+    uint16_t data_val = val & data_val_mask;
+
+    // Don't bother with parity since we don't use it
+
+    // Check stop bit
+    if( (val & stop_bit_mask) != stop_bit_mask) {
+        ret |= PW_IR_PIO_FRAME_ERROR_BIT;
+    }
+
+    // Add in data bits
+    ret |= data_val;
+
+    return ret;
 }
 
-void __attribute__((used)) PIO1_0_IRQHandler(void)
-{
-	if (mCurTx) {	//in tx mode
-	
-		while (!(pio1_hw->fstat & ((1 << PIO_FSTAT_TXFULL_LSB) << mMySm))) {		//space in fifo?
-			
-			int32_t val = palmcardIrPrvCircBufGet();
-						
-			if (val < 0) {	//no more data
-				
+
+/*
+ * IRQ callback for the PIO SM. Performs different functions in TX and RX modes.
+ * TX mode: place processed value (containing stop bits, parity etc) from global circular buffer into the PIO TX FIFO
+ * RX mode: grab value from RX FIFO, processes it and calls the user callback to do whatever they want with it
+ */
+void pw_ir_pio_irq_handler() {
+    if(g_ir_pio_state.state_tx) {
+        // Expecting a TXNFULL event so we take transformed data from the
+        // circ buffer and feed it byte-by-byte into the PIO FIFO
+        // If circ buffer is empty, cancel the interrupt to stop feeding
+
+		while (!(g_ir_pio_state.pio_hw->fstat & ((1 << PIO_FSTAT_TXFULL_LSB) << g_ir_pio_state.pio_sm))) {  //space in fifo?
+            int32_t val = pw_ir_pio_circ_buf_get();
+
+			if (val < 0) { //no more data
+                // Stop interrupts
 				pio1_hw->inte0 = 0;
 				break;
-			}
-			else {			//have data
-				
-				pio1_hw->txf[mMySm] = val;
+			} else { //have data
+				g_ir_pio_state.pio_hw->txf[g_ir_pio_state.pio_sm] = val;
 			}
 		}
-	}
-	else if (mCurRx) {	//in rx mode
-		
+
+    } else if(g_ir_pio_state.state_rx) {
 		uint_fast8_t nItems = 0;
 		uint16_t buf[29];
-		uint32_t oldR9;
 	
-		while (!(pio1_hw->fstat & ((1 << PIO_FSTAT_RXEMPTY_LSB) << mMySm)) && nItems < sizeof(buf) / sizeof(*buf)) {		//data & space in fifo?
+        // While there is data in the RX buffer and `buf` isn't full
+		while (!(g_ir_pio_state.pio_hw->fstat & ((1 << PIO_FSTAT_RXEMPTY_LSB) << g_ir_pio_state.pio_sm)) && nItems < sizeof(buf) / sizeof(*buf)) {		//data & space in fifo?
 			
-			uint_fast16_t input = pio1_hw->rxf[mMySm], val = palmcardIrPrvProcessInput(input);
+			uint16_t input = g_ir_pio_state.pio_hw->rxf[g_ir_pio_state.pio_sm];
+            uint16_t val = pw_ir_pio_process_input(input);
 			
 			buf[nItems++] = val;
 		}
-		
-		if (mIrRxF) {
-		
-			oldR9 = ralSetSafeR9();
-			mIrRxF(mIrRxD, buf, nItems);
-			ralRestoreR9(oldR9);
-		}
-	}
-	else {
-		
-		//spurious
-		pio1_hw->inte0 = 0;
-	}
+
+        // Call user callback
+		g_ir_pio_state.user_rx_callback((void*)0, buf, nItems);
+
+    } else {
+        // spurious
+		g_ir_pio_state.pio_hw->inte0 = 0;
+    }
 }
 
-static uint_fast8_t palmcardIrPrvEvenParity(uint_fast8_t val)	//calc bit to add to data to keep numbr of high bits even
-{
-	val ^= val >> 4;
-	val ^= val >> 2;
-	val ^= val >> 1;
-	
-	return val & 1;
+
+/*
+ * Turns raw bytes ito data to be sent out over PIO (calcs parity, start bit, stop bits)
+ * TODO: rename to encode
+ * Equivalent of `palmcardIrPrvXformData()`
+ */
+static uint16_t pw_ir_pio_transform_data(uint8_t byte) {
+    uint32_t val = 1 + ((uint32_t)((uint8_t)~byte)) * 2; // start bit and data
+    
+    // stop bits are zero here and thus no work to do for them
+
+    return val;
 }
 
-static uint_fast8_t palmcardIrPrvOddParity(uint_fast8_t val)	//calc bit to add to data to keep numbr of high bits odd
-{
-	val ^= val >> 4;
-	val ^= val >> 2;
-	val ^= val >> 1;
-	
-	return 1 - (val & 1);
+/*
+ * Take data, add start/stop/parity bits then feed it to circular buffer
+ * Crucially sets interrupt for when PIO TX isn't full. This calls interrupt handler
+ * Returns the number of bytes added to the buffer. User should check the return value
+ */
+static uint32_t __attribute__((noinline)) pw_ir_pio_serial_tx_blocking(const uint8_t *data, size_t len) {
+    size_t len_orig = len;
+
+    if(!data) return 0;
+    if(!g_ir_pio_state.state_tx) return 0;
+
+    while(len != 0) {
+        uint16_t transformed_data = pw_ir_pio_transform_data(*data);
+        bool add_success = pw_ir_pio_circ_buf_add(transformed_data);
+        if(add_success) {
+            g_ir_pio_state.pio_hw->inte0 = PIO_IRQ0_INTE_SM0_TXNFULL_BITS << g_ir_pio_state.pio_sm;
+            len--;
+            data++;
+        }
+    }
+
+    return len_orig - len;
 }
 
-static uint_fast16_t palmcardIrPrvXformData(uint8_t byte)
-{
-	uint32_t val = 1 + ((uint32_t)((uint8_t)~byte)) * 2;		//start bit and data
-	
-	if (mParityFunc)
-		val += ((uint32_t)mParityFunc(byte)) << (mDataBits + 1);
-	
-	//stop bits are zero here and thus no work to do for them
-	
-	return val;
-}
 
-static uint32_t __attribute__((noinline)) palmcardIrPrvSerialTx(const uint8_t *data, uint32_t len, bool block)
-{
-	uint32_t lenOrig = len;
-		
-	if (!data)			//we do not support sending breaks using IrDA
-		return 0;
-	
-	if (!mCurTx)
-		return 0;
-	
-	while (len) {
-		
-		if (palmcardIrPrvCircBufAdd(palmcardIrPrvXformData(*data))) {
-						
-			pio1_hw->inte0 = PIO_IRQ0_INTE_SM0_TXNFULL_BITS << mMySm;
-			
-			len--;
-			data++;
-			continue;
-		}
-				
-		if (!block)
-			break;
-	}
-	
-	return lenOrig - len;
-}
+/*
+ * Returns `true` if there is a TX ongoing
+ * Equivalent of `palmcardIrPrvIsTxOngoing()`
+ */
+static bool pw_ir_pio_tx_is_ongoing(void) {
 
-static uint32_t palmcardIrPrvCalcProperBaudrate(uint32_t requested)
-{
-	static const uint32_t acceptableBaudrates[] = {2400, 9600, 19200, 38400, 57600, 115200};
-	uint_fast8_t i;
-	
-	for (i = 0; i < sizeof(acceptableBaudrates) && requested >= acceptableBaudrates[i]; i++);
-	
-	return i ? acceptableBaudrates[i - 1] : 0;
-}
+    // We must be in TX mode for TX to be ongoing
+    if(!g_ir_pio_state.state_tx)
+        return false;
 
-static bool palmcardIrPrvIsTxOngoing(void)
-{
-	//we must be in TX mode for TX to be ongiong
-	if (!mCurTx)
-		return false;
-	
-	//if ints are on that means TX is ongloing
-	if (pio1_hw->inte0)
+    // If ints are on (and we are in TX mode) then TX is ongoing
+    if(g_ir_pio_state.pio_hw->inte0)
+        return true;
+
+    // If the TX FIFO is not empty, TX is ongoing
+	if (!(g_ir_pio_state.pio_hw->fstat & ((1 << PIO_FSTAT_TXEMPTY_LSB) << g_ir_pio_state.pio_sm)))
+        return true;
+
+    // If PC has not yet reached our "parking PC then TX is still ongoing
+	if (g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].addr != g_ir_pio_state.pio_start_pc)
 		return true;
-	
-	//if the tx FIFO is not empty, TX is ongoing
-	if (!(pio1_hw->fstat & ((1 << PIO_FSTAT_TXEMPTY_LSB) << mMySm)))
+
+    // We could have read the above just as the SM read the last word from the FIFO, so recheck again
+	if (g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].addr != g_ir_pio_state.pio_start_pc)
 		return true;
-	
-	//if PX has not yet reached our "parking" pc, tx is ongoing
-	if (pio1_hw->sm[mMySm].addr != mMyStartPc)
-		return true;
-	
-	//we could have read the above just as the SM read the last word from the FIFO, so recheck again
-	if (pio1_hw->sm[mMySm].addr != mMyStartPc)
-		return true;
-	
-	return false;
+
+    return false;
+
 }
 
+/*
 static bool palmcardIrPrvConfig(union UartCfg *cfg, RepalmUartRxF rxf, void *userData)
 {
 	if (mCurTx) {	//wait for TX to be done
@@ -420,35 +463,12 @@ static bool palmcardIrPrvConfig(union UartCfg *cfg, RepalmUartRxF rxf, void *use
 
 	return true;
 }
+*/
 
-static bool repalmUartConfig(enum UartPort which, union UartCfg *cfg, RepalmUartRxF rxf, void *userData)
-{
-	switch (which) {
-		case UartPortCradleSerial:
-			return palmcardCommsSerialConfig(cfg, rxf, userData);
-			
-		case UartPortIrDA:
-			return palmcardIrPrvConfig(cfg, rxf, userData);
-		
-		default:
-			return false;
-	}	
-}
-
-static uint32_t repalmUartTx(enum UartPort which, const uint8_t *data, uint32_t len, bool block)
-{
-	switch (which) {
-		case UartPortCradleSerial:
-			return palmcardCommsSerialTx(data, len, block);
-			
-		case UartPortIrDA:
-			return palmcardIrPrvSerialTx(data, len, block);
-		
-		default:
-			return false;
-	}
-}
-
+/*
+ * Checks if TX FIFO is full/empty and checks if RX FIFO is empty
+ */
+/*
 static uint32_t palmcardIrPrvGetSta(void)
 {
 	uint32_t ret = 0;
@@ -473,21 +493,10 @@ static uint32_t palmcardIrPrvGetSta(void)
 	
 	return ret;
 }
+*/
 
-static uint32_t repalmUartGetSta(enum UartPort which)
-{
-	switch (which) {
-		case UartPortCradleSerial:
-			return palmcardCommsSerialGetSta();
-			
-		case UartPortIrDA:
-			return palmcardIrPrvGetSta();
-		
-		default:
-			return false;
-	}
-}
 
+/*
 bool palmcardIrSetup(uint8_t *firstFreeSmP, uint8_t *firstFreePioInstrP, uint8_t *firstFreeDmaChP, uint8_t nDmaCh, uint8_t nPioSms, uint8_t nPioInstrs)
 {
 	if (*firstFreeSmP > nPioSms - NUM_SMS_WE_NEED || *firstFreeDmaChP > nDmaCh - NUM_DMAS_WE_NEED || *firstFreePioInstrP > nPioInstrs - NUM_INSTRS_WE_NEED)
@@ -514,6 +523,18 @@ bool palmcardIrSetup(uint8_t *firstFreeSmP, uint8_t *firstFreePioInstrP, uint8_t
 	
 	return true;
 }
+*/
+
+/*
+ * On receive data, throw it into the global circular buffer
+ * Safe because by the time we want to fill it with TX data, we are done with RX
+ */
+void pw_ir_pio_rx_callback(void* _context, uint16_t *data, size_t len) {
+    for(size_t i = 0; i < len; i++) {
+        if( !(data[i] & PW_IR_PIO_FRAME_ERROR_BIT) )
+            pw_ir_pio_circ_buf_add(data[i]);
+    }
+}
 
 /*
  * ============================================================================
@@ -523,25 +544,119 @@ bool palmcardIrSetup(uint8_t *firstFreeSmP, uint8_t *firstFreePioInstrP, uint8_t
 
 int pw_ir_read(uint8_t *buf, size_t max_len) {
     // TODO: replace with PIO code
-    // See `palmcardIrPrvSerialTx()`
-    return 0;
+    size_t cursor = 0;
+    int64_t diff;
+    
+    // Reset RX buffer
+    g_ir_pio_circ_buf.read = g_ir_pio_circ_buf.write = 0;
+
+    // Set up PIO SM as RX mode
+    pw_ir_pio_setup_rx();
+
+    // Spin until either something is in the callback buffer or 50ms has elapsed
+    volatile absolute_time_t start, now, last_read;
+    start = get_absolute_time();
+    do {
+        now = get_absolute_time();
+        diff = absolute_time_diff_us(start, now);
+    } while( !pw_ir_pio_circ_buf_is_empty() && diff < 50000);
+
+
+    // If something did come through, collect data until time since last byte exceeds 3742us
+    diff = 0;
+    last_read = get_absolute_time();
+    do {
+        if(!pw_ir_pio_circ_buf_is_empty()) {
+		    buf[cursor] = (uint8_t)(pw_ir_pio_circ_buf_get() & 0xff);
+		    cursor++;
+            last_read = get_absolute_time();
+        }
+        now = get_absolute_time();
+        diff = absolute_time_diff_us(last_read, now); // signed difference
+        //printf("%ld ", diff);
+    } while( diff < 3742);
+    
+
+    // (unset PIO RX mode?)
+    pw_ir_pio_reset_state();
+
+    // Debug
+    printf("read: (%d)", cursor);
+    for(size_t i = 0; i < cursor; i++) {
+        if(i%16 == 0) printf("\n");
+        if(i%i == 0)  printf(" ");
+        printf("%02x", buf[i]^0xaa);
+    }
+    printf("\n");
+
+    // return number of bytes read
+    return cursor;
 }
 
 
 int pw_ir_write(uint8_t *buf, size_t len) {
     // TODO: replace with PIO code
+	
+    /*
+     * Set up PIO SM as TX mode
+     * Feed TX cirvc buffer
+     * ???
+     * profit
+     * (unset PIO TX mode)
+     */
+
     return 0;
 }
 
 void pw_ir_init() {
     // TODO: replace with PIO code
+    
+    // ONCE: Set up IR shutdown pin
+    gpio_init(IR_SD_PIN);
+    gpio_set_dir(IR_SD_PIN, GPIO_OUT);
+
+    // De-assert IR_SD
+    gpio_put(IR_SD_PIN, 0);
+
+    // Set `g_ir_pio_state` for callbacks, baud rate, etc.
+
+    g_ir_pio_state = (struct pw_ir_pio_state_s){
+        .pio_sm = 0,
+        .pio_first_dma_channel = 0,
+        .pio_start_pc = 0,
+        .pio_hw = pio1,
+
+        .data_bits = 8,
+        .parity = 0,
+        .stop_bits = 1,
+        .baudrate = 115200,
+
+        .state_tx = false,
+        .state_rx = false,
+
+        .user_rx_callback = pw_ir_pio_rx_callback,
+
+    };
+
+    // Set IRQ handler
+    irq_set_exclusive_handler(PIO1_IRQ_0, pw_ir_pio_irq_handler);
+
+    // unset PIO mode to start PIO SM
+    pw_ir_pio_reset_state();
+
+    // done?
+
 }
 
 void pw_ir_clear_rx() {
-    // TODO: replace with PIO code or remove
+    // Remove all data in RX buffer
+    g_ir_pio_circ_buf.read = g_ir_pio_circ_buf.write = 0;
 }
 
 void pw_ir_deinit() {
     /* TODO: power saving (IR shutdown, stop uart1, etc.) */
+
+    // unset PIO mode/stop PIO SM
+    // Assert IR_SD
 }
 

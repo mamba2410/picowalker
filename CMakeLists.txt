@@ -30,8 +30,8 @@ add_executable(picowalker
     src/drivers/flash_pico_internal.c
     src/drivers/flash_pico_internal.S
     src/drivers/flash_pico_internal.h
-    src/drivers/battery_pico_bq25628e.c
-    src/drivers/battery_pico_bq25628e.h
+    #src/drivers/battery_pico_bq25628e.c
+    #src/drivers/battery_pico_bq25628e.h
     src/picowalker-defs.h
 )
 
@@ -48,5 +48,6 @@ target_link_libraries(picowalker
 	pico_stdlib
     hardware_spi
     hardware_i2c
+    hardware_pio
     ${CMAKE_SOURCE_DIR}/lib/libpicowalker-core.a
 )

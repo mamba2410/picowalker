@@ -5,6 +5,7 @@
 #include "hardware/clocks.h"
 #include "hardware/pll.h"
 
+#include "drivers/eeprom_pico_m95512.h"
 #include "picowalker.h"
 #include "picowalker-defs.h"
 
@@ -19,6 +20,7 @@ int main() {
 
     printf("Hello, picowalker!\n");
 
+    // Start picowalker-core
     walker_entry();
 
     // unreachable

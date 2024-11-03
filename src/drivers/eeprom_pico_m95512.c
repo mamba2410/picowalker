@@ -40,6 +40,7 @@ void pw_eeprom_init() {
     gpio_set_function(EEPROM_MOSI_PIN, GPIO_FUNC_SPI);
     gpio_set_function(EEPROM_MISO_PIN, GPIO_FUNC_SPI);
 
+    // TODO: needs external pull-up, so don't drive high to avoid contention
     gpio_init(EEPROM_CS_PIN);
     gpio_set_dir(EEPROM_CS_PIN, GPIO_OUT);
 
