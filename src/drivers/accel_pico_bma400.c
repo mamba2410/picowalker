@@ -114,7 +114,10 @@ uint32_t pw_accel_get_new_steps() {
 int8_t pw_accel_init() {
     accel_spi = spi0;
 
+    gpio_init(ACCEL_CS_PIN);
+    gpio_set_dir(ACCEL_CS_PIN, GPIO_OUT);
     pw_accel_cs_disable();
+
     //spi_init(accel_spi, ACCEL_SPI_SPEED);
     //// inst, bits, polarity, phase, endian
     //spi_set_format(accel_spi, 8, 1, 1, SPI_MSB_FIRST);
@@ -123,9 +126,6 @@ int8_t pw_accel_init() {
     //gpio_set_function(ACCEL_MOSI_PIN, GPIO_FUNC_SPI);
     //gpio_set_function(ACCEL_MISO_PIN, GPIO_FUNC_SPI);
 
-    gpio_init(ACCEL_CS_PIN);
-    gpio_put(ACCEL_CS_PIN, 1);
-    gpio_set_dir(ACCEL_CS_PIN, GPIO_OUT);
 
     uint8_t buf[8];
     buf[0] = ACCEL_REG_CHIPID;

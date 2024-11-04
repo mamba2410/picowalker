@@ -11,11 +11,15 @@
 static spi_inst_t *eeprom_spi;
 
 static void pw_eeprom_cs_enable() {
+    // Configure output, drive low
+    gpio_set_dir(EEPROM_CS_PIN, GPIO_OUT);
     gpio_put(EEPROM_CS_PIN, 0);
 }
 
 static void pw_eeprom_cs_disable() {
+    // Don't drive high, go to high-z and let pull-up do the work
     gpio_put(EEPROM_CS_PIN, 1);
+    gpio_set_dir(EEPROM_CS_PIN, GPIO_IN);
 }
 
 static void pw_eeprom_wait_for_ready() {
@@ -32,17 +36,19 @@ static void pw_eeprom_wait_for_ready() {
 void pw_eeprom_init() {
     eeprom_spi = spi0;
 
+    // TODO: needs external pull-up, so don't drive high to avoid contention
+    gpio_init(EEPROM_CS_PIN);
+    pw_eeprom_cs_disable();
+
     spi_init(eeprom_spi, 1*1000*1000);
     // inst, bits, polarity, phase, endian
-    spi_set_format(eeprom_spi, 8, 1, 1, SPI_MSB_FIRST);
+    //spi_set_format(eeprom_spi, 8, 1, 1, SPI_MSB_FIRST);
+    spi_set_format(eeprom_spi, 8, 0, 0, SPI_MSB_FIRST);
 
     gpio_set_function(EEPROM_SCL_PIN, GPIO_FUNC_SPI);
     gpio_set_function(EEPROM_MOSI_PIN, GPIO_FUNC_SPI);
     gpio_set_function(EEPROM_MISO_PIN, GPIO_FUNC_SPI);
 
-    // TODO: needs external pull-up, so don't drive high to avoid contention
-    gpio_init(EEPROM_CS_PIN);
-    gpio_set_dir(EEPROM_CS_PIN, GPIO_OUT);
 
     uint8_t msg[3];
 
