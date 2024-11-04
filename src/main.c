@@ -14,7 +14,7 @@ int main() {
 
     // Downclock the system to save a bit of power and allow the HSTX
     // to have a lower clock
-    set_sys_clock_khz(48000, true);
+    //set_sys_clock_khz(48000, true);
 
     stdio_init_all();
 

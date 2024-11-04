@@ -329,11 +329,11 @@ void pw_screen_init() {
      * TODO: in future use GPIN0 clock but this works fine enough
      */
     reset_block(RESETS_RESET_HSTX_BITS);
-    //hw_write_masked(
-    //    &clocks_hw->clk[clk_hstx].ctrl,
-    //    CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB << CLOCKS_CLK_HSTX_CTRL_AUXSRC_LSB,
-    //    CLOCKS_CLK_HSTX_CTRL_AUXSRC_BITS
-    //);
+    hw_write_masked(
+        &clocks_hw->clk[clk_hstx].ctrl,
+        CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB << CLOCKS_CLK_HSTX_CTRL_AUXSRC_LSB,
+        CLOCKS_CLK_HSTX_CTRL_AUXSRC_BITS
+    );
     hw_write_masked(
         &clocks_hw->clk[clk_hstx].div,
         0x02 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
