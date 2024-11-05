@@ -38,7 +38,7 @@ static uint8_t amoled_buffer[AMOLED_BUFFER_SIZE] = {0};
  * Room for optimisation:
  *
  * - Can pack instructoin and address into single 32-bit register
- * - Can send each *pixel* at a time by writing 16-bit to fifo 
+ * - Can send each *pixel* at a time by writing 16-bit to fifo
  *      (DMA friendly)
  * - Can further send more data by packing two of the same pixel into the fifo
  *      (halves buffer size, still can DMA)
@@ -46,7 +46,7 @@ static uint8_t amoled_buffer[AMOLED_BUFFER_SIZE] = {0};
  */
 
 static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len]) {
-    
+
     uint8_t pixel_value, bpu, bpl;
     size_t row, col, stride = pw_img->height;
 
@@ -72,8 +72,10 @@ static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len
             // transform coords
             size_t x_normal = (i/2)%pw_img->width;
             size_t y_normal = 8*(i/(2*pw_img->width)) + j;
-            col = pw_img->height - y_normal - 1;
-            row = x_normal;
+            //col = pw_img->height - y_normal - 1;
+            //row = x_normal;
+            col = y_normal;
+            row = pw_img->width - x_normal;
 
             // now we have pixel coordinate, write to all pixels
             // that need the colour
@@ -113,17 +115,17 @@ void hstx_configure_1wire() {
      * Disable pins SD1..3
      */
     hstx_ctrl_hw->bit[PIN_HSTX_SCK - PIN_HSTX_START] = HSTX_CTRL_BIT0_CLK_BITS;
-    hstx_ctrl_hw->bit[PIN_HSTX_SD0 - PIN_HSTX_START] = 
-        (7<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+    hstx_ctrl_hw->bit[PIN_HSTX_SD0 - PIN_HSTX_START] =
+        (7<<HSTX_CTRL_BIT0_SEL_P_LSB) |
         (7<<HSTX_CTRL_BIT0_SEL_N_LSB);
-    hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] = 
+    hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] =
         (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | (31<<HSTX_CTRL_BIT0_SEL_P_LSB) ;
-    hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] = 
+    hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] =
         (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | (31<<HSTX_CTRL_BIT0_SEL_P_LSB) ;
-    hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] = 
+    hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] =
         (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | (31<<HSTX_CTRL_BIT0_SEL_P_LSB) ;
 
-    hstx_ctrl_hw->csr = 
+    hstx_ctrl_hw->csr =
         HSTX_CTRL_CSR_EN_BITS |             // Enable HSTX
         (31<<HSTX_CTRL_CSR_SHIFT_LSB) |     // Left-shift 1 bits
         (8 <<HSTX_CTRL_CSR_N_SHIFTS_LSB) |  // Perform 8 left-shifts before exhausting
@@ -141,24 +143,24 @@ void hstx_configure_4wire() {
      */
     hstx_ctrl_hw->bit[PIN_HSTX_SCK - PIN_HSTX_START] = HSTX_CTRL_BIT0_CLK_BITS;
 
-    hstx_ctrl_hw->bit[PIN_HSTX_SD0 - PIN_HSTX_START] = 
-        (4<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+    hstx_ctrl_hw->bit[PIN_HSTX_SD0 - PIN_HSTX_START] =
+        (4<<HSTX_CTRL_BIT0_SEL_P_LSB) |
         (4<<HSTX_CTRL_BIT0_SEL_N_LSB);
-    hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] = 
-        (5<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+    hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] =
+        (5<<HSTX_CTRL_BIT0_SEL_P_LSB) |
         (5<<HSTX_CTRL_BIT0_SEL_N_LSB);
-    hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] = 
-        (6<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+    hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] =
+        (6<<HSTX_CTRL_BIT0_SEL_P_LSB) |
         (6<<HSTX_CTRL_BIT0_SEL_N_LSB);
-    hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] = 
-        (7<<HSTX_CTRL_BIT0_SEL_P_LSB) | 
+    hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] =
+        (7<<HSTX_CTRL_BIT0_SEL_P_LSB) |
         (7<<HSTX_CTRL_BIT0_SEL_N_LSB);
 
     /*
      * Set up HSTX shift register
      * For now, just send one byte at a time
      */
-    hstx_ctrl_hw->csr = 
+    hstx_ctrl_hw->csr =
         HSTX_CTRL_CSR_EN_BITS |             // Enable HSTX
         (28<<HSTX_CTRL_CSR_SHIFT_LSB) |     // Left-shift 4 bits
         (2 <<HSTX_CTRL_CSR_N_SHIFTS_LSB) |  // Perform 2 left-shifts before exhausting
@@ -467,7 +469,7 @@ void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t w, s
 }
 
 
-void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1, 
+void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1,
                              screen_pos_t width, screen_pos_t height,
                              screen_colour_t c) {
 
@@ -514,7 +516,7 @@ void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1,
 
 void pw_screen_clear() {
     screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){
-        .x=0, .y=0, 
+        .x=0, .y=0,
         .width=SCREEN_WIDTH, .height=SCREEN_HEIGHT
     }, amoled);
     amoled_draw_block(
