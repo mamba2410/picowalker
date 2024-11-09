@@ -30,8 +30,10 @@ add_executable(picowalker
     src/drivers/flash_pico_internal.c
     src/drivers/flash_pico_internal.S
     src/drivers/flash_pico_internal.h
-    #src/drivers/battery_pico_bq25628e.c
-    #src/drivers/battery_pico_bq25628e.h
+    src/drivers/battery_pico_bq25628e.c
+    src/drivers/battery_pico_bq25628e.h
+    src/drivers/gpio_interrupts_pico.c
+    src/drivers/gpio_interrupts_pico.h
     src/picowalker-defs.h
 )
 
