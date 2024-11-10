@@ -5,9 +5,9 @@
 This tutorial aims to help you:
 
 - Set up a cross-compiling toolchain.
-- Compile the [picowalker-core]() code for the cortex-m33 processor
+- Compile the [picowalker-core](https://github.com/mamba2410/picowalker-core) code for the cortex-m33 processor
     (the processor in the pico 2/rp2350 chip).
-- Compile the [picowalker]() code for the default hardware configuration
+- Compile the [picowalker](https://github.com/mamba2410/picowalker) code for the default hardware configuration
     (see [design.md](./design.md)).
 - Upload the code to the pico
 
@@ -105,17 +105,17 @@ This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 So now, lets run
 
 ```bash
-cmake -B build/arm-cortexm33f -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
-cmake --build build/arm-cortexm33f
+cmake -B build/pico2 -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
+cmake --build build/pico2
 ```
 
 if you encounter errors here, it likely means that `cmake` can't find your
 cross-compiler.
 Check the error messages for more details, and try googling the error messages.
-That's what I do when something goes wrong ¯\\_(ツ)_/¯
+I'm not a CMake expert so that's all I do when something goes wrong ¯\\_(ツ)_/¯
 
 If all went well, you should now have a file located at
-`build/arm-cortexm33f/libpicowalker-core.a`.
+`build/pico2/libpicowalker-core.a`.
 This is our static library!
 
 Now we can move on to compiling the picowalker drivers for our hardware.
@@ -135,17 +135,17 @@ project.
 
 ```
 mkdir lib
-cp ../picowalker-core/build/arm-cortexm33f/libpicowalker-core.a lib/
+cp ../picowalker-core/build/pico2/libpicowalker-core.a lib/
 ```
 
 And now we get to build it with `cmake`:
 
 ```
-cmake -B build/ -DPICO_BOARD=pico2.
-cmake --build build/
+cmake -B build/pico2 -DPICO_BOARD=pico2 .
+cmake --build build/pico2
 ```
 
-If that all went well, you should have a file called `build/picowalker.uf2`.
+If that all went well, you should have a file called `build/pico2/picowalker.uf2`.
 This is the file you'll want to copy to your pico.
 
 If that didn't work out for you, make sure that you have installed the
