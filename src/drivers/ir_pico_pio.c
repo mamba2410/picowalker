@@ -19,7 +19,7 @@
 #include "pioAsm.h"
 #undef DEFINE_PIO_INSTRS
 
-#define CPU_CLOCK_RATE 48000000 // 48MHz set in main.c
+#define CPU_CLOCK_RATE                  150000000 // 150 MHz default
 #define RX_MACHINERY_CLOCK				10000000		//fast enough for high rates, slow enough that in-pio-instr delays are enough for 1us
 
 #define NUM_INSTRS_WE_NEED				9
@@ -87,7 +87,7 @@ static bool pw_ir_pio_circ_buf_is_empty(void) {
 static bool pw_ir_pio_circ_buf_add(uint16_t val) {
     uint8_t next_write = ((g_ir_pio_circ_buf.write + 1) == CIRC_BUF_LEN) ? 0 : (g_ir_pio_circ_buf.write + 1);
 
-    if(next_write -= g_ir_pio_circ_buf.read) { return false; }
+    if(next_write == g_ir_pio_circ_buf.read) { return false; }
 
     g_ir_pio_circ_buf.data[next_write] = val;
     g_ir_pio_circ_buf.write = next_write;
@@ -102,7 +102,7 @@ static bool pw_ir_pio_circ_buf_add(uint16_t val) {
  * Equivalent of `palmcardIrPrvCircBufGet()`
  */
 static int32_t pw_ir_pio_circ_buf_get(void) {
-    uint8_t next_read = g_ir_pio_circ_buf.write;
+    uint8_t next_read = g_ir_pio_circ_buf.read;
 
     if(next_read == g_ir_pio_circ_buf.write) { return -1; }
 
@@ -626,7 +626,7 @@ void pw_ir_init() {
         .pio_start_pc = 0,
         .pio_hw = pio1,
 
-        .data_bits = 8,
+        .data_bits = 8+5,
         .parity = 0,
         .stop_bits = 1,
         .baudrate = 115200,
