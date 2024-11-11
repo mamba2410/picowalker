@@ -29,7 +29,7 @@
 #define NUM_DMAS_WE_NEED				0
 
 //#define CIRC_BUF_SZ						64
-#define CIRC_BUF_LEN    64
+#define CIRC_BUF_LEN    (128+8+1)
 
 // Callback function analogous to `RepalmUartRxF`
 // the first void* is the `mIrRxD` context, likely unused
@@ -64,6 +64,8 @@ struct pw_ir_pio_state_s {
     rx_callback_t user_rx_callback;
 };
 static volatile struct pw_ir_pio_state_s g_ir_pio_state;
+
+static uint16_t g_rx_buffer[CIRC_BUF_LEN];
 
 static bool pw_ir_pio_tx_is_ongoing(void);
 
@@ -334,20 +336,20 @@ void __attribute__((used)) pw_ir_pio_irq_handler() {
 
     } else if(g_ir_pio_state.state_rx) {
 		uint_fast8_t nItems = 0;
-		uint16_t buf[29];
+		//uint16_t buf[29];
 	
         // While there is data in the RX buffer and `buf` isn't full
-		while (!(g_ir_pio_state.pio_hw->fstat & ((1 << PIO_FSTAT_RXEMPTY_LSB) << g_ir_pio_state.pio_sm)) && nItems < sizeof(buf) / sizeof(*buf)) {		//data & space in fifo?
+		while (!(g_ir_pio_state.pio_hw->fstat & ((1 << PIO_FSTAT_RXEMPTY_LSB) << g_ir_pio_state.pio_sm)) && nItems < CIRC_BUF_LEN) {		//data & space in fifo?
 			
 			uint16_t input = g_ir_pio_state.pio_hw->rxf[g_ir_pio_state.pio_sm];
             uint16_t val = pw_ir_pio_process_input(input);
 			
-			buf[nItems++] = val;
+			g_rx_buffer[nItems++] = val;
 		}
 
         // Call user callback
         if(nItems > 0) {
-		    g_ir_pio_state.user_rx_callback((void*)0, buf, nItems);
+		    g_ir_pio_state.user_rx_callback((void*)0, g_rx_buffer, nItems);
         }
 
     } else {
