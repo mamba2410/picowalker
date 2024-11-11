@@ -1,12 +1,14 @@
 #include <stdint.h>
 #include <stddef.h>
-#include <stdlib.h>
+#include <stdbool.h>
+
 #include <stdio.h>
-#include <hardware/uart.h>
+#include "hardware/uart.h"
 #include <hardware/gpio.h>
 #include <hardware/pio.h>
 #include <hardware/irq.h>
 #include "pico/time.h"
+#include "pico/stdlib.h"
 
 #include "ir_pico_pio.h"
 
@@ -89,7 +91,7 @@ static bool pw_ir_pio_circ_buf_add(uint16_t val) {
 
     if(next_write == g_ir_pio_circ_buf.read) { return false; }
 
-    g_ir_pio_circ_buf.data[next_write] = val;
+    g_ir_pio_circ_buf.data[g_ir_pio_circ_buf.write] = val;
     g_ir_pio_circ_buf.write = next_write;
 
     return true;
@@ -195,9 +197,12 @@ static void pw_ir_pio_setup_tx() {
 	g_ir_pio_state.pio_hw->inte0 = 0;
 	//NVIC_ClearPendingIRQ(PIO1_0_IRQn);
 	//NVIC_EnableIRQ(PIO1_0_IRQn);
-    irq_set_enabled(PIO1_IRQ_0, true);
     irq_clear(PIO1_IRQ_0);
+    pio_interrupt_clear(g_ir_pio_state.pio_hw, g_ir_pio_state.pio_sm);
+    irq_set_enabled(PIO1_IRQ_0, true);
 	g_ir_pio_state.pio_hw->inte0 = PIO_IRQ0_INTE_SM0_TXNFULL_BITS << g_ir_pio_state.pio_sm;
+
+    g_ir_pio_state.state_tx = true;
 }
 
 
@@ -212,9 +217,9 @@ static void pw_ir_pio_setup_rx() {
 	uint_fast8_t pc = g_ir_pio_state.pio_start_pc, startPC, restartPC, endPC, jmpDest1, jmpDest2;
 	
     // 8N1
-    uint8_t dataBits = 8;
+    uint8_t dataBits = g_ir_pio_state.data_bits;
     uint8_t parityBits = 0;
-    uint8_t stopBits = 1;
+    uint8_t stopBits = g_ir_pio_state.stop_bits;
 	
 	//1.6276 us is the pulse width of 115,200 and of low power IrDA, so we wait for a low, check again in 1.5 us, and if it is still low, we consider this a start bit
 	//clock should be ~20MHz, shifter should be to the right, autopush at 32 bits. autopull at 32 bits, input should be an infinite stream of words that represent the
@@ -263,9 +268,12 @@ static void pw_ir_pio_setup_rx() {
 	g_ir_pio_state.pio_hw->inte0 = 0;
 	//NVIC_ClearPendingIRQ(PIO1_0_IRQn);
 	//NVIC_EnableIRQ(PIO1_0_IRQn);
-    irq_set_enabled(PIO1_IRQ_0, true);
     irq_clear(PIO1_IRQ_0);
+    pio_interrupt_clear(g_ir_pio_state.pio_hw, g_ir_pio_state.pio_sm);
+    irq_set_enabled(PIO1_IRQ_0, true);
 	g_ir_pio_state.pio_hw->inte0 = PIO_IRQ0_INTE_SM0_RXNEMPTY_BITS << g_ir_pio_state.pio_sm;
+
+    g_ir_pio_state.state_rx = true;
 
 }
 
@@ -300,7 +308,7 @@ static uint16_t pw_ir_pio_process_input(uint32_t val) {
  * TX mode: place processed value (containing stop bits, parity etc) from global circular buffer into the PIO TX FIFO
  * RX mode: grab value from RX FIFO, processes it and calls the user callback to do whatever they want with it
  */
-void pw_ir_pio_irq_handler() {
+void __attribute__((used)) pw_ir_pio_irq_handler() {
     if(g_ir_pio_state.state_tx) {
         // Expecting a TXNFULL event so we take transformed data from the
         // circ buffer and feed it byte-by-byte into the PIO FIFO
@@ -332,7 +340,9 @@ void pw_ir_pio_irq_handler() {
 		}
 
         // Call user callback
-		g_ir_pio_state.user_rx_callback((void*)0, buf, nItems);
+        if(nItems > 0) {
+		    g_ir_pio_state.user_rx_callback((void*)0, buf, nItems);
+        }
 
     } else {
         // spurious
@@ -349,6 +359,8 @@ void pw_ir_pio_irq_handler() {
 static uint16_t pw_ir_pio_transform_data(uint8_t byte) {
     uint32_t val = 1 + ((uint32_t)((uint8_t)~byte)) * 2; // start bit and data
     
+    // we don't do parity
+
     // stop bits are zero here and thus no work to do for them
 
     return val;
@@ -372,6 +384,8 @@ static uint32_t __attribute__((noinline)) pw_ir_pio_serial_tx_blocking(const uin
             g_ir_pio_state.pio_hw->inte0 = PIO_IRQ0_INTE_SM0_TXNFULL_BITS << g_ir_pio_state.pio_sm;
             len--;
             data++;
+        } else {
+            printf("[Error] PIO TX add failed\n");
         }
     }
 
@@ -543,7 +557,6 @@ void pw_ir_pio_rx_callback(void* _context, uint16_t *data, size_t len) {
  */
 
 int pw_ir_read(uint8_t *buf, size_t max_len) {
-    // TODO: replace with PIO code
     size_t cursor = 0;
     int64_t diff;
     
@@ -573,13 +586,13 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
         }
         now = get_absolute_time();
         diff = absolute_time_diff_us(last_read, now); // signed difference
-        //printf("%ld ", diff);
     } while( diff < 3742);
     
 
     // (unset PIO RX mode?)
     pw_ir_pio_reset_state();
 
+    /*
     // Debug
     printf("read: (%d)", cursor);
     for(size_t i = 0; i < cursor; i++) {
@@ -588,6 +601,7 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
         printf("%02x", buf[i]^0xaa);
     }
     printf("\n");
+    */
 
     // return number of bytes read
     return cursor;
@@ -595,7 +609,6 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
 
 
 int pw_ir_write(uint8_t *buf, size_t len) {
-    // TODO: replace with PIO code
 	
     /*
      * Set up PIO SM as TX mode
@@ -604,8 +617,14 @@ int pw_ir_write(uint8_t *buf, size_t len) {
      * profit
      * (unset PIO TX mode)
      */
+    printf("[Debug] Writing %d bytes\n", len);
+    pw_ir_pio_setup_tx();
+    pw_ir_pio_serial_tx_blocking(buf, len);
+    sleep_ms(1);
+    pw_ir_pio_reset_state();
 
-    return 0;
+    // TODO
+    return len;
 }
 
 void pw_ir_init() {
@@ -614,6 +633,10 @@ void pw_ir_init() {
     // ONCE: Set up IR shutdown pin
     gpio_init(IR_SD_PIN);
     gpio_set_dir(IR_SD_PIN, GPIO_OUT);
+
+    pio_gpio_init(pio1, IR_PIO_TX);
+    gpio_init(IR_PIO_RX);
+    gpio_set_dir(IR_PIO_RX, GPIO_IN);
 
     // De-assert IR_SD
     gpio_put(IR_SD_PIN, 0);
@@ -626,7 +649,7 @@ void pw_ir_init() {
         .pio_start_pc = 0,
         .pio_hw = pio1,
 
-        .data_bits = 8+5,
+        .data_bits = 8,
         .parity = 0,
         .stop_bits = 1,
         .baudrate = 115200,
