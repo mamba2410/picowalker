@@ -65,6 +65,7 @@ struct pw_ir_pio_state_s {
 };
 static volatile struct pw_ir_pio_state_s g_ir_pio_state;
 
+static bool pw_ir_pio_tx_is_ongoing(void);
 
 /*
  * Checks if the global TX circular buffer is full
@@ -121,6 +122,11 @@ static int32_t pw_ir_pio_circ_buf_get(void) {
  * Equivalent of `palmcardIrPrvUnsetup()`
  */
 static void pw_ir_pio_reset_state() {
+
+    if(g_ir_pio_state.state_tx) {
+        while( pw_ir_pio_tx_is_ongoing() );
+    }
+
 	//NVIC_DisableIRQ(PIO1_0_IRQn);
     irq_set_enabled(PIO1_IRQ_0, false);
 	
@@ -572,8 +578,7 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
     do {
         now = get_absolute_time();
         diff = absolute_time_diff_us(start, now);
-    } while( !pw_ir_pio_circ_buf_is_empty() && diff < 50000);
-
+    } while( pw_ir_pio_circ_buf_is_empty() && diff < 50000);
 
     // If something did come through, collect data until time since last byte exceeds 3742us
     diff = 0;
@@ -617,11 +622,20 @@ int pw_ir_write(uint8_t *buf, size_t len) {
      * profit
      * (unset PIO TX mode)
      */
-    printf("[Debug] Writing %d bytes\n", len);
     pw_ir_pio_setup_tx();
     pw_ir_pio_serial_tx_blocking(buf, len);
-    sleep_ms(1);
     pw_ir_pio_reset_state();
+
+    /*
+    // Debug
+    printf("write: (%d)", len);
+    for(size_t i = 0; i < len; i++) {
+        if(i%16 == 0) printf("\n");
+        if(i%i == 0)  printf(" ");
+        printf("%02x", buf[i]^0xaa);
+    }
+    printf("\n");
+    */
 
     // TODO
     return len;
