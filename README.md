@@ -27,15 +27,13 @@ which is a Raspberry Pi Pico 2 based custom PCB, including:
 
 Hardware to get working:
 
-- IrDA over PIO (using dmitry gr's code)
-    - Basics implemented but doesn't work, needs more work on it
+- Battery
+    - Charging and comms work, ADC readings for battery level monitoring needs implementing
 - RTC
     - Using RP2350's AON timer
 - Secondary flash (for colour images and possibly cries)
 - USB
 - Sound
-- Battery
-    - Charging and comms work, ADC readings for battery level monitoring needs implementing
 
 ## Building for yourself
 
