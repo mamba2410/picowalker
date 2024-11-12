@@ -339,7 +339,7 @@ void pw_screen_init() {
     );
     hw_write_masked(
         &clocks_hw->clk[clk_hstx].div,
-        0x02 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
+        0x01 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
         CLOCKS_CLK_HSTX_DIV_INT_BITS
     );
     unreset_block_wait(RESETS_RESET_HSTX_BITS);
