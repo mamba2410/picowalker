@@ -4,14 +4,19 @@
 #include "hardware/timer.h"
 #include "hardware/gpio.h"
 #include "pico/types.h"
+#include "pico/stdlib.h"
 
 #include "../picowalker-defs.h"
 #include "buttons_pico.h"
 #include "gpio_interrupts_pico.h"
+#include "power_pico.h"
 
+bool acknowledge_button_presses;
 uint64_t last_pressed = 0;
 
 void pw_button_init() {
+
+    acknowledge_button_presses = true;
 
     // enable pins
     gpio_init(PIN_BUTTON_LEFT);
@@ -30,6 +35,10 @@ void pw_button_init() {
 
 void pw_pico_button_callback(uint gp, uint32_t events) {
     uint8_t b = 0;
+
+
+    // Stop buttons doing anything during sleep
+    if(!acknowledge_button_presses) return;
 
     switch(gp) {
     case PIN_BUTTON_LEFT:
@@ -51,5 +60,8 @@ void pw_pico_button_callback(uint gp, uint32_t events) {
         pw_button_callback(b);
         last_pressed = now;
     }
+
+    // Add one-shot timer to keep track of user actions
+    set_user_idle_timer();
 
 }

@@ -69,6 +69,8 @@ void pw_screen_fill_area(
     screen_pos_t w, screen_pos_t h,
     screen_colour_t colour
 );
+void pw_screen_sleep();
+void pw_screen_wake();
 
 
 /*
@@ -89,6 +91,8 @@ void pw_eeprom_init();
 int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len);
 int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len);
 void pw_eeprom_set_area(eeprom_addr_t addr, uint8_t v, size_t len);
+void pw_eeprom_sleep();
+void pw_eeprom_wake();
 
 
 /*
@@ -110,6 +114,11 @@ typedef enum {
     FLASH_IMG_TINY_CHARS,
 } pw_flash_img_t;
 
+/*
+ *  Functions defined by the driver
+ */
+void pw_flash_sleep();
+void pw_flash_wake();
 
 /*
  *  ==================================================================================
@@ -154,10 +163,30 @@ void pw_button_init();
 void pw_ir_init();
 int pw_ir_read(uint8_t *buf, size_t len);
 int pw_ir_write(uint8_t *buf, size_t len);
+void pw_ir_sleep();
+void pw_ir_wake();
 
 /*
  *  ==================================================================================
- *  BATTERY
+ *  ACCEL
+ *  ==================================================================================
+ */
+
+/*
+ * Types and defines
+ */
+
+/*
+ *  Functions defined by driver
+ */
+void pw_accel_init();
+uint32_t pw_accel_get_new_steps();
+void pw_accel_sleep();
+void pw_accel_wake();
+
+/*
+ *  ==================================================================================
+ *  POWER
  *  ==================================================================================
  */
 
@@ -174,9 +203,12 @@ typedef struct pw_battery_status_s {
 } pw_battery_status_t;
 
 /*
- *  Functions defined by the driver
+ *  Functions defined by driver
  */
-void pw_battery_init();
-pw_battery_status_t pw_battery_get_status();
+void pw_power_init();
+pw_battery_status_t pw_power_get_battery_status();
+void pw_power_enter_sleep();
+bool pw_power_should_sleep();
 
 #endif /* PW_PICOWALKER_INCLUDE_H */
+

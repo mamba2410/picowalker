@@ -300,6 +300,7 @@ enum bq25628e_reg_address_e {
 #define REG_PART_INFO_PN_VAL(x)         (((x)>>3)&0x7)
 #define REG_PART_INFO_DEV_REV_VAL(x)    (((x)>>0)&0x7)
 
+void pw_battery_init();
 void pw_battery_int(uint gp, uint32_t events);
 
 #endif /* BATTERY_PICO_B25628E_H */

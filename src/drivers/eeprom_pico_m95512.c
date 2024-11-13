@@ -150,3 +150,6 @@ void pw_eeprom_set_area(eeprom_addr_t addr, uint8_t v, size_t len) {
     free(buf);
 }
 
+// M95512 has auto-sleep so these do nothing
+void pw_eeprom_sleep() { }
+void pw_eeprom_wake() { }

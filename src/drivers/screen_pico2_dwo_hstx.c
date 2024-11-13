@@ -293,6 +293,69 @@ void amoled_clear_screen() {
 
 }
 
+void amoled_reset() {
+    uint8_t params[4] = {0};
+
+    /*
+     * Screen initialise sequence
+     */
+    gpio_put(PIN_SCREEN_RST, 0);
+    sleep_ms(3);
+    gpio_put(PIN_SCREEN_RST, 1);
+    sleep_ms(50);
+
+    params[0] = 0x00;
+    amoled_send_1wire(CMD_SLEEP_OUT, 0, params);
+    sleep_ms(150);
+
+    params[0] = 0xd5;
+    //params[0] = 0x55;
+    amoled_send_1wire(CMD_PIXEL_FORMAT, 1, params);
+    sleep_ms(10);
+
+    params[0] = 0x20;
+    amoled_send_1wire(CMD_WRITE_CTRL_DSP1, 1, params);
+    sleep_ms(25);
+
+    params[0] = 0x00;
+    amoled_send_1wire(CMD_SET_BRIGHTNESS, 1, params);
+    sleep_ms(10);
+
+    params[0] = 0x7f;
+    amoled_send_1wire(CMD_SET_BRIGHTNESS, 1, params);
+    sleep_ms(10);
+
+    amoled_clear_screen();
+
+    amoled.true_width = AMOLED_WIDTH;
+    amoled.true_height = AMOLED_HEIGHT;
+    amoled.offset_x = AMOLED_X_OFFSET;
+    amoled.offset_y = AMOLED_Y_OFFSET;
+
+    amoled_draw_block(
+        amoled.offset_x, amoled.offset_y,
+        AMOLED_ACTIVE_WIDTH, AMOLED_ACTIVE_HEIGHT,
+        colour_map[SCREEN_BLACK]
+    );
+
+    // Note: different final row/column to draw areas
+    params[0] = (AMOLED_X_OFFSET)>>8;
+    params[1] = (AMOLED_X_OFFSET)&0xff;
+    params[2] = (AMOLED_X_OFFSET + AMOLED_ACTIVE_WIDTH)>>8;
+    params[3] = (AMOLED_X_OFFSET + AMOLED_ACTIVE_WIDTH)&0xff;
+    amoled_send_1wire(CMD_PARTIAL_COL_SET, 4, params);
+
+    params[0] = (AMOLED_Y_OFFSET)>>8;
+    params[1] = (AMOLED_Y_OFFSET)&0xff;
+    params[2] = (AMOLED_Y_OFFSET + AMOLED_ACTIVE_HEIGHT)>>8;
+    params[3] = (AMOLED_Y_OFFSET + AMOLED_ACTIVE_HEIGHT)&0xff;
+    amoled_send_1wire(CMD_PARTIAL_ROW_SET, 4, params);
+
+    amoled_send_1wire(CMD_PARTIAL_ON, 0, params);
+
+    amoled_send_1wire(CMD_DISPLAY_ON, 0, params);
+}
+
 
 /*
  * ============================================================================
@@ -345,72 +408,9 @@ void pw_screen_init() {
     unreset_block_wait(RESETS_RESET_HSTX_BITS);
 
     uint f_clk_hstx = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_HSTX);
-    printf("Running HSTX at %lukHz\n", f_clk_hstx);
+    printf("[Info] Running HSTX at %lukHz\n", f_clk_hstx);
 
-    /*
-     * Screen initialise sequence
-     */
-    sleep_ms(10);
-    gpio_put(PIN_SCREEN_RST, 0);
-    sleep_ms(10);
-    gpio_put(PIN_SCREEN_RST, 1);
-    sleep_ms(150);
-
-    params[0] = 0x00;
-    amoled_send_1wire(CMD_SLEEP_OUT, 0, params);
-    sleep_ms(150);
-
-    params[0] = 0xd5;
-    //params[0] = 0x55;
-    amoled_send_1wire(CMD_PIXEL_FORMAT, 1, params);
-    sleep_ms(10);
-
-    params[0] = 0x20;
-    amoled_send_1wire(CMD_WRITE_CTRL_DSP1, 1, params);
-    sleep_ms(25);
-
-    params[0] = 0x00;
-    amoled_send_1wire(CMD_SET_BRIGHTNESS, 1, params);
-    sleep_ms(10);
-
-    amoled_send_1wire(CMD_DISPLAY_ON, 0, params);
-    sleep_ms(10);
-
-    params[0] = 0x7f;
-    amoled_send_1wire(CMD_SET_BRIGHTNESS, 1, params);
-    sleep_ms(10);
-
-    // Note: different final row/column to draw areas
-    params[0] = (AMOLED_X_OFFSET)>>8;
-    params[1] = (AMOLED_X_OFFSET)&0xff;
-    params[2] = (AMOLED_X_OFFSET + AMOLED_ACTIVE_WIDTH)>>8;
-    params[3] = (AMOLED_X_OFFSET + AMOLED_ACTIVE_WIDTH)&0xff;
-    amoled_send_1wire(CMD_PARTIAL_COL_SET, 4, params);
-
-    params[0] = (AMOLED_Y_OFFSET)>>8;
-    params[1] = (AMOLED_Y_OFFSET)&0xff;
-    params[2] = (AMOLED_Y_OFFSET + AMOLED_ACTIVE_HEIGHT)>>8;
-    params[3] = (AMOLED_Y_OFFSET + AMOLED_ACTIVE_HEIGHT)&0xff;
-    amoled_send_1wire(CMD_PARTIAL_ROW_SET, 4, params);
-
-    amoled_send_1wire(CMD_PARTIAL_ON, 0, params);
-
-    printf("Screen configured\n");
-
-    amoled_clear_screen();
-
-    amoled.true_width = AMOLED_WIDTH;
-    amoled.true_height = AMOLED_HEIGHT;
-    amoled.offset_x = AMOLED_X_OFFSET;
-    amoled.offset_y = AMOLED_Y_OFFSET;
-
-    amoled_draw_block(
-        amoled.offset_x, amoled.offset_y,
-        AMOLED_ACTIVE_WIDTH, AMOLED_ACTIVE_HEIGHT,
-        colour_map[SCREEN_BLACK]
-    );
-
-    printf("Screen initialised\n");
+    amoled_reset();
 }
 
 
@@ -541,3 +541,14 @@ void pw_screen_fill_area(screen_pos_t x, screen_pos_t y,
 
 }
 
+void pw_screen_sleep() {
+    // Enable display standby
+    uint8_t params[2] = {0x01};
+    amoled_send_1wire(CMD_DSTB_CTRL, 1, params);
+}
+
+void pw_screen_wake() {
+    // Wake it up and re-configure it
+    // Same as a power-on reset
+    amoled_reset();
+}

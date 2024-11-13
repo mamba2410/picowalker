@@ -4,14 +4,6 @@ May or may not be in `picowalker-core` instead.
 
 ## Screen
 
-- Clocks
-    - Screen runs well enough on 24MHz at 3x resolution, but not ideal
-    - Might need to have shorter wires, long leads are definitely introducing
-        clock interference
-    - Last-ditch use GPIO relaxation oscillator to feed into HSTX (sacrfices 
-        2 gpio pins which is really not ideal)
-- Rotation
-    - Rotate the other way for hardware v0.1
 
 ## EEPROM
 
@@ -22,4 +14,13 @@ May or may not be in `picowalker-core` instead.
 
 - SPI is initialised by all peripherals. Add a lock and common clock speed.
 
+## Power
+
+- Only wake on 1 second of button press
+- Set hw timer callback on each button press, when expires then set flag that we should sleep
+
+## Timers
+
+- Set up AON timer from eeprom timestamp
+- Set up AON timer from IR packets
 

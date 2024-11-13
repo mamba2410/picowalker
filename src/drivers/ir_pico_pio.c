@@ -699,3 +699,11 @@ void pw_ir_deinit() {
     // Assert IR_SD
 }
 
+void pw_ir_sleep() {
+    gpio_put(IR_SD_PIN, 1);
+}
+
+void pw_ir_wake() {
+    gpio_put(IR_SD_PIN, 0);
+}
+

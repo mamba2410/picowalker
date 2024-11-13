@@ -114,7 +114,7 @@ void pw_battery_init() {
     printf("BQ25628E charge status: %s\n", CHARGE_STATUS_STRINGS[(buf[1]>>3)&0x03]);
 
     // TODO: For testing
-    pw_battery_get_status();
+    pw_power_get_battery_status();
 
     // TODO: Set REG_CHARGER_CONTROL_3.IBAT_PK to 0x0 for 1.5A discharge limit
     // TODO: Charge current limit default 320mA, can reprogram. See REG_CHARGE_CURRENT_LIMIT
@@ -122,7 +122,7 @@ void pw_battery_init() {
 
 }
 
-pw_battery_status_t pw_battery_get_status() {
+pw_battery_status_t pw_power_get_battery_status() {
     pw_battery_status_t bs = {.percent = 100, .flags = 0x00};
     uint8_t buf[4];
 

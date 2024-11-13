@@ -66,6 +66,7 @@ enum screen_cmd {
     CMD_PIXEL_FORMAT    = 0x3a,
     CMD_WRITE_CONTINUE  = 0x3c,
     CMD_WRITE_TE_LINE   = 0x44,
+    CMD_DSTB_CTRL       = 0x4f,
     CMD_SET_BRIGHTNESS  = 0x51,
     CMD_WRITE_CTRL_DSP1 = 0x53,
     CMD_WRITE_CTRL_DPS2 = 0x55,
