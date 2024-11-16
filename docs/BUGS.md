@@ -22,3 +22,13 @@ May or may not be in `picowalker-core` instead.
 - Set up AON timer from eeprom timestamp
 - Set up AON timer from IR packets
 
+## Accel
+
+- We aren't using the interrupts currently. Check out what they can do.
+
+## IR
+
+- Walk start just doesn't seem to work sometimes, needs debugging and logging.
+    - Can't log during normal operation cause its too slow.
+      Launch second core to log?
+
