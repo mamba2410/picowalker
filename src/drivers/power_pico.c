@@ -25,7 +25,6 @@ void user_idle_callback(void) {
  * rather than just the last one.
  */
 void set_user_idle_timer() {
-    /*
     hw_set_bits(&timer_hw->inte, 1u<<USER_IDLE_ALARM_NUM);
     uint user_idle_irq_num = timer_hardware_alarm_get_irq_num(timer_hw, USER_IDLE_ALARM_NUM);
     irq_set_exclusive_handler(user_idle_irq_num, user_idle_callback);
@@ -36,7 +35,6 @@ void set_user_idle_timer() {
     uint64_t target = timer_hw->timerawl + (1000*USER_IDLE_TIMEOUT_MS);
 
     timer_hw->alarm[USER_IDLE_ALARM_NUM] = (uint32_t)target;
-    */
 }
 
 void pw_power_init() {
