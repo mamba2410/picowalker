@@ -86,11 +86,19 @@ void pw_battery_int(uint gp, uint32_t events) {
 
         // Read `FLAG` registers to clear interrupts
         pw_pmic_read_reg(REG_CHARGER_FLAG_0, buf, 3);
+        // Latch up, don't reset. Otherwise interrupts before we check the flag
+        // will cause things to spin forever
+        if(buf[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) {
+            adc_done = true;
+        }
+        //adc_done = (buf[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) ==  REG_CHARGER_FLAG_0_ADC_DONE_FLAG;
+
+        printf("[Info] ============\n");
         printf("[Info] Interrupt flags: CHARGER_FLAGS_0: 0x%02x; CHARGER_FLAGS_1: 0x%02x; FAULT_FLAGS_0: 0x%02x\n", buf[0], buf[1], buf[2]);
         printf("[Info]     CHARGER_FLAGS_0: ");
         for(size_t i = 0; i < 8; i++) {
             if(buf[0] & 1)
-                printf("%s |", CHARGER_FLAG_0_STRINGS[i]);
+                printf("%s (%d) |", CHARGER_FLAG_0_STRINGS[i], i);
             buf[0] >>= 1;
         }
 
@@ -108,8 +116,6 @@ void pw_battery_int(uint gp, uint32_t events) {
             buf[2] >>= 1;
         }
         printf("\n");
-
-        adc_done = (buf[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) ==  REG_CHARGER_FLAG_0_ADC_DONE_FLAG;
 
         // Read status registers
         pw_pmic_read_reg(REG_CHARGER_STATUS_0, buf, 3);
@@ -151,10 +157,10 @@ void pw_battery_init() {
     gpio_set_function(PMIC_I2C_SCL_PIN, GPIO_FUNC_I2C);
     // hardware I2C pull-ups
 
-    // Always allow charge, for now...
+    // Disable charge for now
     gpio_init(BAT_CE_PIN);
     gpio_set_dir(BAT_CE_PIN, GPIO_OUT);
-    gpio_put(BAT_CE_PIN, 0);
+    gpio_put(BAT_CE_PIN, 1);
 
     // Set up INT pin with callback
     gpio_init(BAT_INT_PIN);
@@ -163,6 +169,12 @@ void pw_battery_init() {
 
     uint8_t buf[24] = {0};
 
+    // Reset the PMIC
+    pw_pmic_read_reg(REG_CHARGER_CONTROL_1, buf, 1);
+    buf[0] &= ~REG_CHARGER_CONTROL_1_REG_RST_MSK;
+    buf[0] |= REG_CHARGER_CONTROL_1_REG_RST;
+    pw_pmic_write_reg(REG_CHARGER_CONTROL_1, buf, 1);
+
     // Check for part number
     pw_pmic_read_reg(REG_PART_INFO, buf, 3);
     printf("[Info] BQ25628E part info: 0x%02x\n", buf[0]);
@@ -170,6 +182,23 @@ void pw_battery_init() {
     // Read `FLAG` registers to clear interrupts
     // (possibly) important to clear "power-on" interrupt
     pw_pmic_read_reg(REG_CHARGER_FLAG_0, buf, 3);
+
+    pw_pmic_read_reg(REG_CHARGE_CONTROL, buf, 1);
+    buf[0] &= ~REG_CHARGE_CONTROL_VINDPM_BAT_TRACK_MSK;
+    buf[0] |= REG_CHARGE_CONTROL_VINDPM_BAT_TRACK_DISABLE;
+    pw_pmic_write_reg(REG_CHARGE_CONTROL, buf, 1);
+
+    // Set VINDPM threshold
+    buf[0] = 0x64 << 5; // 4000mV
+    pw_pmic_write_reg(REG_INPUT_VOLTAGE_LIMIT, buf, 1);
+
+    // Disable the watchdog timer so that its always in host mode.
+    // TODO: Probably safer to "pet" the watchdog periodically with a 
+    // hardware timer but this will do for now
+    pw_pmic_read_reg(REG_CHARGER_CONTROL_0, buf, 1);
+    buf[0] &= ~REG_CHARGER_CONTROL_0_WATCHDOG_MSK;
+    buf[0] |= REG_CHARGER_CONTROL_0_WATCHDOG_DISABLED;
+    pw_pmic_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
 
     // Set up ADC targets for conversion
     // Allow: VBAT, IBAT, VBUS, IBUS, VSYS
@@ -181,30 +210,44 @@ void pw_battery_init() {
 
     // Set ADC to one-shot mode, don't enable
     buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
-             REG_ADC_CONTROL_ADC_RATE_CONTINUOUS |
+             //REG_ADC_CONTROL_ADC_RATE_CONTINUOUS |
+             REG_ADC_CONTROL_ADC_RATE_ONESHOT |
              REG_ADC_CONTROL_ADC_SAMPLE_9_BIT | // default
-             REG_ADC_CONTROL_ADC_EN_ENABLED; // don't enable yet
+             REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
     uint8_t my_reg = buf[0];
     pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
 
-    pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
-
-    printf("[Info] Set reg to 0x%02x, read back 0x%02x\n", my_reg, buf[0]);
+    //pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
+    //printf("[Info] Set reg to 0x%02x, read back 0x%02x\n", my_reg, buf[0]);
 
     // Enable ADC
     //pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
+    //buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
     //buf[0] |= REG_ADC_CONTROL_ADC_EN_ENABLED;
     //pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
+
+    // Disable temperature sensing
+    //pw_pmic_read_reg(REG_NTC_CONTROL_0, buf, 1);
+    //buf[0] &= ~REG_NTC_CONTROL_0_TS_IGNORE_MSK;
+    //buf[0] |= REG_NTC_CONTROL_0_TS_IGNORE;
+    //pw_pmic_write_reg(REG_NTC_CONTROL_0, buf, 1);
+
+    buf[0] =  REG_ADC_FUNCTION_DISABLE_0_TS
+             | REG_ADC_FUNCTION_DISABLE_0_TDIE
+             | REG_ADC_FUNCTION_DISABLE_0_VPMID;
+    //pw_pmic_write_reg(REG_ADC_FUNCTION_DISABLE_0, buf, 1);
 
     // Just for fun
     pw_pmic_read_reg(REG_CHARGER_STATUS_0, buf, 3);
     printf("[Info] BQ25628E charge status: %s\n", CHARGE_STATUS_STRINGS[(buf[1]>>3)&0x03]);
 
+    // Enable charge
+    gpio_put(BAT_CE_PIN, 0);
+
     // TODO: For testing
-    //pw_power_get_battery_status();
+    pw_power_get_battery_status();
 
-    debug_read_pmic();
-
+    //debug_read_pmic();
 
     // TODO: Set REG_CHARGER_CONTROL_3.IBAT_PK to 0x0 for 1.5A discharge limit
     // TODO: Charge current limit default 320mA, can reprogram. See REG_CHARGE_CURRENT_LIMIT
@@ -221,8 +264,8 @@ void debug_read_pmic() {
     printf("[Info] ADC values:\n");
     buf16[0] >>= ADC_SHIFTS[0];
     buf16[1] >>= ADC_SHIFTS[1];
-    printf("\t++IBUS: 0x%04x\n", buf16[0]);
-    printf("\t++IBAT: 0x%04x\n", buf16[1]);
+    //printf("\t++IBUS: 0x%04x\n", buf16[0]);
+    //printf("\t++IBAT: 0x%04x\n", buf16[1]);
     if(buf16[0] > 0x3fff) buf16[0] = (buf16[0]^0x7fff) + 1;
     if(buf16[1] > 0x1fff) buf16[1] = (buf16[1]^0x3fff) + 1;
     printf("\tIBUS: %f mA\n", (float)(buf16[0]/*>>ADC_SHIFTS[0]*/) / (float)(0x7d0) * 4000.0);
@@ -236,30 +279,61 @@ void debug_read_pmic() {
 
 pw_battery_status_t pw_power_get_battery_status() {
     pw_battery_status_t bs = {.percent = 100, .flags = 0x00};
-    uint8_t buf[4];
+    uint8_t buf[8];
+    uint16_t *buf16 = (uint16_t*)buf;
+
+    // Pet the watchdog
+    // TODO: Won't work in sleep mode
+    //pw_pmic_read_reg(REG_CHARGER_CONTROL_0, buf, 1);
+    //buf[0] &= ~REG_CHARGER_CONTROL_0_WD_RST_MSK;
+    //buf[0] |= REG_CHARGER_CONTROL_0_WD_RST;
+    //pw_pmic_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
 
     // Read battery level over I2C
     // Set ADC enabled with REG_ADC_CONTROL
-    //pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
-    //buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
-    //buf[0] |= REG_ADC_CONTROL_ADC_EN_ENABLED;
-    //pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
+    pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
+    buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
+    buf[0] |= REG_ADC_CONTROL_ADC_EN_ENABLED;
+    pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
+    //printf("[Info] ADC is %s\n",
+    //    (buf[0] & REG_ADC_CONTROL_ADC_EN_MSK) ? "enabled" : "disabled"
+    //);
 
     // Start an ADC conversion (done on enable?) and spin while waiting on an interrupt to say its done
-    //while(!adc_done);
+    while(!adc_done);
+    adc_done = false;
+
+    //debug_read_pmic();
 
     // Read ADC registers that we're interested in 
     buf[0] = buf[1] = 0;
     //pw_pmic_read_reg(REG_VBAT_ADC, buf, 1);
-    pw_pmic_read_reg(REG_VBAT_ADC, buf, 1);
-    uint16_t vbat = REG_VBAT_ADC_VAL(buf[0]);
-    printf("[Info] Raw VBAT 0x%04x\n", *(uint16_t*)buf);
+    pw_pmic_read_reg(REG_VBAT_ADC, buf, 2);
+    uint16_t raw_val = buf16[0];
+    uint16_t vbat = REG_VBAT_ADC_VAL(raw_val);
+    //printf("[Info] Raw VBAT 0x%04x\n", raw_val);
 
     // Convert voltage to battery percentage
     // TODO: Some form of LUT
     // Value here is 0x000 - 0xaf0, max resolution of 1.99mV
     float vbat_f = ((float)vbat / (float)0xaf0) * 5572.0;
-    printf("[Info] VBAT: %f mV\n", vbat_f);
+    printf("[Log ] VBAT: %4.0f mV\n", vbat_f);
+
+
+    pw_pmic_read_reg(REG_IBUS_ADC, buf, 4);
+
+    float neg = 1.0;
+    buf16[0] >>= ADC_SHIFTS[0];
+    if(buf16[0] > 0x3fff) { buf16[0] = (buf16[0]^0x7fff) + 1; neg = -1.0; }
+    printf("[Log ] IBUS: %4.0f mA\n", neg * (float)(buf16[0]) / (float)(0x7d0) * 4000.0);
+
+    buf16[1] >>= ADC_SHIFTS[1];
+    if(buf16[1] > 0x1fff) { buf16[1] = (buf16[1]^0x3fff) + 1; neg = -1.0; }
+    printf("[Log ] IBAT: %4.0f mA\n", neg * (float)(buf16[1]) / (float)(0x3e8) * 4000.0);
+
+    
+    pw_pmic_read_reg(REG_VSYS_ADC, buf, 2);
+    printf("[Log ] VSYS: %4.0f mV\n", (float)(buf16[0]>>ADC_SHIFTS[5]) / (float)(0xaf0) * 5572.0);
 
     // Read status over I2C (charging, fault, etc.)
     // Get REG_CHARGER_STATUS_1.CHG_STAT

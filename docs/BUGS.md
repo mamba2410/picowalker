@@ -4,7 +4,6 @@ May or may not be in `picowalker-core` instead.
 
 ## Screen
 
-
 ## EEPROM
 
 - Hardware needs 10k pull-up on CSB pin, so software shouldn't drive it high
@@ -17,7 +16,6 @@ May or may not be in `picowalker-core` instead.
 ## Power
 
 - Only wake on 1 second of button press
-- Set hw timer callback on each button press, when expires then set flag that we should sleep
 
 ## Timers
 
