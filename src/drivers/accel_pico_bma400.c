@@ -5,6 +5,7 @@
 #include "hardware/gpio.h"
 
 #include "accel_pico_bma400.h"
+#include "gpio_interrupts_pico.h"
 
 static spi_inst_t *accel_spi;
 static int32_t prev_steps;
@@ -117,6 +118,9 @@ int8_t pw_accel_init() {
     gpio_init(ACCEL_CS_PIN);
     gpio_set_dir(ACCEL_CS_PIN, GPIO_OUT);
     pw_accel_cs_disable();
+
+    gpio_init(ACCEL_INT_PIN);
+    gpio_set_irq_enabled_with_callback(ACCEL_INT_PIN, GPIO_IRQ_EDGE_RISE, true, &pw_gpio_interrupt_handler);
 
     //spi_init(accel_spi, ACCEL_SPI_SPEED);
     //// inst, bits, polarity, phase, endian
