@@ -216,6 +216,33 @@ void pw_power_init();
 pw_battery_status_t pw_power_get_battery_status();
 void pw_power_enter_sleep();
 bool pw_power_should_sleep();
+pw_wake_reason_t pw_power_get_wake_reason();
+
+
+/*
+ *  ==================================================================================
+ *  TIME
+ *  ==================================================================================
+ */
+
+/*
+ * Types and defines
+ */
+#define PW_EVENT_EVERY_MINUTE   (1<<0)
+#define PW_EVENT_EVERY_HOUR     (1<<1)
+#define PW_EVENT_EVERY_DAY      (1<<2)
+
+typedef uint8_t pw_time_events_t;
+
+/*
+ *  Functions defined by driver
+ */
+void pw_time_init_rtc(uint32_t last_sync);
+void pw_time_update_rtc(uint32_t last_sync);
+pw_time_events_t pw_time_check_for_events();
+uint64_t pw_time_now_us();
+void pw_time_delay_ms(uint32_t ms);
+void pw_time_delay_us(uint32_t us);
 
 #endif /* PW_PICOWALKER_INCLUDE_H */
 

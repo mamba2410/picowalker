@@ -51,6 +51,7 @@ pico_add_extra_outputs(picowalker)
 ## Link these libs together
 target_link_libraries(picowalker
 	pico_stdlib
+    pico_aon_timer
     hardware_sleep
     hardware_spi
     hardware_i2c
