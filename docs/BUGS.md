@@ -15,7 +15,10 @@ May or may not be in `picowalker-core` instead.
 
 ## Power
 
-- Only wake on 1 second of button press
+- Don't do IO in interrupts as we may be in the process of powering up or down
+  or even be asleep which would not be good.
+    - Set a flag and let the core code poll the flag to see what needs doing.
+    - This will affect mainly PMIC, but accelerometer also
 
 ## Timers
 
