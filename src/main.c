@@ -18,10 +18,9 @@ int main() {
 
     stdio_init_all();
 
-    printf("Hello, picowalker!\n");
+    printf("[Info] ==== Hello, picowalker! ====\n");
 
-    /*
-    // Program the EEPROM over debug uart
+    /* Program the EEPROM over debug uart
     // Send a full rom file using `cat`
     // Beware: no validation is done
     pw_eeprom_init();
