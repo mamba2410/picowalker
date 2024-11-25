@@ -20,6 +20,7 @@
 #define ACCEL_REG_ACC_Y_MSB 0x07
 #define ACCEL_REG_ACC_Z_LSB 0x08
 #define ACCEL_REG_ACC_Z_MSB 0x09
+#define ACCEL_REG_INT_STAT0 0x0e
 #define ACCEL_REG_TEMP      0x11
 #define ACCEL_REG_STEP_CNT_0    0x15
 #define ACCEL_REG_STEP_CNT_1    0x16
@@ -33,13 +34,15 @@
 #define ACCEL_REG_INT1_MAP      0x21
 #define ACCEL_REG_INT2_MAP      0x22
 #define ACCEL_REG_INT12_MAP     0x23
+#define ACCEL_REG_INT12_IO_CTRL 0x24
 
-#define ACCEL_REG_AUTOLOWPOW0   0x2b
-#define ACCEL_REG_AUTOLOWPOW1   0x2c
-#define ACCEL_REG_AUTOWAKEUP0   0x2d
-#define ACCEL_REG_AUTOWAKEUP1   0x2e
+#define ACCEL_REG_FIFO_PWR_CONFIG   0x29
+#define ACCEL_REG_AUTOLOWPOW0   0x2a
+#define ACCEL_REG_AUTOLOWPOW1   0x2b
+#define ACCEL_REG_AUTOWAKEUP0   0x2c
+#define ACCEL_REG_AUTOWAKEUP1   0x2d
+#define ACCEL_REG_CMD           0x7e
 
-#define STEP_CNT_INT_EN         0x01
 #define STEP_STAT_MASK          0x03
 #define STEP_STAT_STILL         0x00
 #define STEP_STAT_WALKING       0x01
@@ -52,5 +55,47 @@
 #define ACCEL_POWER_SLEEP       0x00
 #define ACCEL_POWER_LOW         0x01
 #define ACCEL_POWER_NORMAL      0x02
+
+#define REG_STATUS_INT_ACTIVE   (1<<0)
+#define REG_STATUS_POWER_MODE_STAT_MSK  (0b11<<1)
+#define REG_STATUS_POWER_MODE_SLEEP     (0b00<<1)
+#define REG_STATUS_POWER_MODE_LOW_POWER (0b01<<1)
+#define REG_STATUS_POWER_MODE_NORMAL    (0b10<<1)
+#define REG_STATUS_CMD_READY    (1<<4)
+#define REG_STATUS_DATA_READY   (1<<7)
+
+#define REG_ACC_CONFIG0_SLEEP_MODE_MSK          (0b11<<0)
+#define REG_ACC_CONFIG0_SLEEP_MODE_SLEEP        (0b00<<0)
+#define REG_ACC_CONFIG0_SLEEP_MODE_LOW_POWER    (0b01<<0)
+#define REG_ACC_CONFIG0_SLEEP_MODE_NORMAL       (0b10<<0)
+#define REG_ACC_CONFIG0_OSR_LP_MSK              (0b11<<5)
+#define REG_ACC_CONFIG0_OSR_LP_HIGH             (0b00<<5)
+#define REG_ACC_CONFIG0_OSR_LP_LOW              (0b01<<5)
+
+#define REG_INT_CONFIG1_STEP_CNT_INT_EN     0x01
+
+#define REG_INT12_MAP_STEP_INT1     (1<<0)
+#define REG_INT12_MAP_TAP_INT1      (1<<2)
+#define REG_INT12_MAP_ATCH_INT1     (1<<2) // activity changed
+
+#define REG_INT12_IO_CTRL_INT1_OD_MSK          (1<<2)
+#define REG_INT12_IO_CTRL_INT1_OD_PUSH_PULL    (0<<2)
+#define REG_INT12_IO_CTRL_INT1_OD_OPEN_DRAIN   (1<<2)
+#define REG_INT12_IO_CTRL_INT1_LVL_MSK         (1<<1)
+#define REG_INT12_IO_CTRL_INT1_LVL_ACTIVE_LOW  (0<<1)
+#define REG_INT12_IO_CTRL_INT1_LVL_ACTIVE_HIGH (1<<1)
+#define REG_INT12_IO_CTRL_INT2_OD_MSK          (1<<6)
+#define REG_INT12_IO_CTRL_INT2_OD_PUSH_PULL    (0<<6)
+#define REG_INT12_IO_CTRL_INT2_OD_OPEN_DRAIN   (1<<6)
+#define REG_INT12_IO_CTRL_INT2_LVL_MSK         (1<<5)
+#define REG_INT12_IO_CTRL_INT2_LVL_ACTIVE_LOW  (0<<5)
+#define REG_INT12_IO_CTRL_INT2_LVL_ACTIVE_HIGH (1<<5)
+
+#define REG_FIFO_PWR_CONFIG_READ_DISABLE    (1<<0)
+
+#define REG_CMD_NOP             0
+#define REG_CMD_FIFO_FLUSH      0xb0
+#define REG_CMD_STEP_CNT_CLEAR  0xb1
+#define REG_CMD_SOFTRESET       0xb6
 
 #endif /* PW_DRIVER_ACCEL_BMA400_H */

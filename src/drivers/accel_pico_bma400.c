@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <stdio.h>
+
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
@@ -68,7 +70,32 @@ static void pw_accel_read_steps(uint8_t *buf) {
     pw_accel_read_spi(buf, 4);      // all at once
 }
 
+// Sends a command to reg CMD to perform, mainly used for software reset
+static void bma400_send_cmd(uint8_t cmd) {
+    uint8_t buf[4];
 
+    // Check if 
+    do {
+        buf[0] = ACCEL_REG_STATUS;
+        pw_accel_read_spi(buf, 1);
+    } while( (buf[0] & REG_STATUS_CMD_READY) != REG_STATUS_CMD_READY);
+
+    buf[0] = ACCEL_REG_CMD;
+    buf[1] = cmd;
+    pw_accel_write_spi(buf, 2);
+}
+
+void pw_accel_reset_int() {
+    uint8_t buf[4];
+    buf[0] = ACCEL_REG_STATUS;
+    pw_accel_read_spi(buf, 1);
+
+    printf("[Debug] Read status: 0x%02x\n", buf[0]);
+
+    buf[0] = ACCEL_REG_INT_STAT0;
+    pw_accel_read_spi(buf, 3);
+    printf("[Debug] INT_STAT0: 0x%02x, 0x%02x, 0x%02x\n", buf[0], buf[1], buf[2]);
+}
 
 
 /*
@@ -119,8 +146,10 @@ int8_t pw_accel_init() {
     gpio_set_dir(ACCEL_CS_PIN, GPIO_OUT);
     pw_accel_cs_disable();
 
+    // Set up interrupts, we later set up open-drain active-low
     gpio_init(ACCEL_INT_PIN);
-    gpio_set_irq_enabled_with_callback(ACCEL_INT_PIN, GPIO_IRQ_EDGE_RISE, true, &pw_gpio_interrupt_handler);
+    //gpio_pull_up(ACCEL_INT_PIN);
+    gpio_set_irq_enabled_with_callback(ACCEL_INT_PIN, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
 
     //spi_init(accel_spi, ACCEL_SPI_SPEED);
     //// inst, bits, polarity, phase, endian
@@ -132,8 +161,22 @@ int8_t pw_accel_init() {
 
 
     uint8_t buf[8];
+
+    // Dummy read after power on to put into SPI4 mode (from I2C mode)
     buf[0] = ACCEL_REG_CHIPID;
-    pw_accel_read_spi(buf, 1);    // dummy read
+    pw_accel_read_spi(buf, 1);
+
+    // Software-reset the chip
+    bma400_send_cmd(REG_CMD_SOFTRESET);
+
+    // Delay for reset, unknown time
+    sleep_ms(2);
+
+    // Dummy read again to set us back into SPI4 mode
+    buf[0] = ACCEL_REG_CHIPID;
+    pw_accel_read_spi(buf, 1);
+
+    // Read chip ID to make sure comms are ok
     buf[0] = ACCEL_REG_CHIPID;
     pw_accel_read_spi(buf, 1);
 
@@ -142,10 +185,33 @@ int8_t pw_accel_init() {
         return -1;
     }
 
-    buf[1] = STEP_CNT_INT_EN;
-    buf[0] = ACCEL_REG_INT_CONFIG1;
+    // Set up interrupts to be active low, open drain
+    // INT2 is not used
+    buf[0] = ACCEL_REG_INT12_IO_CTRL;
+    buf[1] = REG_INT12_IO_CTRL_INT1_OD_OPEN_DRAIN
+           | REG_INT12_IO_CTRL_INT1_LVL_ACTIVE_LOW
+           | REG_INT12_IO_CTRL_INT2_OD_OPEN_DRAIN
+           | REG_INT12_IO_CTRL_INT2_LVL_ACTIVE_LOW;
     pw_accel_write_spi(buf, 2);
 
+    // Enable interrupts on step taken
+    buf[0] = ACCEL_REG_INT_CONFIG1;
+    buf[1] = REG_INT_CONFIG1_STEP_CNT_INT_EN;
+    pw_accel_write_spi(buf, 2);
+
+    // Map interrupts to INT1
+    // Multi-write to INT2_MAP, INT2_MAP and INT12_MAP sequentially
+    buf[0] = ACCEL_REG_INT1_MAP;
+    buf[1] = 0; // Nothing of interest for INT1
+    buf[2] = 0; // Nothing of interest for INT2
+    buf[3] = REG_INT12_MAP_STEP_INT1; // Map step interrupt to pin 1
+    pw_accel_write_spi(buf, 4);
+
+    // Disable ability to read FIFOs, apparently saves 100nA
+    buf[0] = ACCEL_REG_FIFO_PWR_CONFIG;
+    buf[1] = REG_FIFO_PWR_CONFIG_READ_DISABLE;
+    pw_accel_write_spi(buf, 2);
+    
     prev_steps = 0;
 
     return 0;

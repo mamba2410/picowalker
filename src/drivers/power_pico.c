@@ -76,7 +76,7 @@ void pw_power_enter_sleep() {
     // Also reconfigures UART to run from XOSC
     sleep_run_from_xosc();
 
-    gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_HIGH_BITS, true);
+    gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     gpio_set_dormant_irq_enabled(BAT_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     gpio_set_dormant_irq_enabled(PIN_BUTTON_MIDDLE, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     //sleep_goto_dormant_until_pin(PIN_BUTTON_MIDDLE, true, false);

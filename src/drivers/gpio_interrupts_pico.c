@@ -10,7 +10,7 @@
 #include "../picowalker-defs.h"
 
 void pw_gpio_interrupt_handler(uint gp, uint32_t events) {
-    printf("[Debug] interrupt on pin GP%d\n", gp);
+    //printf("[Debug] interrupt on pin GP%d\n", gp);
     switch(gp) {
     case PIN_BUTTON_LEFT:
     case PIN_BUTTON_MIDDLE:
@@ -25,6 +25,8 @@ void pw_gpio_interrupt_handler(uint gp, uint32_t events) {
         break;
     }
     case ACCEL_INT_PIN: {
+        printf("[Debug] Accel interrupt\n");
+        pw_accel_reset_int();
         wake_reason |= PW_WAKE_REASON_ACCEL;
         break;
     }
