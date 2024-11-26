@@ -146,10 +146,6 @@ int8_t pw_accel_init() {
     gpio_set_dir(ACCEL_CS_PIN, GPIO_OUT);
     pw_accel_cs_disable();
 
-    // Set up interrupts, we later set up open-drain active-low
-    gpio_init(ACCEL_INT_PIN);
-    //gpio_pull_up(ACCEL_INT_PIN);
-    gpio_set_irq_enabled_with_callback(ACCEL_INT_PIN, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
 
     //spi_init(accel_spi, ACCEL_SPI_SPEED);
     //// inst, bits, polarity, phase, endian
@@ -212,7 +208,14 @@ int8_t pw_accel_init() {
     buf[1] = REG_FIFO_PWR_CONFIG_READ_DISABLE;
     pw_accel_write_spi(buf, 2);
     
+    // Now that interrupts are configured, we set up interrupt pin
+    gpio_init(ACCEL_INT_PIN);
+    gpio_pull_up(ACCEL_INT_PIN);
+    gpio_set_irq_enabled_with_callback(ACCEL_INT_PIN, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
+
     prev_steps = 0;
+
+    pw_accel_reset_int();
 
     return 0;
 }
