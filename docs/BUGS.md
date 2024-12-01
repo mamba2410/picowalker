@@ -12,6 +12,7 @@ May or may not be in `picowalker-core` instead.
 ## SPI
 
 - SPI is initialised by all peripherals. Add a lock and common clock speed.
+    - W25Q128 is max 50MHz, M95512 is 10MHz, BMA400 is 
 
 ## Power
 
@@ -34,4 +35,5 @@ May or may not be in `picowalker-core` instead.
 - Walk start just doesn't seem to work sometimes, needs debugging and logging.
     - Can't log during normal operation cause its too slow.
       Launch second core to log?
+
 

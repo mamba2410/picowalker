@@ -8,7 +8,19 @@ See the sister project: [picowalker-core](https://github.com/mamba2410/picowalke
 
 This project is the board-specific firmware for running the "picowalker" software.
 
-This branch is for the `picowalker` hardware v0.1, a custom PCB which is a stepping stone for an eventual custom PCB replacement for the Pokewalker.
+There are multiple branches in this repo, all with similar functionality
+(providing the "hardware API" for the picowalker-core).
+
+- `hardware-v0.1` - The current active branch, drivers specific to the 
+    [custom PCB](https://github.com/mamba2410/picowalker-hardware) used as a
+    stepping stone to creating a modern rebuild.
+- `pico2` - Branch used to test out hardware using a pico 2 on a breadboard.
+    It is mostly compatible with `hardware-v0.1` except the pinouts will have
+    changed and some of the hardware is difficult to connect on a breadboard.
+- `master` - Branch used to test out hardware using an original pico 1 on a 
+    breadboard. This will hopefully, eventually contain lots of "drivers" to 
+    be able to run a homebrew Pokewalker using DIY hardware, for now, based
+    around the pico and pico 2.
 
 ## Project state
 
@@ -28,18 +40,14 @@ which is a Raspberry Pi Pico 2 based custom PCB, including:
 Hardware to get working:
 
 - Battery
-    - Charging and comms work, ADC readings for battery level monitoring needs implementing
+    - Charging, comms and ADC readings work
+    - Need to turn VBAT voltage reading into a battery level estimate
 - RTC
     - Using RP2350's AON timer
 - Secondary flash (for colour images and possibly cries)
+- Sound (not on hardware-v0.1)
 - USB
-- Sound
-
-## Building for yourself
-
-I have written a [tutorial](docs/TUTORIAL.md) on how to build this project for yourself.
-You'll need the hardware, but a lot of this can be done with just a pico 2 and some breakout boards.
-
+- Optimise sleep current (theoretically ~200uA is possible)
 
 ## Help Wanted
 
@@ -52,7 +60,7 @@ Help is needed to:
 - Find/create a good license. (see License section)
 
 If you would like to try out the current implementation or contribute to the project, please read
-the [design doc](./docs/DESIGN.md).
+the [design doc](./docs/DESIGN.md) and [build tutorial](./docs/TUTORIAL.md).
 
 ## Resources
 
@@ -60,6 +68,9 @@ the [design doc](./docs/DESIGN.md).
 
 - [Pico SDK](https://github.com/raspberrypi/pico-sdk)
 - [Getting Started with Pico C](https://www.raspberrypi.org/documentation/rp2040/getting-started/#getting-started-with-c)
+- [Pico 2 Datasheet](https://datasheets.raspberrypi.com/pico/pico-2-datasheet.pdf)
+- [RP2350 Datasheet](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf)
+
 
 ### Pokewalker
 
@@ -90,41 +101,17 @@ src/openocd -s tcl -f interface/cmsis-dap.cfg -f target/rp2350.cfg -c "adapter s
 See debug output with
 
 ```bash
-screen /dev/ttyACM0 115200
+picocom -b 115200 /dev/ttyACM0
 ```
+Exit with `C-a` then `C-x`
 
 Run GDB with
 
 ```bash
-gdb build/picowalker.elf
-(gdb) target remote :333
+arm-none-eabi-gdb build/picowalker.elf
 (gdb) load
 (gdb) continue
 ```
-
-### Linux
-
-It should be as easy as
-
-```sh
-cmake -B build/ -DPICO_BOARD=pico2 -DCMAKE_BUILD_TYPE=Debug .
-cmake --build build/
-```
-
-Then copy over the `picowalker.uf2` to the pico and it should work.
-Alternatively, debugging with gdb and SWD.
-
-### Mac
-
-Should be the same as Linux?
-
-### Windows
-
-You're on your own.
-The top level Makefile is for linux but doesn't actually do a lot.
-The whole build system is managed by the original Pico CMake so getting it to build on Windows shouldn't be too hard if you try.
-
-See instructions on the [Pico SDK datasheet.](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf)
 
 ## License
 

@@ -63,6 +63,7 @@ git repository into it.
 mkdir ~/repos
 cd ~/repos
 git clone https://github.com/raspberrypi/pico-sdk
+git clone https://github.com/raspberrypi/pico-extras
 git clone https://github.com/raspberrypi/pico-examples
 ```
 
@@ -86,7 +87,7 @@ With that done, it's time to get some compiling done.
 
 ## Compiling `picowalker-core`
 
-Next we need to compile the [picowalker-core]() library.
+Next we need to compile the [picowalker-core](https://github.com/mamba2410/picowalker-core) library.
 This is the platform-independant code to make the picowalker run.
 
 First, we need to clone it.
@@ -161,11 +162,12 @@ Now we have a build version of the software, lets get it running!
 Hold down the `bootsel` button on the pico and connect it to your computer
 via a USB cable.
 It should show up as a "USB mass storage device".
-Copy the `build/picowalker.uf2` file into this "mass storage device".
+Copy the `build/pico2/picowalker.uf2` file into this "mass storage device".
 The pico should reboot and start running the software.
 
-If you don't see an image, try checking your wires and make sure you have
-pull-up resistors on both of the i2c lines.
+Hopefully, you should see an image on the screen!
+Assuming your eeprom is empty, the board will act as an uninitialised pokewalker
+waiting to receive IR commands from a game.
 
 ## Conclusion
 

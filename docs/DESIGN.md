@@ -2,14 +2,28 @@
 
 ## Goals
 
-People should be able to build the hardware themselves, then load the code onto the pico and have a working device.
+There are currently two goals of this project:
 
-Alternatively, a second version which can fit into the original Pokewalker form-factor.
-This would require SMD components so not so easy to build at home.
+The first is to provide a set of drivers that can be mixed together to create
+a custom Pokewalker by connecting a bunch of "module" boards together.
+This is supposed to be so that anybody can design and assemble the hardware,
+and then compile the code for their board, with some pinout tweaking.
+
+The second is to provide a smaller set of drivers specifically designed for
+a [custom PCB](https://github.com/mamba2410/picowalker-hardware) as a
+Pokewalker replacement in a much closer form-factor to the original.
+
+The second goal is the one that's active in development, but the two are not
+mutually exclusive.
+Once there is one working example, extending it to different hardware is a
+slightly easier task.
 
 ## Hardware
 
-The current hardware I'm using to prototype this:
+For the `hardware-v0.1` branch, the hardware schematics can be found in the
+[picowalker-hardware repo](https://github.com/mamba2410/picowalker-hardware).
+
+For the breadboarding approach, the hardware is:
 
 - Main controller (Pico 2)
 - OLED screen SH8601Z driver (DO0180PFST05 module)
@@ -17,11 +31,9 @@ The current hardware I'm using to prototype this:
     - [Panel (Chinese website)](https://www.dwo.net.cn/pd.jsp?fromColId=2&id=11921#_pp=2_322)
 - Optional SSD1327 drivers for different screen
 - IrDA interface
-  - Mikroe IrDA 3-click (breadboard development) [Mouser](https://www.mouser.co.uk/ProductDetail/Mikroe/MIKROE-2871?qs=f9yNj16SXrKCBoWeEAc2vQ%3D%3D)
-- Alternative IrDA interface that will need some manual building (not recommended)
+  - Mikroe IrDA 3-click [Mouser](https://www.mouser.co.uk/ProductDetail/Mikroe/MIKROE-2871?qs=f9yNj16SXrKCBoWeEAc2vQ%3D%3D)
+- Alternative IrDA interface that will need manually breaking out (not recommended)
   - TFDU4101 TxR [Mouser](https://www.mouser.co.uk/ProductDetail/Vishay-Semiconductors/TFDU4101-TR3?qs=4vzNq8kLoSZaXF7Bmpq4%252Bw%3D%3D)
-  - MCP2122 UART to IrDA encoder [Mouser](https://www.mouser.co.uk/ProductDetail/Microchip-Technology-Atmel/MCP2122T-E-SN?qs=php1hWwkCL7dJgtHA%2FdIXg%3D%3D)
-  - DSC1001CL1-001.8432T clock oscillator [Mouser](https://www.mouser.co.uk/ProductDetail/Microchip-Technology-Atmel/DSC1001CL1-001.8432T?qs=yDQnu9hAfI%2FtBK%252Bb6vr8lA%3D%3D)
 - Accelerometer
   - Bosch BMA400 SPI [Mouser](https://www.mouser.co.uk/ProductDetail/Bosch-Sensortec/BMA400?qs=f9yNj16SXrKBoguHUc32eQ%3D%3D)
 - External EEPROM
@@ -30,7 +42,7 @@ The current hardware I'm using to prototype this:
   - 128K 25LC1024 (256-byte page size, if you want extra storage, but needs code modifications) [Mouser](https://www.mouser.co.uk/ProductDetail/Microchip-Technology-Atmel/25LC1024-E-P?qs=0R2K%2FH4DmMNuJO3S%2F11Ktg%3D%3D)
 - Control buttons
 
-What else is needed:
+What is not included:
 
 - Speaker
 - Rechargeable battery
