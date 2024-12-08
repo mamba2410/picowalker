@@ -12,28 +12,41 @@ static spi_inst_t *flash_spi;
 static const size_t offsets[] = {0x0000, 0x0100, 0x0120, 0x0140, 0x0160, 0x0170, 0x180};
 static const size_t sizes[]   = {0x0100, 0x0020, 0x0020, 0x0020, 0x0010, 0x0010, 0x010};
 
+void w25q128_cs_enable() {
+    // Drive output low
+    gpio_set_dir(FLASH_CS_PIN, GPIO_OUT);
+    gpio_put(FLASH_CS_PIN, 0);
+}
+
+void w25q128_cs_disable() {
+    // External pull-up so go high-z
+    gpio_put(FLASH_CS_PIN, 1);
+    gpio_set_dir(FLASH_CS_PIN, GPIO_IN);
+}
+
+
 void w25q128_instruction_addr_single(uint8_t instruction, uint32_t addr, size_t len, uint8_t buf[len]) {
     uint8_t instr_buf[4];
     buf[0] = instruction;
     buf[1] = (uint8_t)(addr >> 16); // BE
     buf[2] = (uint8_t)(addr >> 8);
     buf[3] = (uint8_t)(addr >> 0);
-    gpio_put(FLASH_CS_PIN, 0);
+    w25q128_cs_enable();
     spi_write_blocking(flash_spi, instr_buf, 4);
     if(len > 0)
         spi_read_blocking(flash_spi, buf, len);
-    gpio_put(FLASH_CS_PIN, 1);
+    w25q128_cs_disable();
 
 }
 
 void w25q128_instruction_single(uint8_t instruction, size_t len, uint8_t buf[len]) {
     uint8_t instr_buf[4];
     buf[0] = instruction;
-    gpio_put(FLASH_CS_PIN, 0);
+    w25q128_cs_enable();
     spi_write_blocking(flash_spi, instr_buf, 1);
     if(len > 0)
         spi_read_blocking(flash_spi, buf, len);
-    gpio_put(FLASH_CS_PIN, 1);
+    w25q128_cs_disable();
 
 }
 
@@ -65,10 +78,10 @@ void pw_flash_init() {
     flash_spi = spi0;
 
     // Set up CS pin
-    // May require external pull-up to keep it high during power-up
+    // External pull-up, so we leave it as input
     gpio_init(FLASH_CS_PIN);
-    gpio_set_dir(FLASH_CS_PIN, GPIO_OUT);
-    gpio_put(FLASH_CS_PIN, 1);
+    //gpio_set_dir(FLASH_CS_PIN, GPIO_OUT);
+    //gpio_put(FLASH_CS_PIN, 1);
 
     // May need 5ms delay between power-on and accepting instructions
     //sleep_ms(5);
