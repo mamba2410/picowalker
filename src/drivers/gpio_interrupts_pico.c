@@ -25,8 +25,8 @@ void pw_gpio_interrupt_handler(uint gp, uint32_t events) {
         break;
     }
     case ACCEL_INT_PIN: {
-        printf("[Debug] Accel interrupt\n");
-        pw_accel_reset_int();
+        //printf("[Debug] Accel interrupt\n");
+        //pw_accel_reset_int();
         wake_reason |= PW_WAKE_REASON_ACCEL;
         break;
     }

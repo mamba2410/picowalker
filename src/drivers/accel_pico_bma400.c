@@ -201,7 +201,7 @@ int8_t pw_accel_init() {
     buf[1] = 0; // Nothing of interest for INT1
     buf[2] = 0; // Nothing of interest for INT2
     buf[3] = REG_INT12_MAP_STEP_INT1; // Map step interrupt to pin 1
-    pw_accel_write_spi(buf, 4);
+    //pw_accel_write_spi(buf, 4);
 
     // Disable ability to read FIFOs, apparently saves 100nA
     buf[0] = ACCEL_REG_FIFO_PWR_CONFIG;
@@ -211,7 +211,7 @@ int8_t pw_accel_init() {
     // Now that interrupts are configured, we set up interrupt pin
     gpio_init(ACCEL_INT_PIN);
     gpio_pull_up(ACCEL_INT_PIN);
-    gpio_set_irq_enabled_with_callback(ACCEL_INT_PIN, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
+    //gpio_set_irq_enabled_with_callback(ACCEL_INT_PIN, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
 
     prev_steps = 0;
 
