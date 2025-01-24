@@ -9,6 +9,8 @@
 #include "picowalker.h"
 #include "picowalker-defs.h"
 
+void pw_time_init_rtc() {}
+
 int main() {
     bi_decl(bi_program_description("picowalker"));
 
@@ -20,7 +22,8 @@ int main() {
 
     printf("[Info] ==== Hello, picowalker! ====\n");
 
-    /* Program the EEPROM over debug uart
+    /*
+    //Program the EEPROM over debug uart
     // Send a full rom file using `cat`
     // Beware: no validation is done
     pw_eeprom_init();

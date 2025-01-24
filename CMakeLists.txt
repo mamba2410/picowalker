@@ -13,28 +13,27 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
     src/main.c
-    src/drivers/screen_pico2_dwo_hstx.c
-    src/drivers/screen_pico2_dwo_hstx.h
-    src/drivers/accel_pico_bma400.c
-    src/drivers/accel_pico_bma400.h
-    src/drivers/ir_pico_pio.c
-    src/drivers/ir_pico_pio.h
-    src/drivers/buttons_pico.c
-    src/drivers/buttons_pico.h
-    src/drivers/eeprom_pico_m95512.c
-    src/drivers/eeprom_pico_m95512.h
+    src/drivers/screen_rp2040_gc9a01a.c
+    src/drivers/screen_rp2040_gc9a01a.h
+    src/drivers/accel_rp2040_qmi8658a.c
+    src/drivers/accel_rp2040_qmi8658a.h
+    src/drivers/ir_dummy.c
+    src/drivers/ir_dummy.h
+    src/drivers/buttons_dummy.c
+    src/drivers/buttons_dummy.h
+    src/drivers/eeprom_pico_ram.S
+    src/drivers/eeprom_pico_ram.c
+    src/drivers/eeprom_pico_ram.h
     src/drivers/timer_pico.c
     src/drivers/extras_pico.S
     src/drivers/extras_pico.h
-    #src/drivers/flash_pico_w25q128.c
-    #src/drivers/flash_pico_w25q128.h
     src/drivers/flash_pico_internal.c
     src/drivers/flash_pico_internal.S
     src/drivers/flash_pico_internal.h
-    src/drivers/battery_pico_bq25628e.c
-    src/drivers/battery_pico_bq25628e.h
-    src/drivers/gpio_interrupts_pico.c
-    src/drivers/gpio_interrupts_pico.h
+    #src/drivers/battery_pico_bq25628e.c
+    #src/drivers/battery_pico_bq25628e.h
+    #src/drivers/gpio_interrupts_pico.c
+    #src/drivers/gpio_interrupts_pico.h
     src/drivers/power_pico.c
     src/drivers/power_pico.h
     src/picowalker-defs.h
