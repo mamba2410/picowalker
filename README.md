@@ -22,55 +22,41 @@ See the custom hardware these drivers are for: [picowalker-hardware](https://git
 Releases here will contain a full UF2 image which can be uploaded to the v1.0 picowalker hardware to run a full picowalker device.
 
 There are multiple branches in this repo, all with similar functionality
-(providing the "driver API" for the picowalker-core).
 
-- `hardware-v0.1` - The current active branch, drivers specific to the 
-    [custom PCB](https://github.com/mamba2410/picowalker-hardware) used as a
-    stepping stone to creating a modern rebuild.
-- `pico2` - Branch used to test out hardware using a pico 2 on a breadboard.
-    It is mostly compatible with `hardware-v0.1` except the pinouts will have
-    changed and some of the hardware is difficult to connect on a breadboard.
-- `waveshare` - An in-progress branch for the Waveshare RP2040 dev board
+This is the branch for the [Waveshare RP2040 Touch LCD 1.28"](https://www.waveshare.com/wiki/RP2040-Touch-LCD-1.28) board.
+Under development, this is just a starting point to help out.
+
+## Hardware
+
+- Screen - [GC0A01A by Waveshare](https://files.waveshare.com/wiki/common/GC9A01A.pdf) (SPI 4-wire)
+- Touch - [CST816S](https://files.waveshare.com/upload/5/51/CST816S_Datasheet_EN.pdf) (I2C, unused)
+- Accel - [QMI8658](https://files.waveshare.com/upload/5/5f/QMI8658A_Datasheet_Rev_A.pdf) (I2C)
+- EEPROM - None (linked in at compile time, read only)
+- Flash - Internal (linked in at compile time, read only)
+- PMIC - ETA6096, not digitally controlled
+- Buttons - None, touch to be used eventually
+- No IR
 
 ## Project state
 
-This is working with the [picowalker-hardware v0.1](https://github.com/mamba2410/picowalker-hardware)
-which is a Raspberry Pi Pico 2 based custom PCB, including:
+Working (as intended):
 
-- DO180PFST05 OLED screen controlled over PIO QSPI or the rp2350 HSTX (SH8601Z driver)
-    - On-the-fly decode of picowalker images to RGB565.
-    - Currently only greyscale images.
-- IrDA over PIO via Dmitry Gr.
-    - Currently CPU-fed but needs to be DMA-fed
-- M95512 64kB EEPROM
-- BMA400 Accelerometer over SPI
-    - Automatic step detection, with optional interrupts
-- BQ25628E PMIC for lithium battery charging and power management, with I2C interface
-    - Charging
-    - Voltage and current measurements
-- Serial debug outputs over pico stdout on a uart
-- Debugging on swd
-- Generic push buttons
-- USB (TinyUSB)
-    - Mass Storage Controller (MSC) for backing up and restoring the eeprom save data.
-- RTC
-    - Using RP2350's AON timer (internal LPOSC)
+Probably eeprom, flash and PMIC because they don't do a lot.
 
-Hardware to get working:
+Not working:
 
-- Battery
-    - Turn VBAT voltage reading into a battery level estimate
-    - Safe shutdown if battery voltage goes too low
-- Sound (not on hardware-v0.1)
-- External RTC (on hardware-v0.2)
-- Optimise sleep current (theoretically ~200uA is possible) [example](https://github.com/mamba2410/rp2350-powman-sleep).
-- Colour sprites.
+- Screen
+- Accel
+- Buttons/touch
 
-## Issues and Contributing
+## Resources
 
-Please leave all issues in this repo, irrespective of what parts of the code they technically belong to.
+### Pico
 
-If you'd like to contribute, please see the [design doc](./docs/DESIGN.md) and the build guide below.
+- [Pico SDK](https://github.com/raspberrypi/pico-sdk)
+- [Getting Started with Pico C](https://www.raspberrypi.org/documentation/rp2040/getting-started/#getting-started-with-c)
+- [Pico Datasheet](https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf)
+- [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2350/rp2040-datasheet.pdf)
 
 ## Building and Testing
 
@@ -85,7 +71,7 @@ I'm also using the Raspberry Pi debug probe which is a really easy and cheap (~$
 From openocd directory:
 
 ```bash
-src/openocd -s tcl -f interface/cmsis-dap.cfg -f target/rp2350.cfg -c "adapter speed 5000"
+src/openocd -s tcl -f interface/cmsis-dap.cfg -f target/rp2040.cfg
 ```
 
 See debug output with

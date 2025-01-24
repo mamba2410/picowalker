@@ -110,8 +110,8 @@ If you are compiling for boards with `rp2040` you use `toolchain-pico.cmake`.
 So now, lets run
 
 ```bash
-cmake -B build/pico2 -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
-cmake --build build/pico2
+cmake -B build/waveshare -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico.cmake .
+cmake --build build/waveshare
 ```
 
 if you encounter errors here, it likely means that `cmake` can't find your
@@ -140,18 +140,17 @@ project.
 
 ```
 mkdir lib
-cp ../picowalker-core/build/pico2/libpicowalker-core.a lib/
+cp ../picowalker-core/build/waveshare/libpicowalker-core.a lib/
 ```
 
 Now we choose which board to compile. I'll choose `picowalker-v0.3`.
 
 ```
-cd boards/picowalker-v0.3
-cmake -B build/ -DPICO_BOARD=pico2 .
-cmake --build build/
+cmake -B build/waveshare -DPICO_BOARD=pico .
+cmake --build build/waveshare
 ```
 
-If that all went well, you should have a file called `build/picowalker.uf2`.
+If that all went well, you should have a file called `build/waveshare/picowalker.uf2`.
 This is the file you'll want to copy to your pico.
 
 If that didn't work out for you, make sure that you have installed the
