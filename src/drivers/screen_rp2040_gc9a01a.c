@@ -76,6 +76,28 @@ static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len
 }
 
 
+void lcd_write_data(size_t len, uint8_t data[len]) {
+    
+    // TODO
+    // DCX goes high to indicate data being sent
+    // CSB low to send data
+    // Send data
+    // CSB high to end transaction
+    // Don't care about DCX line, next transaction can change it
+
+}
+
+void lcd_write_command(size_t len, uint8_t data[len]) {
+    
+    // TODO
+    // DCX goes low to indicate command being sent
+    // CSB low to send data
+    // Send data
+    // CSB high to end transaction
+    // Don't care about DCX line, next transaction can change it
+
+}
+
 screen_area_t transform_pw_to_lcd(screen_area_t pw_area, lcd_t a) {
     screen_area_t lcd_area = {0};
     //lcd_area.x = (SCREEN_HEIGHT - pw_area.height - pw_area.y)*SCREEN_SCALE + a.offset_x;
@@ -116,12 +138,13 @@ void lcd_clear_screen() {
 }
 
 void lcd_reset() {
-    uint8_t params[4] = {0};
+    uint8_t params[8] = {0};
 
     // Send reset signal via reset pin
     // TODO
 
     // Screen initialise sequence
+    // See `lib/LCD/LCD_1in28.c` in waveshare C demo code.
     // TODO
 
     // Setup screen offset
