@@ -50,7 +50,7 @@ void pw_time_init_rtc(uint32_t sync_time) {
 
 }
 
-void pw_time_update_rtc(uint32_t sync_time) {
+void pw_time_set_rtc(uint32_t sync_time) {
     // We don't need to run as unix time, its simpler to just use PW time
     struct timespec ts = {0, 0};
     ts.tv_sec = (uint64_t)(sync_time);

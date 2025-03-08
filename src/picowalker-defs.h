@@ -228,19 +228,30 @@ pw_wake_reason_t pw_power_get_wake_reason();
 /*
  * Types and defines
  */
-#define PW_EVENT_EVERY_MINUTE   (1<<0)
-#define PW_EVENT_EVERY_HOUR     (1<<1)
-#define PW_EVENT_EVERY_DAY      (1<<2)
+#define RTC_EVENT_EVERY_DAY     (1<<0)
+#define RTC_EVENT_EVERY_HOUR    (1<<1)
+#define RTC_EVENT_EVERY_MINUTE  (1<<2)
+#define RTC_EVENT_EVERY_SECOND  (1<<3)
 
-typedef uint8_t pw_time_events_t;
+typedef uint8_t pw_rtc_events_t;
+
+typedef struct pw_dhms_s {
+    uint16_t days;
+    uint8_t hours;
+    uint8_t minutes;
+    uint8_t seconds;
+} pw_dhms_t;
 
 /*
  *  Functions defined by driver
  */
-void pw_time_init_rtc(uint32_t last_sync);
-void pw_time_update_rtc(uint32_t last_sync);
-pw_time_events_t pw_time_check_for_events();
-uint64_t pw_time_now_us();
+void pw_time_init_rtc(uint32_t last_sync);   // From RTC
+void pw_time_set_rtc(uint32_t last_sync);    // From RTC
+uint32_t pw_time_get_rtc();     // From RTC
+pw_dhms_t pw_time_get_dhms();   // From RTC
+pw_rtc_events_t pw_time_get_rtc_events();
+uint64_t pw_time_get_us();  // Since boot
+uint64_t pw_time_get_ms();  // Since boot
 void pw_time_delay_ms(uint32_t ms);
 void pw_time_delay_us(uint32_t us);
 
