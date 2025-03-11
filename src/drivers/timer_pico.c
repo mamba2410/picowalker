@@ -4,9 +4,11 @@
 
 //#include "pico/stdlib.h"
 
+#include "hardware/powman.h"
 #include "pico/time.h"
 #include "pico/types.h"
 #include "pico/aon_timer.h"
+
 
 #include "power_pico.h"
 #include "../picowalker-defs.h"
@@ -39,12 +41,13 @@ void pw_time_init_rtc(uint32_t sync_time) {
     // `sync_time` is in seconds since 1st Jan 2000
 
     // Convert pw time to unix time
-    //struct timespec ts = {0, 0};
+    struct timespec ts = {0, 0};
     //ts.tv_sec = (uint64_t)(sync_time) + UNIX_TIME_OFFSET;
     
     // We don't need to run as unix time, its simpler to just use PW time
-    struct timespec ts = {0, 0};
+    //struct timespec ts = {0, 0};
     ts.tv_sec = (uint64_t)(sync_time);
+    printf("[Debug] Setting powman timer to %08x\n", ts.tv_sec);
 
     aon_timer_start(&ts);
 
@@ -54,25 +57,44 @@ void pw_time_set_rtc(uint32_t sync_time) {
     // We don't need to run as unix time, its simpler to just use PW time
     struct timespec ts = {0, 0};
     ts.tv_sec = (uint64_t)(sync_time);
+    //ts.tv_sec = (uint64_t)(sync_time) + UNIX_TIME_OFFSET;
     aon_timer_set_time(&ts);
+}
+
+uint32_t pw_time_get_rtc() {
+    uint64_t ms = powman_timer_get_ms();
+    return (uint32_t)(ms/1000);
+}
+
+pw_dhms_t pw_time_get_dhms() {
+    uint64_t ms = powman_timer_get_ms();
+    uint64_t units = ms/1000;
+    pw_dhms_t dhms;
+    dhms.seconds = units%60;
+    units /= 60;
+    dhms.minutes = units%60;
+    units /= 60;
+    dhms.hours = units%24;
+    dhms.days = units/24;
+    return dhms;
 }
 
 /*
  * Returns flags of what periodic events need to be handled
  */
-uint8_t pw_time_check_events() {
-    uint8_t events = 0;
+pw_rtc_events_t pw_time_get_rtc_events() {
+    pw_rtc_events_t events = 0;
 
     if(rtc_counters.minutes >= 60) {
         rtc_counters.minutes -= 60;
         rtc_counters.hours += 1;
-        events |= PW_EVENT_EVERY_HOUR;
+        events |= RTC_EVENT_EVERY_HOUR;
     }
 
     if(rtc_counters.hours >= 24) {
         rtc_counters.hours -= 24;
         rtc_counters.days += 1;
-        events |= PW_EVENT_EVERY_DAY;
+        events |= RTC_EVENT_EVERY_DAY;
     }
     
     // TODO: Check for minutes
@@ -82,9 +104,15 @@ uint8_t pw_time_check_events() {
     return events;
 }
 
-uint64_t pw_time_now_us() {
+uint32_t pw_time_get_us() {
     absolute_time_t now = get_absolute_time();
-    return (uint64_t)now;
+    return (uint32_t)now;
+}
+
+uint32_t pw_time_get_ms() {
+    absolute_time_t now = get_absolute_time();
+    uint64_t long_now = (uint64_t)now;
+    return (uint32_t)(long_now/1000);
 }
 
 void pw_time_delay_ms(uint32_t ms) {

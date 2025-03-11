@@ -250,8 +250,8 @@ void pw_time_set_rtc(uint32_t last_sync);    // From RTC
 uint32_t pw_time_get_rtc();     // From RTC
 pw_dhms_t pw_time_get_dhms();   // From RTC
 pw_rtc_events_t pw_time_get_rtc_events();
-uint64_t pw_time_get_us();  // Since boot
-uint64_t pw_time_get_ms();  // Since boot
+uint32_t pw_time_get_us();  // Since boot
+uint32_t pw_time_get_ms();  // Since boot
 void pw_time_delay_ms(uint32_t ms);
 void pw_time_delay_us(uint32_t us);
 
