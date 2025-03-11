@@ -3,7 +3,7 @@
 
 #include "../picowalker-defs.h"
 
-#define USER_IDLE_TIMEOUT_MS (10*1000)
+#define USER_IDLE_TIMEOUT_MS (30*1000)
 
 #define USER_IDLE_ALARM_NUM (0u)
 
