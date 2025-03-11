@@ -42,6 +42,21 @@ int main() {
     }
     */
 
+    /*
+    // Dump eeprom over debug port
+    // picocom -b 115200 /dev/ttyACM0 -g logfile.bin
+    pw_eeprom_init();
+
+    uint32_t address = 0;
+    uint8_t page[128];
+    while(address < 0x10000) {
+        pw_eeprom_read(address, page, 128);
+        uart_write_blocking(uart0, page, 128);
+        address += 128;
+    }
+    while(1);
+    */
+
     // Start picowalker-core
     walker_entry();
 
