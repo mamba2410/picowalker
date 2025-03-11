@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "hardware/clocks.h"
 #include "hardware/timer.h"
 #include "hardware/xosc.h"
 #include "pico/sleep.h"
@@ -56,7 +57,7 @@ void pw_power_enter_sleep() {
     acknowledge_button_presses = false;
 
     // Sleep the screen first so it doesn't do anything weird
-    //pw_screen_sleep();
+    pw_screen_sleep();
 
     // Sleep the IR in case we were in the comms context
     //pw_ir_sleep();
@@ -67,6 +68,12 @@ void pw_power_enter_sleep() {
 
     wake_reason = 0;
 
+    // Start the POWMAN timer from LPOSC which we aren't turning off
+    uint64_t powman_ms = powman_timer_get_ms();
+    powman_timer_set_1khz_tick_source_lposc();
+    powman_timer_set_ms(powman_ms);
+    printf("[Debug] Sleeping powman timer with %lu ms\n", powman_ms);
+
     // Actually do the sleep
     printf("[Info] Sleeping MCU\n");
 
@@ -74,13 +81,18 @@ void pw_power_enter_sleep() {
 
     // Set XOSC as dormant clock source
     // Also reconfigures UART to run from XOSC
-    sleep_run_from_xosc();
+    sleep_run_from_lposc();
+
+    // Only let POWMAN clock run
+    clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
+    clocks_hw->sleep_en1 = 0;
+    scb_hw->scr |= ARM_CPU_PREFIXED(SCR_SLEEPDEEP_BITS);
 
     gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     gpio_set_dormant_irq_enabled(BAT_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     gpio_set_dormant_irq_enabled(PIN_BUTTON_MIDDLE, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     //sleep_goto_dormant_until_pin(PIN_BUTTON_MIDDLE, true, false);
-    xosc_dormant();
+    rosc_set_dormant();
 
 
     // TODO: Check what caused the wakeup, if it was AON timer then go back to sleep
@@ -93,6 +105,12 @@ void pw_power_enter_sleep() {
 
     // === End of danger zone ===
 
+    // Run POWMAN timer from XOSC since its more accurate
+    powman_ms = powman_timer_get_ms();
+    powman_timer_set_1khz_tick_source_xosc();
+    powman_timer_set_ms(powman_ms);
+    printf("[Debug] Reset powman timer with %lu ms\n", powman_ms);
+
     //pw_accel_wake();
     //pw_flash_wake();
     //pw_eeprom_wake();
@@ -103,7 +121,7 @@ void pw_power_enter_sleep() {
     pw_button_init();
 
     // Wake screen last for least weirdness
-    //pw_screen_wake();
+    pw_screen_wake();
 
     // TODO: Change call when timer code gets updated
     power_should_sleep = false;
