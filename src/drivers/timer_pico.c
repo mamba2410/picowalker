@@ -11,6 +11,7 @@
 #include "pico/aon_timer.h"
 
 
+
 #include "picowalker-defs.h"
 
 #define UNIX_TIME_OFFSET 946684800ul
@@ -112,6 +113,24 @@ void pw_time_set_rtc(uint32_t sync_time) {
     //ts.tv_sec = (uint64_t)(sync_time) + UNIX_TIME_OFFSET;
     printf("[Debug] Setting RTC to 0x%08x\n", sync_time);
     aon_timer_set_time(&ts);
+}
+
+uint32_t pw_time_get_rtc() {
+    uint64_t ms = powman_timer_get_ms();
+    return (uint32_t)(ms/1000);
+}
+
+pw_dhms_t pw_time_get_dhms() {
+    uint64_t ms = powman_timer_get_ms();
+    uint64_t units = ms/1000;
+    pw_dhms_t dhms;
+    dhms.seconds = units%60;
+    units /= 60;
+    dhms.minutes = units%60;
+    units /= 60;
+    dhms.hours = units%24;
+    dhms.days = units/24;
+    return dhms;
 }
 
 uint32_t pw_time_get_rtc() {
