@@ -46,8 +46,9 @@ void pw_time_init_rtc(uint32_t sync_time) {
     
     // We don't need to run as unix time, its simpler to just use PW time
     //struct timespec ts = {0, 0};
-    ts.tv_sec = (uint64_t)(sync_time);
-    printf("[Debug] Setting powman timer to %08x\n", ts.tv_sec);
+    //ts.tv_sec = (uint64_t)(sync_time);
+    ts.tv_sec |= sync_time;
+    printf("[Debug] Initialising RTC to 0x%08x\n", sync_time);
 
     aon_timer_start(&ts);
 
@@ -56,13 +57,16 @@ void pw_time_init_rtc(uint32_t sync_time) {
 void pw_time_set_rtc(uint32_t sync_time) {
     // We don't need to run as unix time, its simpler to just use PW time
     struct timespec ts = {0, 0};
-    ts.tv_sec = (uint64_t)(sync_time);
+    //ts.tv_sec = (uint64_t)(sync_time);
+    ts.tv_sec |= sync_time;
     //ts.tv_sec = (uint64_t)(sync_time) + UNIX_TIME_OFFSET;
+    printf("[Debug] Setting RTC to 0x%08x\n", sync_time);
     aon_timer_set_time(&ts);
 }
 
 uint32_t pw_time_get_rtc() {
     uint64_t ms = powman_timer_get_ms();
+    printf("[Debug] Powman timer has 0x%08x ms\n", (uint32_t)ms);
     return (uint32_t)(ms/1000);
 }
 
