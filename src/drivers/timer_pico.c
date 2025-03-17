@@ -14,29 +14,23 @@
 #include "../picowalker-defs.h"
 
 #define UNIX_TIME_OFFSET 946684800ul
+#define TIMER_INTERVAL_SEC 60
 
-static struct rtc_counters_s {
-    uint8_t minutes;
-    uint8_t hours;
-    uint16_t days;
-} rtc_counters;
-
-
-void pw_rtc_callback() {
-    // Should be called every minute by the AON timer
-    rtc_counters.minutes += 1;
-    
-    // Set the reason for waking up, does nothing if we are already awake
-    wake_reason |= PW_WAKE_REASON_RTC;
-
-    // Schedule another RTC alarm
-}
+static pw_dhms_t last_check = {0,};
+static struct timespec next_alarm = {0,};
 
 /*
  * ============================================================================
  * Functions required by driver
  * ============================================================================
  */
+
+void pw_timer_periodic_callback() {
+    next_alarm.tv_sec += TIMER_INTERVAL_SEC;
+    aon_timer_enable_alarm(&next_alarm, pw_timer_periodic_callback, true);
+    wake_reason |= PW_WAKE_REASON_RTC;
+}
+
 void pw_time_init_rtc(uint32_t sync_time) {
     // `sync_time` is in seconds since 1st Jan 2000
 
@@ -52,6 +46,10 @@ void pw_time_init_rtc(uint32_t sync_time) {
 
     aon_timer_start(&ts);
 
+    ts.tv_sec += TIMER_INTERVAL_SEC;
+    next_alarm = ts;
+    aon_timer_enable_alarm(&next_alarm, pw_timer_periodic_callback, true);
+    
 }
 
 void pw_time_set_rtc(uint32_t sync_time) {

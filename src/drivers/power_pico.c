@@ -99,13 +99,8 @@ void pw_power_enter_sleep() {
     gpio_set_dormant_irq_enabled(BAT_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     gpio_set_dormant_irq_enabled(PIN_BUTTON_MIDDLE, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     //sleep_goto_dormant_until_pin(PIN_BUTTON_MIDDLE, true, false);
+    // We should also be allowed to wake from AON timer
     rosc_set_dormant();
-
-
-    // TODO: Check what caused the wakeup, if it was AON timer then go back to sleep
-
-    // TODO: Wait one second and sample pin again?
-    // Can do that with another sleep timer clocked from AON
 
     sleep_power_up();
     printf("[Info] MCU is awake\n");
@@ -124,6 +119,11 @@ void pw_power_enter_sleep() {
     printf("[Debug] Wake saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
     powman_timer_set_1khz_tick_source_xosc();
     aon_timer_set_time(&ts);
+
+    // TODO: Check what caused the wakeup, if it was AON timer then go back to sleep
+
+    // TODO: Wait one second and sample pin again?
+    // Can do that with another sleep timer clocked from AON
 
     //pw_accel_wake();
     //pw_flash_wake();
