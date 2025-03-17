@@ -81,31 +81,6 @@ pw_dhms_t pw_time_get_dhms() {
     return dhms;
 }
 
-/*
- * Returns flags of what periodic events need to be handled
- */
-pw_rtc_events_t pw_time_get_rtc_events() {
-    pw_rtc_events_t events = 0;
-
-    if(rtc_counters.minutes >= 60) {
-        rtc_counters.minutes -= 60;
-        rtc_counters.hours += 1;
-        events |= RTC_EVENT_EVERY_HOUR;
-    }
-
-    if(rtc_counters.hours >= 24) {
-        rtc_counters.hours -= 24;
-        rtc_counters.days += 1;
-        events |= RTC_EVENT_EVERY_DAY;
-    }
-    
-    // TODO: Check for minutes
-    // TODO: Check for hours
-    // TODO: Check for days
-
-    return events;
-}
-
 uint32_t pw_time_get_us() {
     absolute_time_t now = get_absolute_time();
     return (uint32_t)now;
