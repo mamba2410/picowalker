@@ -13,8 +13,8 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
     src/main.c
-    src/drivers/screen_pico2_dwo_hstx.c
-    src/drivers/screen_pico2_dwo_hstx.h
+    src/drivers/screen_pico2_dwo_pio.c
+    src/drivers/screen_pico2_dwo_pio.h
     src/drivers/accel_pico_bma400.c
     src/drivers/accel_pico_bma400.h
     src/drivers/ir_pico_pio.c
@@ -39,6 +39,9 @@ add_executable(picowalker
     src/drivers/power_pico.h
     src/picowalker-defs.h
 )
+
+## PIO stuff for SDK
+pico_generate_pio_header(picowalker ${CMAKE_CURRENT_LIST_DIR}/src/drivers/qspi.pio)
 
 ## Enable usb, uart etc for stdio
 #pico_enable_stdio_usb(picowalker 1)
