@@ -49,37 +49,20 @@ void pw_power_init() {
 
 void pw_power_enter_sleep() {
 
-    // Turn off the peripherals
-    //printf("[Info] Sleeping peripherals\n");
-
     // Going to sleep, we don't want to respond to button presses
     // TODO: move this to core
     acknowledge_button_presses = false;
 
-    // Sleep the screen first so it doesn't do anything weird
-    pw_screen_sleep();
-
-    // Sleep the IR in case we were in the comms context
-    //pw_ir_sleep();
-
-    //pw_eeprom_sleep();
-    //pw_flash_sleep();
-    //pw_accel_sleep(); // Don't sleep accel, it stops counting steps
-
     wake_reason = 0;
 
     // Start the POWMAN timer from LPOSC which we aren't turning off
-    //uint64_t powman_ms = powman_timer_get_ms();
-    //printf("[Debug] Sleeping powman timer with 0x%08x%08x ms\n", (uint32_t)(powman_ms>>32), (uint32_t)powman_ms);
-    //uint32_t powman_sec = powman_ms/1000;
-    //printf("[Debug] Equivalent to 0x%08x s\n", powman_sec);
     struct timespec ts;
     aon_timer_get_time(&ts);
     printf("[Debug] Sleep saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
 
-    powman_timer_set_1khz_tick_source_lposc();
+    //powman_timer_set_1khz_tick_source_lposc();
     //powman_timer_set_ms(powman_ms);
-    aon_timer_set_time(&ts);
+    //aon_timer_set_time(&ts);
 
     // Actually do the sleep
     printf("[Info] Sleeping MCU\n");
@@ -117,8 +100,8 @@ void pw_power_enter_sleep() {
 
     aon_timer_get_time(&ts);
     printf("[Debug] Wake saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
-    powman_timer_set_1khz_tick_source_xosc();
-    aon_timer_set_time(&ts);
+    //powman_timer_set_1khz_tick_source_xosc();
+    //aon_timer_set_time(&ts);
 
     // TODO: Check what caused the wakeup, if it was AON timer then go back to sleep
 
@@ -135,7 +118,7 @@ void pw_power_enter_sleep() {
     pw_button_init();
 
     // Wake screen last for least weirdness
-    pw_screen_wake();
+    //pw_screen_wake();
 
     // TODO: Change call when timer code gets updated
     power_should_sleep = false;
