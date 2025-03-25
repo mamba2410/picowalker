@@ -5,6 +5,7 @@
 //#include "pico/stdlib.h"
 
 #include "hardware/powman.h"
+#include "pico/bootrom.h"
 #include "pico/time.h"
 #include "pico/types.h"
 #include "pico/aon_timer.h"
@@ -33,6 +34,24 @@ void pw_timer_periodic_callback() {
 
 void pw_time_init_rtc(uint32_t sync_time) {
     // `sync_time` is in seconds since 1st Jan 2000
+
+    // Read LPOSC measured frequency and set LPOSC frequency
+    // TODO: Trim clock to make it closer to 32.768 kHz
+    otp_cmd_t cmd;
+    cmd.flags = 0x11;
+    uint16_t lposc_value = 0;
+    uint8_t raw_value[4];
+    //int ret = rom_func_otp_access(&lposc_value, sizeof(lposc_value), cmd);
+    int ret = rom_func_otp_access(raw_value, 4, cmd);
+    if(ret) {
+        printf("[Error] Couldn't read LPOSC value from OTP: %d\n", ret);
+    } else {
+        lposc_value = *(uint32_t*)raw_value;
+        printf("[Debug] Running RTC with LPOSC at %d Hz\n", lposc_value);
+
+        powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
+
+    }
 
     // Convert pw time to unix time
     struct timespec ts = {0, 0};
