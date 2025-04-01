@@ -16,6 +16,7 @@
 
 static volatile bool power_should_sleep;
 pw_wake_reason_t wake_reason;
+extern lposc_value;
 
 void user_idle_callback(void) {
     // Clear interrupt
@@ -60,9 +61,9 @@ void pw_power_enter_sleep() {
     aon_timer_get_time(&ts);
     printf("[Debug] Sleep saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
 
-    //powman_timer_set_1khz_tick_source_lposc();
+    powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
     //powman_timer_set_ms(powman_ms);
-    //aon_timer_set_time(&ts);
+    aon_timer_set_time(&ts);
 
     // Actually do the sleep
     printf("[Info] Sleeping MCU\n");
@@ -72,6 +73,7 @@ void pw_power_enter_sleep() {
     // Set XOSC as dormant clock source
     // Also reconfigures UART to run from XOSC
     sleep_run_from_lposc();
+    //sleep_run_from_xosc();
 
     // Only let POWMAN clock run
     clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
@@ -84,6 +86,7 @@ void pw_power_enter_sleep() {
     //sleep_goto_dormant_until_pin(PIN_BUTTON_MIDDLE, true, false);
     // We should also be allowed to wake from AON timer
     rosc_set_dormant();
+    //xosc_dormant();
 
     sleep_power_up();
     printf("[Info] MCU is awake\n");
@@ -100,8 +103,9 @@ void pw_power_enter_sleep() {
 
     aon_timer_get_time(&ts);
     printf("[Debug] Wake saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
-    //powman_timer_set_1khz_tick_source_xosc();
-    //aon_timer_set_time(&ts);
+    //powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
+    powman_timer_set_1khz_tick_source_xosc();
+    aon_timer_set_time(&ts);
 
     // TODO: Check what caused the wakeup, if it was AON timer then go back to sleep
 
