@@ -28,7 +28,9 @@ extern void pw_button_init();
 void user_idle_callback(void) {
     // Clear interrupt
     hw_clear_bits(&timer_hw->intr, 1u<<USER_IDLE_ALARM_NUM);
-    power_should_sleep = true;
+    if(power_sleep_enabled) {
+        power_should_sleep = true;
+    }
 }
 
 
