@@ -19,6 +19,7 @@
 
 static pw_dhms_t last_check = {0,};
 static struct timespec next_alarm = {0,};
+uint16_t lposc_value = 32768;
 
 /*
  * ============================================================================
@@ -39,7 +40,7 @@ void pw_time_init_rtc(uint32_t sync_time) {
     // TODO: Trim clock to make it closer to 32.768 kHz
     otp_cmd_t cmd;
     cmd.flags = 0x11;
-    uint16_t lposc_value = 0;
+    //uint16_t lposc_value = 0;
     uint8_t raw_value[4];
     //int ret = rom_func_otp_access(&lposc_value, sizeof(lposc_value), cmd);
     int ret = rom_func_otp_access(raw_value, 4, cmd);
@@ -47,9 +48,9 @@ void pw_time_init_rtc(uint32_t sync_time) {
         printf("[Error] Couldn't read LPOSC value from OTP: %d\n", ret);
     } else {
         lposc_value = *(uint32_t*)raw_value;
-        printf("[Debug] Running RTC with LPOSC at %d Hz\n", lposc_value);
+        printf("[Debug] LPOSC factory measured at %d Hz\n", lposc_value);
 
-        powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
+        //powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
 
     }
 
