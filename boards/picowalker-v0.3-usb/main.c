@@ -43,6 +43,7 @@ void board_i2c_init() {
 #include "drivers/eeprom_pico_m95512.h"
 #include "picowalker.h"
 #include "picowalker-defs.h"
+#include "drivers/power_pico.h"
 
 extern void (*current_loop)(void);
 >>>>>>> ef32a79 (usb: imported usb cdc msc example which works):src/main.c
@@ -146,10 +147,18 @@ int main() {
 
 void tud_mount_cb(void) {
     printf("[Info] tusb mounted\n");
+
+    // Halt sleep timer so we don't mess up tusb
+    power_sleep_enabled = false;
+
 }
 
 void tud_umount_cb(void) {
     printf("[Info] tusb unmounted\n");
+
+    // Unmount and now we're safe to sleep
+    power_sleep_enabled = true;
+    set_user_idle_timer();
 }
 
 void tud_suspend_cb(bool remote_wakeup_en) { (void)remote_wakeup_en; }
