@@ -33,11 +33,12 @@ static bool ejected = false;
 // Some MCU doesn't have enough 8KB SRAM to store the whole disk
 // We will use Flash as read-only disk with board that has
 // CFG_EXAMPLE_MSC_READONLY defined
+#define CFG_EXAMPLE_MSC_READONLY true
 
 #define README_CONTENTS \
 "This is tinyusb's MassStorage Class demo.\r\n\r\n\
 If you find any bugs or get any questions, feel free to file an\r\n\
-issue at github.com/hathach/tinyusb"
+issue at github.com/hathach/tinyusb \r\n"
 
 enum
 {
@@ -60,7 +61,7 @@ uint8_t msc_disk[DISK_BLOCK_NUM][DISK_BLOCK_SIZE] =
   // FAT magic code at offset 510-511
   {
       0xEB, 0x3C, 0x90, 0x4D, 0x53, 0x44, 0x4F, 0x53, 0x35, 0x2E, 0x30, 0x00, 0x02, 0x01, 0x01, 0x00,
-      0x01, 0x10, 0x00, 0x10, 0x00, 0xF8, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x01, 0x10, 0x00, 0x10, 0x01, 0xF8, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x29, 0x34, 0x12, 0x00, 0x00, 'T' , 'i' , 'n' , 'y' , 'U' ,
       'S' , 'B' , ' ' , 'M' , 'S' , 'C' , 0x46, 0x41, 0x54, 0x31, 0x32, 0x20, 0x20, 0x20, 0x00, 0x00,
 
@@ -100,7 +101,7 @@ uint8_t msc_disk[DISK_BLOCK_NUM][DISK_BLOCK_SIZE] =
 
   //------------- Block1: FAT12 Table -------------//
   {
-      0xF8, 0xFF, 0xFF, 0xFF, 0x0F // // first 2 entries must be F8FF, third entry is cluster end of readme file
+      0xF8, 0xFF, 0xFF, 0x00, 0x0F, 0xff // // first 2 entries must be F8FF, third entry is cluster end of disk
   },
 
   //------------- Block2: Root Directory -------------//
@@ -111,7 +112,11 @@ uint8_t msc_disk[DISK_BLOCK_NUM][DISK_BLOCK_SIZE] =
       // second entry is readme file
       'R' , 'E' , 'A' , 'D' , 'M' , 'E' , ' ' , ' ' , 'T' , 'X' , 'T' , 0x20, 0x00, 0xC6, 0x52, 0x6D,
       0x65, 0x43, 0x65, 0x43, 0x00, 0x00, 0x88, 0x6D, 0x65, 0x43, 0x02, 0x00,
-      sizeof(README_CONTENTS)-1, 0x00, 0x00, 0x00 // readme's files size (4 Bytes)
+      sizeof(README_CONTENTS)-1, 0x00, 0x00, 0x00, // readme's files size (4 Bytes)
+      // third entry is eeprom file
+      'E' , 'E' , 'P' , 'R' , 'O' , 'M' , ' ' , ' ' , 'B' , 'I' , 'N' , 0x20, 0x00, 0x6c, 0x58, 0xad,
+      0x81, 0x5a, 0x81, 0x5a, 0x00, 0x00, 0x58, 0xaD, 0x81, 0x5a, 0x04, 0x00,
+      0x00, 0x00, 0x01, 0x00 // eeprom file size (64 kiB)
   },
 
   //------------- Block3: Readme Content -------------//
@@ -155,7 +160,7 @@ void tud_msc_capacity_cb(uint8_t lun, uint32_t* block_count, uint16_t* block_siz
 {
   (void) lun;
 
-  *block_count = DISK_BLOCK_NUM;
+  *block_count = DISK_BLOCK_NUM+256;
   *block_size  = DISK_BLOCK_SIZE;
 }
 
@@ -188,9 +193,13 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
 {
   (void) lun;
 
-  // out of ramdisk
-  if ( lba >= DISK_BLOCK_NUM ) {
-    return -1;
+  printf("[Debug] msc reading lba %d offset %d, length %d\n", lba, offset, bufsize);
+  // out of ramdisk, read from eeprom
+  if ( lba >= 4 ) {
+      uint16_t eeprom_addr = (lba-4)*DISK_BLOCK_SIZE + offset;
+      //printf("[Debug] Reading eeprom addr 0x%04x\n", eeprom_addr);
+      pw_eeprom_read(eeprom_addr, buffer, bufsize);
+      return (int32_t)bufsize;
   }
 
   // Check for overflow of offset + bufsize
