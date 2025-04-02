@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
+#include <tusb.h>
 
 #include "hardware/spi.h"
 #include "hardware/i2c.h"
 #include "hardware/clocks.h"
 #include "hardware/pll.h"
 
-<<<<<<< HEAD:boards/picowalker-v0.3/main.c
 //#include "drivers/eeprom/m95512_rp2xxx_spi.h"
 #include "picowalker-defs.h"
 
@@ -37,16 +37,7 @@ void board_i2c_init() {
     i2c_is_inited = true;
 }
 
-=======
-#include <tusb.h>
 
-#include "drivers/eeprom_pico_m95512.h"
-#include "picowalker.h"
-#include "picowalker-defs.h"
-#include "drivers/power_pico.h"
-
-extern void (*current_loop)(void);
->>>>>>> ef32a79 (usb: imported usb cdc msc example which works):src/main.c
 int main() {
     bi_decl(bi_program_description("picowalker"));
 
@@ -112,14 +103,6 @@ int main() {
     //audio_test_program();
 
     // Start picowalker-core
-<<<<<<< HEAD:boards/picowalker-v0.3/main.c
-    walker_setup();
-
-    extern void (*current_loop)(void);
-    while(1) {
-        current_loop();
-=======
-    //walker_entry();
     walker_setup();
 
     tusb_rhport_init_t dev_init = {
@@ -127,18 +110,17 @@ int main() {
         .speed = TUSB_SPEED_AUTO
     };
 
+
+
     tusb_init(BOARD_TUD_RHPORT, &dev_init);
     board_init();
 
-    //if(board_init_after_tusb) {
-    //    board_init_after_tusb();
-    //}
+    extern void (*current_loop)(void);
 
     while(1) {
         tud_task();
         current_loop();
-        //walker_loop();
->>>>>>> ef32a79 (usb: imported usb cdc msc example which works):src/main.c
+        cdc_task();
     }
 
     // unreachable
