@@ -595,6 +595,10 @@ pw_power_status_t pw_power_get_status() {
     if(pmic_info.unplugged) {
         pmic_info.unplugged = false;
         bs.flags |= PW_POWER_STATUS_FLAGS_UNPLUGGED;
+        // This is a workaround for TinyUSB not being able to detect an unmount call on pico devices
+        // If we aren't charging, we can pretend like that's good enough and assume we are unplugged
+        // Side-effect is that it will enable sleep if its plugged in but not charging
+        tud_umount_cb();
     }
 
     if(bq25628e_adc_timed_out()) {
@@ -620,6 +624,7 @@ pw_power_status_t pw_power_get_status() {
 
     bq25628e_log_vbat(vbat);
     bq25628e_clear_adc_state();
+
 
     return bs;
 }
