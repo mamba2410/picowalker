@@ -331,6 +331,14 @@ pw_battery_status_t pw_power_get_battery_status() {
         bs.flags |= PW_BATTERY_STATUS_FLAGS_FAULT;
     }
 
+    // TODO: Remove
+    // This is a workaround for TinyUSB not being able to detect an unmount call on pico devices
+    // If we aren't charging, we can pretend like that's good enough and assume we are unplugged
+    // Side-effect is that it will enable sleep if its plugged in but not charging
+    if(buf[1]>>3 == 0 && power_sleep_enabled == false){
+        tud_umount_cb();
+    }
+
     // Wait for interrupt to say that ADC function is done
     while(!adc_done && (pw_time_get_ms() < adc_timeout_stamp));
     if(!adc_done) {
@@ -403,6 +411,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     pw_log(log_staging, len);
 
     // ADC gets auto-disabled if we're in one-shot mode
+
 
     return bs;
 }
