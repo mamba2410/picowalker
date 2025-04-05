@@ -33,7 +33,7 @@ static bool ejected = false;
 // Some MCU doesn't have enough 8KB SRAM to store the whole disk
 // We will use Flash as read-only disk with board that has
 // CFG_EXAMPLE_MSC_READONLY defined
-#define CFG_EXAMPLE_MSC_READONLY true
+////#define CFG_EXAMPLE_MSC_READONLY true
 
 enum
 {
@@ -352,15 +352,40 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
 {
   (void) lun;
 
-  // out of ramdisk
-  if ( lba >= DISK_BLOCK_NUM ) return -1;
+  // LBA 0..2 are from ramdisk
+  if(lba >= 0 && lba <= 2) {
+    uint8_t const* addr = msc_disk[lba] + offset;
+    memcpy(addr, buffer, bufsize);
+    return (int32_t)bufsize;
+  }
 
-#ifndef CFG_EXAMPLE_MSC_READONLY
-  uint8_t* addr = msc_disk[lba] + offset;
-  memcpy(addr, buffer, bufsize);
-#else
-  (void) lba; (void) offset; (void) buffer;
-#endif
+  // LBA 130 is also ramdisk, index 3
+  if(lba == 130) {
+    uint8_t const* addr = msc_disk[3] + offset;
+    memcpy(addr, buffer, bufsize);
+    return (int32_t)bufsize;
+  }
+
+  // LBA 164 is also ramdisk, index 4
+  if(lba == 130) {
+    uint8_t const* addr = msc_disk[4] + offset;
+    memcpy(addr, buffer, bufsize);
+    return (int32_t)bufsize;
+  }
+
+  // LBA 166..293 is eeprom
+  if(lba >= 166 && lba <= 293) {
+      uint16_t eeprom_addr = (lba-166)*DISK_BLOCK_SIZE + offset;
+      pw_eeprom_write(eeprom_addr, buffer, bufsize);
+      return (int32_t)bufsize;
+  }
+
+  // Check for overflow of offset + bufsize
+  if ( offset + bufsize > DISK_BLOCK_SIZE ) {
+    return -1;
+  }
+
+  printf("[Warn] USB ignoring %d-byte write to LBA %d offset %d\n", bufsize, lba, offset);
 
   return (int32_t) bufsize;
 }
