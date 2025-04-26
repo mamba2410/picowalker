@@ -5,11 +5,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define BAT_INT_PIN 27  // GP27, phys 32
-#define BAT_CE_PIN  28  // GP28, phys 34
+#define BAT_INT_PIN 3
+#define BAT_CE_PIN  2
 
-#define PMIC_I2C_SCL_PIN 21  // GP21, phys 27
-#define PMIC_I2C_SDA_PIN 20  // GP20, phys 26
+#define PMIC_I2C_SCL_PIN 1
+#define PMIC_I2C_SDA_PIN 0
 
 #define PMIC_I2C_SPEED_KHZ 100 // Supports 400 and 1000 also but needs more timing requirements
 #define PMIC_I2C_ADDRESS 0x6a

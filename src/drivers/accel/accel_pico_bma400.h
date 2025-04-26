@@ -1,12 +1,12 @@
 #ifndef PW_DRIVER_ACCEL_BMA400_H
 #define PW_DRIVER_ACCEL_BMA400_H
 
-#define ACCEL_SCL_PIN       2 // GP 2, phys 4
-#define ACCEL_MOSI_PIN      3 // GP 3, phys 5
-#define ACCEL_MISO_PIN      4 // GP 4, phys 6
-#define ACCEL_CS_PIN        7 // GP 7, phys 10
+#define ACCEL_SCL_PIN       26
+#define ACCEL_MOSI_PIN      27
+#define ACCEL_MISO_PIN      28
+#define ACCEL_CS_PIN        21
 #define ACCEL_SPI_SPEED     1000000 // 1MHz
-#define ACCEL_INT_PIN       8 // GP8, phys 11
+#define ACCEL_INT_PIN       22
 
 #define ACCEL_READ_MASK     0x80
 #define ACCEL_WRITE_MASK    0x7f

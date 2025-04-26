@@ -31,11 +31,22 @@
 //#define AMOLED_BUFFER_SIZE (AMOLED_ACTIVE_WIDTH*AMOLED_ACTIVE_HEIGHT*AMOLED_BYTES_PER_PIXEL)
 
 
+/*
+// Normal
 const uint16_t colour_map[4] = {
     0xe75b, // white
     0xbe16, // light grey
     0x7c0e, // dark grey
     0x5289, // black
+};
+*/
+
+// Reversed nibbles
+const uint16_t colour_map[4] = {
+    0x7ead, // white
+    0xd786, // light grey
+    0xe307, // dark grey
+    0xa419, // black
 };
 
 enum screen_cmd {
@@ -86,15 +97,15 @@ typedef struct screen_area_s {
 } screen_area_t;
 
 
-#define PIN_PIO_SCK    13 // GP13, phys 17
-#define PIN_PIO_SD_START 14 // output pins must be contiguous
-#define PIN_PIO_SD0    15 // GP14, phys 20
-#define PIN_PIO_SD1    14 // GP14, phys 19
-#define PIN_PIO_SD2    17 // GP17, phys 22
-#define PIN_PIO_SD3    16 // GP16, phys 21
-#define PIN_PIO_CSB    18 // GP18, phys 24
+#define PIN_PIO_SCK    8
+#define PIN_PIO_SD_START 9
+#define PIN_PIO_SD0    12
+#define PIN_PIO_SD1    11
+#define PIN_PIO_SD2    10
+#define PIN_PIO_SD3    9
+#define PIN_PIO_CSB    7
 
-#define PIN_SCREEN_RST  12 // GP12, phys 16
-//#define PIN_SCREEN_PWREN    0xff // Manual
+#define PIN_SCREEN_RST  6
+#define PIN_SCREEN_PWREN    5
 
 #endif /* PW_SCREEN_PICO2_DWO_HSTX_H */

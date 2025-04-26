@@ -140,7 +140,7 @@ uint32_t pw_accel_get_new_steps() {
 }
 
 int8_t pw_accel_init() {
-    accel_spi = spi0;
+    accel_spi = spi1;
 
     gpio_init(ACCEL_CS_PIN);
     gpio_set_dir(ACCEL_CS_PIN, GPIO_OUT);
