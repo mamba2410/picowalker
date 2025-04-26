@@ -147,12 +147,6 @@ void pio_configure_4wire() {
 }
 
 void __time_critical_func(pio_put_word)(uint8_t word) {
-    // swap bits around, SD2, SD3, SD0, SD1 for hardware v0.1
-    if(pio_config.is_4wire) {
-        uint8_t lo = word & 0x55;
-        uint8_t hi = word & 0xaa;
-        word = (lo << 1) | (hi >> 1);
-    }
 
     // Doesn't work?
     //pio_sm_put_blocking(pio_config.pio, pio_config.sm, word);
@@ -362,10 +356,13 @@ void pw_screen_init() {
      * Set up manual CSB
      */
     gpio_init(PIN_PIO_CSB);
+    gpio_init(PIN_SCREEN_PWREN);
     gpio_init(PIN_SCREEN_RST);
     gpio_set_dir(PIN_PIO_CSB, GPIO_OUT);
+    gpio_set_dir(PIN_SCREEN_PWREN, GPIO_OUT);
     gpio_set_dir(PIN_SCREEN_RST, GPIO_OUT);
     gpio_put(PIN_PIO_CSB, 1);
+    gpio_put(PIN_SCREEN_PWREN, 1);
     gpio_put(PIN_SCREEN_RST, 0);
 
     pio_config.pio = pio0;
