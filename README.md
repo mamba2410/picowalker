@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/mamba2410/picowalker/blob/hardware-v0.1/assets/picowalker_logo_white.png?raw=true">
+    <img width=512 src="https://github.com/mamba2410/picowalker/blob/hardware-v0.1/assets/picowalker_logo_black.png?raw=true">
+  </picture>
+</p>
+
 # picowalker
 
 ## About
