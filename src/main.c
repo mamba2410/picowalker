@@ -54,6 +54,8 @@ int main() {
     while(1);
     */
 
+    //audio_test_program();
+
     // Start picowalker-core
     walker_entry();
 
