@@ -157,6 +157,11 @@ void pw_battery_int(uint gp, uint32_t events) {
 }
 
 
+void pw_battery_shutdown() {
+    uint8_t val = REG_CHARGER_CONTROL_2_BATFET_CTRL_SHUTDOWN;
+    pw_pmic_write_reg(REG_CHARGER_CONTROL_2, &val, 1);
+}
+
 void pw_battery_init() {
 
     // I2C bus
@@ -295,6 +300,13 @@ pw_battery_status_t pw_power_get_battery_status() {
     // Value here is 0x000 - 0xaf0, max resolution of 1.99mV
     float vbat_f = ((float)vbat / (float)0xaf0) * 5572.0;
     printf("[Log ] VBAT: %4.0f mV\n", vbat_f);
+
+
+    // TODO: Move this to core code
+    if(vbat_f < 3.5f) {
+        printf("[Error] Battery too low, shutting down\n");
+        pw_battery_shutdown();
+    }
 
     float neg = 1.0;
 
