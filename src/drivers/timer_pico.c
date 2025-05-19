@@ -22,6 +22,8 @@
 
 #define USE_EXTERNAL_RTC false
 
+#define USE_EXTERNAL_RTC true
+
 static pw_dhms_t last_check = {0,};
 static struct timespec next_alarm = {0,};
 uint16_t lposc_value = 32768;
