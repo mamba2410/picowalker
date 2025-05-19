@@ -17,6 +17,8 @@
 #define UNIX_TIME_OFFSET 946684800ul
 #define TIMER_INTERVAL_SEC 60
 
+#define RTC_CLK_PIN 20
+
 static pw_dhms_t last_check = {0,};
 static struct timespec next_alarm = {0,};
 uint16_t lposc_value = 32768;
@@ -37,22 +39,25 @@ void pw_time_init_rtc(uint32_t sync_time) {
     // `sync_time` is in seconds since 1st Jan 2000
 
     // Read LPOSC measured frequency and set LPOSC frequency
-    // TODO: Trim clock to make it closer to 32.768 kHz
     otp_cmd_t cmd;
     cmd.flags = 0x11;
-    //uint16_t lposc_value = 0;
     uint8_t raw_value[4];
-    //int ret = rom_func_otp_access(&lposc_value, sizeof(lposc_value), cmd);
     int ret = rom_func_otp_access(raw_value, 4, cmd);
     if(ret) {
         printf("[Error] Couldn't read LPOSC value from OTP: %d\n", ret);
     } else {
         lposc_value = *(uint32_t*)raw_value;
         printf("[Debug] LPOSC factory measured at %d Hz\n", lposc_value);
-
-        //powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
-
     }
+
+    // Set up powman timer
+    powman_timer_stop();
+    gpio_init(RTC_CLK_PIN);
+    powman_hw->ext_time_ref = POWMAN_PASSWORD_BITS | (1<<4) | (0x01 << 0);
+    lposc_value = 32768;
+    powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
+    //powman_timer_set_1khz_tick_source_xosc();
+    printf("[Debug] Changed RTC to external lposc at %d Hz\n", lposc_value);
 
     // Convert pw time to unix time
     struct timespec ts = {0, 0};
@@ -64,7 +69,11 @@ void pw_time_init_rtc(uint32_t sync_time) {
     ts.tv_sec |= sync_time;
     printf("[Debug] Initialising RTC to 0x%08x\n", sync_time);
 
-    aon_timer_start(&ts);
+    bool ok = aon_timer_set_time(&ts);
+    if(ok) {
+        powman_timer_set_ms(timespec_to_ms(&ts));
+        powman_timer_start();
+    }
 
     ts.tv_sec += TIMER_INTERVAL_SEC;
     next_alarm = ts;
