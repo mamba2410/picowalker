@@ -19,6 +19,8 @@
 
 #define RTC_CLK_PIN 20
 
+#define USE_EXTERNAL_RTC true
+
 static pw_dhms_t last_check = {0,};
 static struct timespec next_alarm = {0,};
 uint16_t lposc_value = 32768;
@@ -38,26 +40,45 @@ void pw_timer_periodic_callback() {
 void pw_time_init_rtc(uint32_t sync_time) {
     // `sync_time` is in seconds since 1st Jan 2000
 
+#if USE_EXTERNAL_RTC
+    // Set up powman timer
+    powman_timer_stop();
+    gpio_init(RTC_CLK_PIN);
+    uint32_t reg_val = 0;
+    switch(RTC_CLK_PIN) {
+        case 12: reg_val = (1<<4) | 0x00; break;
+        case 20: reg_val = (1<<4) | 0x01; break;
+        case 14: reg_val = (1<<4) | 0x02; break;
+        case 22: reg_val = (1<<4) | 0x03; break;
+        default: {
+            reg_val = 0x0;
+            printf("[Warn ] External clock on pin %d not allowed\n", RTC_CLK_PIN);
+        }
+    }
+    powman_hw->ext_time_ref = POWMAN_PASSWORD_BITS | reg_val;
+    lposc_value = 32768;
+    // Requires sdk 2.1.2 since its bugged before that
+    powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
+    //powman_timer_set_1khz_tick_source_xosc();
+    printf("[Debug] Changed RTC to external lposc at %d Hz on pin %d\n", lposc_value, RTC_CLK_PIN);
+#else
     // Read LPOSC measured frequency and set LPOSC frequency
     otp_cmd_t cmd;
     cmd.flags = 0x11;
     uint8_t raw_value[4];
     int ret = rom_func_otp_access(raw_value, 4, cmd);
     if(ret) {
+        lposc_value = 32768;
         printf("[Error] Couldn't read LPOSC value from OTP: %d\n", ret);
     } else {
         lposc_value = *(uint32_t*)raw_value;
         printf("[Debug] LPOSC factory measured at %d Hz\n", lposc_value);
     }
-
-    // Set up powman timer
     powman_timer_stop();
-    gpio_init(RTC_CLK_PIN);
-    powman_hw->ext_time_ref = POWMAN_PASSWORD_BITS | (1<<4) | (0x01 << 0);
-    lposc_value = 32768;
+    powman_hw->ext_time_ref = POWMAN_PASSWORD_BITS | 0;
     powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
-    //powman_timer_set_1khz_tick_source_xosc();
-    printf("[Debug] Changed RTC to external lposc at %d Hz\n", lposc_value);
+
+#endif
 
     // Convert pw time to unix time
     struct timespec ts = {0, 0};
