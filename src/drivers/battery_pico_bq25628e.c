@@ -15,6 +15,10 @@
 #define I2C_READ_MASK   (0x00)
 #define I2C_WRITE_MASK  (0x00)
 
+#define VBAT_ABS_MINIMUM_MV 3500.0f
+#define VBAT_ABS_MAXIMUM_MV 4250.0f
+#define VBAT_SAFE_MINIMUM_MV 3600.0f
+
 static const char* CHARGE_STATUS_STRINGS[4] = {
     "not charging",
     "trickle, pre-charge or fast charge",
@@ -300,10 +304,20 @@ pw_battery_status_t pw_power_get_battery_status() {
     // Value here is 0x000 - 0xaf0, max resolution of 1.99mV
     float vbat_f = ((float)vbat / (float)0xaf0) * 5572.0;
     printf("[Log ] VBAT: %4.0f mV\n", vbat_f);
-
+    float percent_f = 100.0f*(vbat_f - VBAT_ABS_MINIMUM_MV)/(VBAT_ABS_MAXIMUM_MV-VBAT_ABS_MINIMUM_MV);
+    bs.percent = (uint8_t)percent_f;
+    if(percent_f > 105) {
+        printf("[Warn ] Battery percentage above 100%%: %d%%\n", percent_f);
+        bs.percent = 100;
+    }
+    if(percent_f < 0) {
+        printf("[Warn ] Battery percentage below 0%%: %d%%\n", percent_f);
+        bs.percent = 0;
+    }
+    //printf("[Info ] Battery is at %.2f%%\n", percent_f);
 
     // TODO: Move this to core code
-    if(vbat_f < 3.5f) {
+    if(vbat_f < VBAT_SAFE_MINIMUM_MV) {
         printf("[Error] Battery too low, shutting down\n");
         pw_battery_shutdown();
     }
