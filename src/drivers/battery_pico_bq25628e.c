@@ -286,7 +286,22 @@ pw_battery_status_t pw_power_get_battery_status() {
 
     // Read status registers while we wait for ADC conversion
     pw_pmic_read_reg(REG_CHARGER_STATUS_0, buf, 3);
-    printf("[Info] bq25628e charge status: %s\n", CHARGE_STATUS_STRINGS[(buf[1]>>3)&0x03]);
+    uint8_t charge_status = (buf[1]>>3)&0x03;
+    printf("[Info] bq25628e charge status: %s\n", CHARGE_STATUS_STRINGS[charge_status]);
+    if(charge_status != 0) {
+        bs.flags |= PW_BATTERY_STATUS_FLAGS_CHARGING;
+    }
+
+    uint8_t fault_mask = 
+        REG_FAULT_STATUS_0_SHUT_STAT |
+        REG_FAULT_STATUS_0_SYS_FAULT_STAT |
+        REG_FAULT_STATUS_0_BAT_FAULT_STAT |
+        REG_FAULT_STATUS_0_VBUS_FAULT_STAT;
+
+    uint8_t fault_status = buf[2] & fault_mask;
+    if(fault_status != 0) {
+        bs.flags |= PW_BATTERY_STATUS_FLAGS_FAULT;
+    }
 
     // Wait for interrupt to say that ADC function is done
     while(!adc_done);
@@ -316,11 +331,6 @@ pw_battery_status_t pw_power_get_battery_status() {
     }
     //printf("[Info ] Battery is at %.2f%%\n", percent_f);
 
-    // TODO: Move this to core code
-    if(vbat_f < VBAT_SAFE_MINIMUM_MV) {
-        printf("[Error] Battery too low, shutting down\n");
-        pw_battery_shutdown();
-    }
 
     float neg = 1.0;
 
