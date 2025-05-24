@@ -194,7 +194,7 @@ void pw_battery_init() {
 
     // Check for part number
     pw_pmic_read_reg(REG_PART_INFO, buf, 3);
-    printf("[Info] BQ25628E part info: 0x%02x\n", buf[0]);
+    printf("[Info ] BQ25628E part info: 0x%02x\n", buf[0]);
 
     // Read `FLAG` registers to clear interrupts
     // (possibly) important to clear "power-on" interrupt
@@ -209,6 +209,9 @@ void pw_battery_init() {
     buf[0] |= REG_CHARGER_CONTROL_0_WATCHDOG_DISABLED;
     pw_pmic_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
 
+    // Enable charge
+    gpio_put(BAT_CE_PIN, 0);
+
     // Set up ADC targets for conversion
     // Allow: VBAT, IBAT, VBUS, IBUS, VSYS
     // Probably just allow VBAT, VSYS in prod
@@ -218,22 +221,32 @@ void pw_battery_init() {
     //pw_pmic_write_reg(REG_ADC_FUNCTION_DISABLE_0, buf, 1);
 
     // Set ADC to one-shot mode, don't enable to save power
+    // Have long ADC samples at first to "prime" the ADC
     buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
              REG_ADC_CONTROL_ADC_RATE_ONESHOT |
-             REG_ADC_CONTROL_ADC_SAMPLE_9_BIT | // default
+             //REG_ADC_CONTROL_ADC_SAMPLE_9_BIT | // default
+             REG_ADC_CONTROL_ADC_SAMPLE_12_BIT | // extend ADC sample time to 30 ms
              REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
     uint8_t my_reg = buf[0];
+    pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
+
+    // Do a few samples to prime the ADC and stop it from instantly shutting down.
+    // TODO: Do this a better way
+    for(size_t i = 0; i < 3; i++) {
+        pw_power_get_battery_status();
+    }
+
+    // Back to normal length ADC samples
+    buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
+             REG_ADC_CONTROL_ADC_RATE_ONESHOT |
+             REG_ADC_CONTROL_ADC_SAMPLE_10_BIT | // 7.5 ms each
+             REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
+    my_reg = buf[0];
     pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
 
     // Just for fun
     //pw_pmic_read_reg(reg_charger_status_0, buf, 3);
     //printf("[info] bq25628e charge status: %s\n", charge_status_strings[(buf[1]>>3)&0x03]);
-
-    // Enable charge
-    gpio_put(BAT_CE_PIN, 0);
-
-    // Debug: For testing
-    pw_power_get_battery_status();
 
     // TODO: Set REG_CHARGER_CONTROL_3.IBAT_PK to 0x0 for 1.5A discharge limit
     // TODO: Charge current limit default 320mA, can reprogram. See REG_CHARGE_CURRENT_LIMIT
@@ -287,7 +300,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     // Read status registers while we wait for ADC conversion
     pw_pmic_read_reg(REG_CHARGER_STATUS_0, buf, 3);
     uint8_t charge_status = (buf[1]>>3)&0x03;
-    printf("[Info] bq25628e charge status: %s\n", CHARGE_STATUS_STRINGS[charge_status]);
+    //printf("[Info] bq25628e charge status: %s\n", CHARGE_STATUS_STRINGS[charge_status]);
     if(charge_status != 0) {
         bs.flags |= PW_BATTERY_STATUS_FLAGS_CHARGING;
     }
@@ -318,7 +331,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     // TODO: Some form of LUT
     // Value here is 0x000 - 0xaf0, max resolution of 1.99mV
     float vbat_f = ((float)vbat / (float)0xaf0) * 5572.0;
-    printf("[Log ] VBAT: %4.0f mV\n", vbat_f);
+    printf("[Log  ] VBAT: %4.0f mV\n", vbat_f);
     float percent_f = 100.0f*(vbat_f - VBAT_ABS_MINIMUM_MV)/(VBAT_ABS_MAXIMUM_MV-VBAT_ABS_MINIMUM_MV);
     bs.percent = (uint8_t)percent_f;
     if(percent_f > 105) {
@@ -339,7 +352,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     pw_pmic_read_reg(REG_IBAT_ADC, buf, 2);
     raw_val = REG_IBAT_ADC_VAL(buf16[0]);
     if(raw_val > 0x1fff) { raw_val = (raw_val^0x3fff) + 1; neg = -1.0; }
-    printf("[Log ] IBAT: %4.0f mA\n", neg * (float)(raw_val) / (float)(0x3e8) * 4000.0);
+    //printf("[Log ] IBAT: %4.0f mA\n", neg * (float)(raw_val) / (float)(0x3e8) * 4000.0);
 
     // Read bus current draw
     //pw_pmic_read_reg(REG_IBUS_ADC, buf, 2);
@@ -351,7 +364,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     // This gets converted down, but good to note what we're feeding the screen
     pw_pmic_read_reg(REG_VSYS_ADC, buf, 2);
     raw_val = REG_VSYS_ADC_VAL(buf16[0]);
-    printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
+    //printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
 
     // ADC gets auto-disabled if we're in one-shot mode
 
