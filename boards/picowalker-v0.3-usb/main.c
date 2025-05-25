@@ -117,6 +117,10 @@ int main() {
 
     extern void (*current_loop)(void);
 
+    //if(board_init_after_tusb) {
+    //    board_init_after_tusb();
+    //}
+
     while(1) {
         tud_task();
         current_loop();
