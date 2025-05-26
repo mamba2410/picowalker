@@ -9,20 +9,461 @@
 #include "hardware/resets.h"
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
-#include "hardware/structs/hstx_ctrl.h"
-#include "hardware/structs/hstx_fifo.h"
+#include "hardware/spi.h"
+
+//#include "hardware/structs/hstx_ctrl.h"
+//#include "hardware/structs/hstx_fifo.h"
 
 #include "../picowalker-defs.h"
-#include "screen_pico2_dwo_hstx.h"
+#include "screen_rp2040_gc9a01a.h"
 
-
-static uint8_t lcd_buffer[AMOLED_BUFFER_SIZE] = {0};
+static lcd_t lcd = {0}|;
+static uint8_t lcd_buffer[LCD_BUFFER_SIZE] = {0};
 
 /*
  * Screen for the Waveshare rp2040 touch LCS 1.28"
  * It's a circular screen with touch controls, but touch isn't implemented here.
  * 240x240 resolution, assume corners are cut off?
  */
+
+/********************************************************************************
+Function: Resets LCD
+Parameters:
+********************************************************************************/
+ void lcd_reset() 
+ {
+    // Reset and clear memory
+    gpio_put(LCD_PIN_RST, 0);
+    sleep_ms(3);
+    gpio_put(LCD_PIN_RST, 1);
+    sleep_ms(50);
+    gpio_put(LCD_PIN_CS, 0);
+    sleep_ms(50);
+}
+
+/********************************************************************************
+Function: Sends command to LCD
+Parameters:
+        command : command to be sent
+********************************************************************************/
+void lcd_send_command(uint8_t command)
+{
+    // DCX goes high to indicate data being sent
+    gpio_put(LCD_PIN_DC, 0);
+    spi_write_blocking(LCD_SPI_PORT, &command, 1)
+}
+
+/********************************************************************************
+Function: Sends data to LCD
+Parameters:
+        data : data to be sent
+********************************************************************************/
+void lcd_send_data(uint8_t data)
+{
+    // DCX goes high to indicate data being sent
+    gpio_put(LCD_PIN_DC, 1);
+    spi_write_blocking(LCD_SPI_PORT, &data, 1)
+}
+
+/********************************************************************************
+Function: Sets the LCD to the specified coordinates
+Parameters:
+        x_start : x start coordinate
+        y_start : y start coordinate
+        x_end : x end coordinate
+        y_end : y end coordinate
+ *********************************************************************************/
+void lcd_set_windows(uint16_t x_start, uint16_t y_start, uint16_t x_end, uint16_t y_end) 
+{
+    // Set X Coordinates
+    lcd_send_command(CMD_COL_SET); //0x2A
+    lcd_send_data(CMD_NOP);        //0x00
+    lcd_send_data(x_start);
+    lcd_send_data((x_end-1)>>8);
+    lcd_send_data(x_end-1);
+
+    // Set Y Coordinates
+    lcd_send_command(CMD_PAGE_SET); //0x2B    
+    lcd_send_data(CMD_NOP);         //0x00
+    lcd_send_data(y_start);
+    lcd_send_data((y_start-1)>>8);
+    lcd_send_data(y_end-1);
+
+    lcd_send_command(CMD_WRITE_START); //0x2C
+
+}
+
+/********************************************************************************
+Function: Clears the screen
+Parameters:
+********************************************************************************/
+void lcd_clear_screen() 
+{
+    // Clear Screen by sending all zeroes
+    uint16_t i;
+    uint16_t colour = 0x0000;
+    uitn16_t image[LCD_WIDTH*LCD_HEIGHT];
+    clear_colour = ((colour<<8)&0xff00)|(color>>8);
+
+    for(i = 0; i < LCD_WIDTH*LCD_HEIGHT; i++) 
+    {
+        image[i] = clear_colour;
+    }
+
+    lcd_set_windows(0, 0, LCD_WIDTH, LCD_HEIGHT);
+    gpio_put(LCD_PIN_DC)
+    for (i = 0; i < LCD_WIDTH*LCD_HEIGHT; i++) 
+    {
+        spi_write_blocking(LCD_SPI_PORT, (uint8_t *)&image[i*LCD_WIDTH], LCD_WIDTH*2);
+    }
+        
+}
+
+/********************************************************************************
+Function: Set Resolution and Scanning Direction
+Parameters:
+        scanning_direction: Scanning direction
+********************************************************************************/
+void lcd_set_attributes(uint8_t scan_direction)
+{
+    // Set screen scan direction
+    lcd_attributes_s.SCAN_DIRECTION = scan_direction;
+    uint8_t memory_access_register = 0x08;
+
+    // Get GRAM and LCD width and height
+    if (scan_direction == HORIZONTAL)
+    {
+        lcd_attributes_s.HEIGHT = LCD_HEIGHT;
+        lcd_attributes_s.WIDTH = LCD_WIDTH;
+
+        memory_access_register = 0xC8;
+    }
+    else 
+    {
+        lcd_attributes_s.HEIGHT = LCD_WIDTH;
+        lcd_attributes_s.WIDTH = LCD_HEIGHT;
+        memory_access_register = 0x68;
+    }
+
+    // Set read / write scan direction
+    lcd_send_command(CMD_MEMORY_ACCESS)
+    lcd_send_data(memory_access_register);
+
+}
+
+
+/********************************************************************************
+Function: Initializes the LCD
+Parameters:
+*********************************************************************************/
+void lcd_init()
+{
+    // Reset and clear memory
+    lcd_reset();
+
+    // Set display orientation
+    lcd_set_attributes(HORIZONTAL);
+
+    // Set Intiialization Sequence
+    lcd_send_command(0xEF);
+	lcd_send_command(0xEB);
+	lcd_send_data(0x14); 
+	
+    lcd_send_command(0xFE);			 
+	lcd_send_command(0xEF); 
+
+	lcd_send_command(0xEB);	
+	lcd_send_data(0x14); 
+
+	lcd_send_command(0x84);			
+	lcd_send_data(0x40); 
+
+	lcd_send_command(0x85);			
+	lcd_send_data(0xFF); 
+
+	lcd_send_command(0x86);			
+	lcd_send_data(0xFF); 
+
+	lcd_send_command(0x87);			
+	lcd_send_data(0xFF);
+
+	lcd_send_command(0x88);			
+	lcd_send_data(0x0A);
+
+	lcd_send_command(0x89);			
+	lcd_send_data(0x21); 
+
+	lcd_send_command(0x8A);			
+	lcd_send_data(0x00); 
+
+	lcd_send_command(0x8B);			
+	lcd_send_data(0x80); 
+
+	lcd_send_command(0x8C);			
+	lcd_send_data(0x01); 
+
+	lcd_send_command(0x8D);			
+	lcd_send_data(0x01); 
+
+	lcd_send_command(0x8E);			
+	lcd_send_data(0xFF); 
+
+	lcd_send_command(0x8F);			
+	lcd_send_data(0xFF); 
+
+
+	lcd_send_command(0xB6);
+	lcd_send_data(0x00);
+	lcd_send_data(0x20);
+
+	lcd_send_command(0x36);
+	lcd_send_data(0x08);
+
+	lcd_send_command(0x3A);			
+	lcd_send_data(0x05); 
+
+
+	lcd_send_command(0x90);			
+	lcd_send_data(0x08);
+	lcd_send_data(0x08);
+	lcd_send_data(0x08);
+	lcd_send_data(0x08); 
+
+	lcd_send_command(0xBD);			
+	lcd_send_data(0x06);
+	
+	lcd_send_command(0xBC);			
+	lcd_send_data(0x00);	
+
+	lcd_send_command(0xFF);			
+	lcd_send_data(0x60);
+	lcd_send_data(0x01);
+	lcd_send_data(0x04);
+
+	lcd_send_command(0xC3);			
+	lcd_send_data(0x13);
+	lcd_send_command(0xC4);			
+	lcd_send_data(0x13);
+
+	lcd_send_command(0xC9);			
+	lcd_send_data(0x22);
+
+	lcd_send_command(0xBE);			
+	lcd_send_data(0x11); 
+
+	lcd_send_command(0xE1);			
+	lcd_send_data(0x10);
+	lcd_send_data(0x0E);
+
+	lcd_send_command(0xDF);			
+	lcd_send_data(0x21);
+	lcd_send_data(0x0c);
+	lcd_send_data(0x02);
+
+	lcd_send_command(0xF0);   
+	lcd_send_data(0x45);
+	lcd_send_data(0x09);
+	lcd_send_data(0x08);
+	lcd_send_data(0x08);
+	lcd_send_data(0x26);
+ 	lcd_send_data(0x2A);
+
+ 	lcd_send_command(0xF1);    
+ 	lcd_send_data(0x43);
+ 	lcd_send_data(0x70);
+ 	lcd_send_data(0x72);
+ 	lcd_send_data(0x36);
+ 	lcd_send_data(0x37);  
+ 	lcd_send_data(0x6F);
+
+
+ 	lcd_send_command(0xF2);   
+ 	lcd_send_data(0x45);
+ 	lcd_send_data(0x09);
+ 	lcd_send_data(0x08);
+ 	lcd_send_data(0x08);
+ 	lcd_send_data(0x26);
+ 	lcd_send_data(0x2A);
+
+ 	lcd_send_command(0xF3);   
+ 	lcd_send_data(0x43);
+ 	lcd_send_data(0x70);
+ 	lcd_send_data(0x72);
+ 	lcd_send_data(0x36);
+ 	lcd_send_data(0x37); 
+ 	lcd_send_data(0x6F);
+
+	lcd_send_command(0xED);	
+	lcd_send_data(0x1B); 
+	lcd_send_data(0x0B); 
+
+	lcd_send_command(0xAE);			
+	lcd_send_data(0x77);
+	
+	lcd_send_command(0xCD);			
+	lcd_send_data(0x63);		
+
+
+	lcd_send_command(0x70);			
+	lcd_send_data(0x07);
+	lcd_send_data(0x07);
+	lcd_send_data(0x04);
+	lcd_send_data(0x0E); 
+	lcd_send_data(0x0F); 
+	lcd_send_data(0x09);
+	lcd_send_data(0x07);
+	lcd_send_data(0x08);
+	lcd_send_data(0x03);
+
+	lcd_send_command(0xE8);			
+	lcd_send_data(0x34);
+
+	lcd_send_command(0x62);			
+	lcd_send_data(0x18);
+	lcd_send_data(0x0D);
+	lcd_send_data(0x71);
+	lcd_send_data(0xED);
+	lcd_send_data(0x70); 
+	lcd_send_data(0x70);
+	lcd_send_data(0x18);
+	lcd_send_data(0x0F);
+	lcd_send_data(0x71);
+	lcd_send_data(0xEF);
+	lcd_send_data(0x70); 
+	lcd_send_data(0x70);
+
+	lcd_send_command(0x63);			
+	lcd_send_data(0x18);
+	lcd_send_data(0x11);
+	lcd_send_data(0x71);
+	lcd_send_data(0xF1);
+	lcd_send_data(0x70); 
+	lcd_send_data(0x70);
+	lcd_send_data(0x18);
+	lcd_send_data(0x13);
+	lcd_send_data(0x71);
+	lcd_send_data(0xF3);
+	lcd_send_data(0x70); 
+	lcd_send_data(0x70);
+
+	lcd_send_command(0x64);			
+	lcd_send_data(0x28);
+	lcd_send_data(0x29);
+	lcd_send_data(0xF1);
+	lcd_send_data(0x01);
+	lcd_send_data(0xF1);
+	lcd_send_data(0x00);
+	lcd_send_data(0x07);
+
+	lcd_send_command(0x66);			
+	lcd_send_data(0x3C);
+	lcd_send_data(0x00);
+	lcd_send_data(0xCD);
+	lcd_send_data(0x67);
+	lcd_send_data(0x45);
+	lcd_send_data(0x45);
+	lcd_send_data(0x10);
+	lcd_send_data(0x00);
+	lcd_send_data(0x00);
+	lcd_send_data(0x00);
+
+	lcd_send_command(0x67);			
+	lcd_send_data(0x00);
+	lcd_send_data(0x3C);
+	lcd_send_data(0x00);
+	lcd_send_data(0x00);
+	lcd_send_data(0x00);
+	lcd_send_data(0x01);
+	lcd_send_data(0x54);
+	lcd_send_data(0x10);
+	lcd_send_data(0x32);
+	lcd_send_data(0x98);
+
+	lcd_send_command(0x74);			
+	lcd_send_data(0x10);	
+	lcd_send_data(0x85);	
+	lcd_send_data(0x80);
+	lcd_send_data(0x00); 
+	lcd_send_data(0x00); 
+	lcd_send_data(0x4E);
+	lcd_send_data(0x00);					
+	
+    lcd_send_command(0x98);			
+	lcd_send_data(0x3e);
+	lcd_send_data(0x07);
+
+	lcd_send_command(0x35);	
+	lcd_send_command(0x21);
+
+    lcd_send_command(0x11);
+    sleep_ms(3);
+    lcd_send_command(0x29);
+    sleep_ms(20);
+
+}
+
+
+/********************************************************************************
+Function: Sends image buffer in RAM to display, ideal for background image
+Parameters:
+    image: pointer to image buffer
+*********************************************************************************/
+void lcd_display(uint16_t *image)
+{
+    uint16_t i;
+    lcd_set_windows(0, 0, LCD_WIDTH, LCD_HEIGHT);
+    gpio_put(LCD_PIN_DC, 1);
+    for (i = 0; i < LCD_HEIGHT; i++)
+    {
+        spi_write_blocking(spi0, (uint8_t *)&image[i*LCD_WIDTH], LCD_WIDTH*2);
+    }
+}
+
+/********************************************************************************
+Function: Draws game frame buffer to display
+Parameters:
+    buffer: pointer to game frame buffer
+    x_start: x coordinate of top left corner of image
+    y_start: y coordinate of top left corner of image
+    width: width of buffer
+    height: height of buffer
+*********************************************************************************/
+void lcd_draw_buffer(uint16_t *buffer, int x_start, int y_start, int width, int height) 
+{
+    uint16_t i;
+
+    // TODO Fix the window to be more in the middle of the screen
+    lcd_set_windows(x, y, x + width - 1, y + height - 1);
+
+    gpio_put(LCD_PIN_DC, 1);
+    gpio_put(LCD_PIN_CS, 0);
+
+    for (i = 0; i< width * height; i++)
+    {
+        uint16_t colour = buffer[i];
+        lcd_send_data(colour >> 8);
+        lcd_send_data(colour & 0xFF);
+    }
+    gpio_put(LCD_PIN_CS, 1);
+}
+
+
+void lcd_draw_block(int x_start, int y_start, int width, int height, uint16_t colour) {
+    // Send start/end commands for x and y, with DCX pin low?
+    // TODO
+
+    // Fill local buffer with colour
+    // TODO
+
+    // Send data with DCX pin high
+    // TODO
+}
+
+
+
+
+
+
 
 static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len]) {
 
@@ -75,29 +516,7 @@ static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len
 
 }
 
-
-void lcd_write_data(size_t len, uint8_t data[len]) {
-    
-    // TODO
-    // DCX goes high to indicate data being sent
-    // CSB low to send data
-    // Send data
-    // CSB high to end transaction
-    // Don't care about DCX line, next transaction can change it
-
-}
-
-void lcd_write_command(size_t len, uint8_t data[len]) {
-    
-    // TODO
-    // DCX goes low to indicate command being sent
-    // CSB low to send data
-    // Send data
-    // CSB high to end transaction
-    // Don't care about DCX line, next transaction can change it
-
-}
-
+// TODO Adjust this code so it's only rendering 128 x 96
 screen_area_t transform_pw_to_lcd(screen_area_t pw_area, lcd_t a) {
     screen_area_t lcd_area = {0};
     //lcd_area.x = (SCREEN_HEIGHT - pw_area.height - pw_area.y)*SCREEN_SCALE + a.offset_x;
@@ -108,53 +527,6 @@ screen_area_t transform_pw_to_lcd(screen_area_t pw_area, lcd_t a) {
     return lcd_area;
 }
 
-void lcd_draw_buffer(int x_start, int y_start, int width, int height,
-        size_t len, uint8_t buf[len]) {
-
-    uint8_t params[5] = {0};
-    int x_end = x_start + width  - 1;
-    int y_end = y_start + height - 1;
-
-    // TODO
-}
-
-
-void lcd_draw_block(int x_start, int y_start, int width, int height, uint16_t colour) {
-    // Send start/end commands for x and y, with DCX pin low?
-    // TODO
-
-    // Fill local buffer with colour
-    // TODO
-
-    // Send data with DCX pin high
-    // TODO
-}
-
-
-
-
-void lcd_clear_screen() {
-    // TODO
-}
-
-void lcd_reset() {
-    uint8_t params[8] = {0};
-
-    // Send reset signal via reset pin
-    // TODO
-
-    // Screen initialise sequence
-    // See `lib/LCD/LCD_1in28.c` in waveshare C demo code.
-    // TODO
-
-    // Setup screen offset
-    // TODO
-
-    // Clear screen memory by sending all zeroes
-    // TODO
-}
-
-
 /*
  * ============================================================================
  * Driver functions
@@ -162,8 +534,6 @@ void lcd_reset() {
  */
 
 void pw_screen_init() {
-
-    uint8_t params[4] = {0};
 
     /*
      * SPI 4-wire (with mosi, miso, and D/C line)
@@ -177,15 +547,17 @@ void pw_screen_init() {
     // Reset and clear memory
     lcd_reset();
 
+    // Initialize LCD Screen
+    lcd_init();
 }
 
 
 void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y) {
     // TODO: checks image isn't too large
-    decode_img(img, AMOLED_BUFFER_SIZE, lcd_buffer);
+    decode_img(img, LCD_BUFFER_SIZE, lcd_buffer);
 
     // Put decoded, transformed image in `lcd_buffer`
-    decode_img(img, AMOLED_BUFFER_SIZE, lcd_buffer);
+    decode_img(img, LCD_BUFFER_SIZE, lcd_buffer);
 
     // Transform image area to lcd coordinates
     screen_area_t lcd_area = transform_pw_to_lcd((screen_area_t){
@@ -310,7 +682,7 @@ void pw_screen_fill_area(screen_pos_t x, screen_pos_t y,
 void pw_screen_sleep() {
     // Enable display standby
     uint8_t params[2] = {0x01};
-    lcd_send_1wire(CMD_DSTB_CTRL, 1, params);
+    // TODO lcd_send_1wire(CMD_DSTB_CTRL, 1, params);
 }
 
 void pw_screen_wake() {
