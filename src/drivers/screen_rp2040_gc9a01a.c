@@ -460,11 +460,6 @@ void lcd_draw_block(int x_start, int y_start, int width, int height, uint16_t co
 }
 
 
-
-
-
-
-
 static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len]) {
 
     uint8_t pixel_value, bpu, bpl;
@@ -533,7 +528,8 @@ screen_area_t transform_pw_to_lcd(screen_area_t pw_area, lcd_t a) {
  * ============================================================================
  */
 
-void pw_screen_init() {
+void pw_screen_init() 
+{
 
     /*
      * SPI 4-wire (with mosi, miso, and D/C line)
@@ -549,10 +545,14 @@ void pw_screen_init() {
 
     // Initialize LCD Screen
     lcd_init();
+
+    // Clear Screen
+    lcd_clear_screen();
 }
 
 
-void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y) {
+void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y) 
+{
     // TODO: checks image isn't too large
     decode_img(img, LCD_BUFFER_SIZE, lcd_buffer);
 
@@ -560,57 +560,54 @@ void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y) {
     decode_img(img, LCD_BUFFER_SIZE, lcd_buffer);
 
     // Transform image area to lcd coordinates
-    screen_area_t lcd_area = transform_pw_to_lcd((screen_area_t){
-        .x = x,
-        .y = y,
-        .width = img->width,
-        .height = img->height,
-    }, lcd);
-    lcd_draw_buffer(
+    pw_area = (screen_area_t){.x = x, .y = y, .width = img->width, .height = img->height};
+    screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
+
+    lcd_draw_buffer(lcd_buffer, lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
+    /*lcd_draw_buffer(
             //((SCREEN_HEIGHT-img->height-y)*SCREEN_SCALE)+lcd.offset_x, (x*SCREEN_SCALE)+lcd.offset_y,
             //img->height*SCREEN_SCALE, img->width*SCREEN_SCALE,
             lcd_area.x, lcd_area.y,
             lcd_area.width, lcd_area.height,
             2*lcd_area.width*lcd_area.height,
-            lcd_buffer);
+            lcd_buffer);*/
 }
 
 
-void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_pos_t h) {
+void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_pos_t h) 
+{
 
-    screen_area_t lcd_area = transform_pw_to_lcd((screen_area_t){
-        .x = x,
-        .y = y,
-        .width = w,
-        .height = h,
-    }, lcd);
+    pw_area = (screen_area_t){.x = x, .y = y, .width = w, .height = h};
+    screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
 
+    // Clear Area via White Colour
+    lcd_draw_buffer(colour_map[0], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
+    /*
     lcd_draw_block(
         lcd_area.x, lcd_area.y,
         lcd_area.width, lcd_area.height,
         colour_map[SCREEN_WHITE]
     );
-
+    */
 }
 
-void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_colour_t c) {
-    screen_area_t lcd_area = transform_pw_to_lcd((screen_area_t){
-        .x = x,
-        .y = y,
-        .width = w,
-        .height = 1,
-    }, lcd);
+void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_colour_t c) 
+{
+    pw_area = (screen_area_t){.x = x, .y = y, .width = w, .height = 1};
+    screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
+    
+    lcd_draw_buffer(colour_map[c], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
+    /*
     lcd_draw_block(
         lcd_area.x, lcd_area.y,
         lcd_area.width, lcd_area.height,
         colour_map[c]);
-
+    */
 }
 
 
-void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1,
-                             screen_pos_t width, screen_pos_t height,
-                             screen_colour_t c) {
+void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1, screen_pos_t width, screen_pos_t height, screen_colour_t c) 
+{
 
     // assume y2 > y1 and x2 > x1
     screen_pos_t x2 = x1 + width - 1;
@@ -621,43 +618,54 @@ void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1,
     // top bar
     pw_area = (screen_area_t){.x = x1, .y = y1, .width = width, .height = 1};
     lcd_area = transform_pw_to_lcd(pw_area, lcd);
+    lcd_draw_buffer(colour_map[c], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
+    /*
     lcd_draw_block(
         lcd_area.x, lcd_area.y,
         lcd_area.width, lcd_area.height,
         colour_map[c]);
+    */
 
     // bottom bar
     pw_area = (screen_area_t){.x = x1, .y = y2, .width = width, .height = 1};
     lcd_area = transform_pw_to_lcd(pw_area, lcd);
+    lcd_draw_buffer(colour_map[c], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
+    /*
     lcd_draw_block(
         lcd_area.x, lcd_area.y,
         lcd_area.width, lcd_area.height,
         colour_map[c]);
+    */
 
     // left bar
     pw_area = (screen_area_t){.x = x1, .y = y1, .width = 1, .height = height};
     lcd_area = transform_pw_to_lcd(pw_area, lcd);
+    lcd_draw_buffer(colour_map[c], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
+    /*
     lcd_draw_block(
         lcd_area.x, lcd_area.y,
         lcd_area.width, lcd_area.height,
         colour_map[c]);
+    */
 
     // right bar
     pw_area = (screen_area_t){.x = x2, .y = y1, .width = 1, .height = height};
     lcd_area = transform_pw_to_lcd(pw_area, lcd);
+    lcd_draw_buffer(colour_map[c], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
+    /*
     lcd_draw_block(
         lcd_area.x, lcd_area.y,
         lcd_area.width, lcd_area.height,
         colour_map[c]);
-
+    */
 }
 
 
-void pw_screen_clear() {
-    screen_area_t lcd_area = transform_pw_to_lcd((screen_area_t){
-        .x=0, .y=0,
-        .width=SCREEN_WIDTH, .height=SCREEN_HEIGHT
-    }, lcd);
+void pw_screen_clear() 
+{
+    pw_area = (screen_area_t){.x=0, .y=0, .width=SCREEN_WIDTH, .height=SCREEN_HEIGHT};
+    lcd_area = transform_pw_to_lcd(pw_area, lcd);
+    lcd_draw_buffer(colour_map[0], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
     lcd_draw_block(
         lcd_area.x, lcd_area.y,
         lcd_area.width, lcd_area.height,
@@ -667,16 +675,18 @@ void pw_screen_clear() {
 }
 
 
-void pw_screen_fill_area(screen_pos_t x, screen_pos_t y,
-                         screen_pos_t w, screen_pos_t h,
-                         screen_colour_t c) {
-    screen_area_t lcd_area = transform_pw_to_lcd((screen_area_t){.x=x, .y=y, .width=w, .height=h}, lcd);
+void pw_screen_fill_area(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_pos_t h, screen_colour_t c) 
+{
+    pw_area = (screen_area_t){.x = x, .y = y, .width = w, .height = h};
+    screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
+    lcd_draw_buffer(colour_map[c], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
+    /*
     lcd_draw_block(
         lcd_area.x, lcd_area.y,
         lcd_area.width, lcd_area.height,
         colour_map[c]
     );
-
+    */
 }
 
 void pw_screen_sleep() {
