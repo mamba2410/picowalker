@@ -5,9 +5,9 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#define IR_SD_PIN  9    // GP9, phys 12
-#define IR_PIO_RX 10    // GP10, phys 14
-#define IR_PIO_TX 11    // GP11, phys 15
+#define IR_SD_PIN 15
+#define IR_PIO_RX 14
+#define IR_PIO_TX 13
 
 #define PIN_IRDA_OUT IR_PIO_TX
 #define PIN_IRDA_IN  IR_PIO_RX

@@ -6,9 +6,9 @@
 
 #include "pico/types.h"
 
-#define PIN_BUTTON_LEFT     26 // GP20, phys 31
-#define PIN_BUTTON_MIDDLE   22 // GP11, phys 29
-#define PIN_BUTTON_RIGHT    19 // GP19, phys 25
+#define PIN_BUTTON_LEFT     23
+#define PIN_BUTTON_MIDDLE   25
+#define PIN_BUTTON_RIGHT    4
 
 extern bool acknowledge_button_presses;
 

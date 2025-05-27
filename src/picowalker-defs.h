@@ -216,6 +216,75 @@ void pw_power_init();
 pw_battery_status_t pw_power_get_battery_status();
 void pw_power_enter_sleep();
 bool pw_power_should_sleep();
+pw_wake_reason_t pw_power_get_wake_reason();
+
+
+/*
+ *  ==================================================================================
+ *  TIME
+ *  ==================================================================================
+ */
+
+/*
+ * Types and defines
+ */
+#define RTC_EVENT_EVERY_DAY     (1<<0)
+#define RTC_EVENT_EVERY_HOUR    (1<<1)
+#define RTC_EVENT_EVERY_MINUTE  (1<<2)
+#define RTC_EVENT_EVERY_SECOND  (1<<3)
+
+typedef uint8_t pw_rtc_events_t;
+
+typedef struct pw_dhms_s {
+    uint16_t days;
+    uint8_t hours;
+    uint8_t minutes;
+    uint8_t seconds;
+} pw_dhms_t;
+
+/*
+ *  Functions defined by driver
+ */
+void pw_time_init_rtc(uint32_t last_sync);   // From RTC
+void pw_time_set_rtc(uint32_t last_sync);    // From RTC
+uint32_t pw_time_get_rtc();     // From RTC
+pw_dhms_t pw_time_get_dhms();   // From RTC
+uint32_t pw_time_get_us();  // Since boot
+uint32_t pw_time_get_ms();  // Since boot
+void pw_time_delay_ms(uint32_t ms);
+void pw_time_delay_us(uint32_t us);
+
+/*
+ *  ==================================================================================
+ *  AUDIO
+ *  ==================================================================================
+ */
+
+#define SOUND_NAVIGATE_MENU 0
+#define SOUND_NAVIGATE_BACK 1
+#define SOUND_CURSOR_MOVE 2
+#define SOUND_POKERADAR_FOUND_STH 3
+#define SOUND_DOWSING_MISS 4
+#define SOUND_DOWSING_FOUND_ITEM 5
+#define SOUND_POKEMON_ENCOUNTER 10
+
+typedef struct {
+    uint8_t info;
+    uint8_t period_idx;
+} pw_sound_frame_t;
+
+typedef enum {
+    VOLUME_NONE=0,
+    VOLUME_HALF=1,
+    VOLUME_FULL=2
+} pw_volume_t;
+
+extern pw_volume_t pw_audio_volume;
+extern uint8_t PW_AUDIO_PERIODTAB[];
+
+void pw_audio_init();
+void pw_audio_play_sound_data(const pw_sound_frame_t* sound_data, size_t sz);
+bool pw_audio_is_playing_sound();
+
 
 #endif /* PW_PICOWALKER_INCLUDE_H */
-

@@ -1,10 +1,10 @@
 #ifndef PW_DRIVER_M95512_H
 #define PW_DRIVER_M95512_H
 
-#define EEPROM_SCL_PIN      2 // GP 2, phys 4
-#define EEPROM_MOSI_PIN     3 // GP 3, phys 5
-#define EEPROM_MISO_PIN     4 // GP 4, phys 6
-#define EEPROM_CS_PIN       6 // GP 6, phys 9
+#define EEPROM_SCL_PIN      26
+#define EEPROM_MOSI_PIN     27
+#define EEPROM_MISO_PIN     28
+#define EEPROM_CS_PIN       29
 #define EEPROM_PAGE_SIZE    128
 
 #define CMD_READ        0x03
