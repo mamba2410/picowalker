@@ -21,8 +21,6 @@
 #define VBAT_ABS_MAXIMUM_MV 4250.0f
 #define VBAT_SAFE_MINIMUM_MV 3600.0f
 
-static char log_staging[128] = "";
-
 static const char* CHARGE_STATUS_STRINGS[4] = {
     "not charging",
     "trickle, pre-charge or fast charge",
@@ -176,6 +174,11 @@ void pw_battery_shutdown() {
     pw_pmic_write_reg(REG_CHARGER_CONTROL_2, &val, 1);
 }
 
+void pw_battery_shutdown() {
+    uint8_t val = REG_CHARGER_CONTROL_2_BATFET_CTRL_SHUTDOWN;
+    pw_pmic_write_reg(REG_CHARGER_CONTROL_2, &val, 1);
+}
+
 void pw_battery_init() {
 
     board_i2c_init();
@@ -218,6 +221,9 @@ void pw_battery_init() {
     // Enable charge
     gpio_put(BAT_CE_PIN, 0);
 
+    // Enable charge
+    gpio_put(BAT_CE_PIN, 0);
+
     // Set up ADC targets for conversion
     // Allow: VBAT, VSYS
     buf[0] = REG_ADC_FUNCTION_DISABLE_0_VPMID |
@@ -231,10 +237,11 @@ void pw_battery_init() {
     /*
     // Set ADC to one-shot mode, don't enable to save power
     // Have long ADC samples at first to "prime" the ADC
+    // Have long ADC samples at first to "prime" the ADC
     buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
              REG_ADC_CONTROL_ADC_RATE_ONESHOT |
              //REG_ADC_CONTROL_ADC_SAMPLE_9_BIT | // default
-             //REG_ADC_CONTROL_ADC_SAMPLE_12_BIT | // extend ADC sample time to 30 ms
+             REG_ADC_CONTROL_ADC_SAMPLE_12_BIT | // extend ADC sample time to 30 ms
              REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
     uint8_t my_reg = buf[0];
     pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
@@ -244,14 +251,13 @@ void pw_battery_init() {
     for(size_t i = 0; i < 3; i++) {
         pw_power_get_battery_status();
     }
-    */
 
     // Back to normal length ADC samples
     buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
              REG_ADC_CONTROL_ADC_RATE_ONESHOT |
              REG_ADC_CONTROL_ADC_SAMPLE_10_BIT | // 7.5 ms each
              REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
-    //my_reg = buf[0];
+    my_reg = buf[0];
     pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
 
     // Just for fun
@@ -332,14 +338,6 @@ pw_battery_status_t pw_power_get_battery_status() {
         bs.flags |= PW_BATTERY_STATUS_FLAGS_FAULT;
     }
 
-    // TODO: Remove
-    // This is a workaround for TinyUSB not being able to detect an unmount call on pico devices
-    // If we aren't charging, we can pretend like that's good enough and assume we are unplugged
-    // Side-effect is that it will enable sleep if its plugged in but not charging
-    if(buf[1]>>3 == 0 && power_sleep_enabled == false){
-        tud_umount_cb();
-    }
-
     // Wait for interrupt to say that ADC function is done
     while(!adc_done && (pw_time_get_ms() < adc_timeout_stamp));
     if(!adc_done) {
@@ -363,18 +361,17 @@ pw_battery_status_t pw_power_get_battery_status() {
     // TODO: Some form of LUT
     // Value here is 0x000 - 0xaf0, max resolution of 1.99mV
     float vbat_f = ((float)vbat / (float)0xaf0) * 5572.0;
-    //printf("[Log  ] VBAT: %4.0f mV\n", vbat_f);
+    printf("[Log  ] VBAT: %4.0f mV\n", vbat_f);
     float percent_f = 100.0f*(vbat_f - VBAT_ABS_MINIMUM_MV)/(VBAT_ABS_MAXIMUM_MV-VBAT_ABS_MINIMUM_MV);
     bs.percent = (uint8_t)percent_f;
     if(percent_f > 105) {
-        printf("[Warn ] Battery percentage above 100%%: %d%%\n", (uint8_t)percent_f);
+        printf("[Warn ] Battery percentage above 100%%: %d%%\n", percent_f);
         bs.percent = 100;
     }
     if(percent_f < 0) {
-        printf("[Warn ] Battery percentage below 0%%: %d%%\n", (uint8_t)percent_f);
+        printf("[Warn ] Battery percentage below 0%%: %d%%\n", percent_f);
         bs.percent = 0;
     }
-    //bs.percent = 80;
     //printf("[Info ] Battery is at %.2f%%\n", percent_f);
 
 
@@ -382,10 +379,9 @@ pw_battery_status_t pw_power_get_battery_status() {
 
     // Read battery current draw
     // Convert to 2's compliment - negative means discharge
-    //pw_pmic_read_reg(REG_IBAT_ADC, buf, 2);
-    //raw_val = REG_IBAT_ADC_VAL(buf16[0]);
-    //if(raw_val > 0x1fff) { raw_val = (raw_val^0x3fff) + 1; neg = -1.0; }
-    //float ibat_f = neg * (float)(raw_val) / (float)(0x3e8) * 4000.0;
+    pw_pmic_read_reg(REG_IBAT_ADC, buf, 2);
+    raw_val = REG_IBAT_ADC_VAL(buf16[0]);
+    if(raw_val > 0x1fff) { raw_val = (raw_val^0x3fff) + 1; neg = -1.0; }
     //printf("[Log ] IBAT: %4.0f mA\n", neg * (float)(raw_val) / (float)(0x3e8) * 4000.0);
 
     // Read bus current draw
@@ -398,18 +394,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     // This gets converted down, but good to note what we're feeding the screen
     pw_pmic_read_reg(REG_VSYS_ADC, buf, 2);
     raw_val = REG_VSYS_ADC_VAL(buf16[0]);
-    float vsys_f = (float)raw_val * 5572.0 / (float)0x0af0;
     //printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
-
-    int len = snprintf(log_staging, 128,
-            "[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"Mode\": \"%s\", \"Timestamp\":%lu}\n",
-            vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"Sleep":"Normal", pw_time_get_rtc()
-            );
-    //printf("[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"ADC_conversion_ms\": %d}\n",
-            //vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], adc_conversion_time
-    //);
-    printf(log_staging);
-    pw_log(log_staging, len);
 
     // ADC gets auto-disabled if we're in one-shot mode
 

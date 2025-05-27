@@ -19,6 +19,7 @@ static volatile bool power_should_sleep;
 volatile bool power_sleep_enabled = true;
 pw_wake_reason_t wake_reason;
 extern lposc_value;
+extern lposc_value;
 
 void user_idle_callback(void) {
     // Clear interrupt
@@ -63,7 +64,7 @@ void pw_power_enter_sleep() {
     // Start the POWMAN timer from LPOSC which we aren't turning off
     struct timespec ts;
     aon_timer_get_time(&ts);
-    //printf("[Debug] Sleep saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
+    printf("[Debug] Sleep saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
 
     powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
     //powman_timer_set_ms(powman_ms);
@@ -83,6 +84,13 @@ void pw_power_enter_sleep() {
     clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
     clocks_hw->sleep_en1 = 0;
     scb_hw->scr |= ARM_CPU_PREFIXED(SCR_SLEEPDEEP_BITS);
+    sleep_run_from_lposc();
+    //sleep_run_from_xosc();
+
+    // Only let POWMAN clock run
+    clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
+    clocks_hw->sleep_en1 = 0;
+    scb_hw->scr |= ARM_CPU_PREFIXED(SCR_SLEEPDEEP_BITS);
 
     gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     gpio_set_dormant_irq_enabled(BAT_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
@@ -93,7 +101,7 @@ void pw_power_enter_sleep() {
     //xosc_dormant();
 
     sleep_power_up();
-    printf("[Info ] MCU is awake, wake reason: 0x%02x\n", wake_reason);
+    printf("[Info] MCU is awake\n");
 
     // === End of danger zone ===
 
@@ -106,9 +114,9 @@ void pw_power_enter_sleep() {
     //powman_timer_set_ms(powman_ms);
 
     aon_timer_get_time(&ts);
-    //printf("[Debug] Wake saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
+    printf("[Debug] Wake saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
     //powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
-    //powman_timer_set_1khz_tick_source_xosc();
+    powman_timer_set_1khz_tick_source_xosc();
     aon_timer_set_time(&ts);
 
     // TODO: Check what caused the wakeup, if it was AON timer then go back to sleep

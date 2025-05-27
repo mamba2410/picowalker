@@ -31,7 +31,7 @@ static void pw_eeprom_wait_for_ready() {
 }
 
 void pw_eeprom_init() {
-    eeprom_spi = spi0;
+    eeprom_spi = spi1;
 
     spi_init(eeprom_spi, 1000*1000);
     // inst, bits, polarity, phase, endian

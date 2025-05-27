@@ -5,7 +5,16 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define ADC_TIMEOUT_MS 100
+#define BAT_INT_PIN 3
+#define BAT_CE_PIN  2
+
+#define PMIC_I2C_SCL_PIN 1
+#define PMIC_I2C_SDA_PIN 0
+
+#define PMIC_I2C_SPEED_KHZ 100 // Supports 400 and 1000 also but needs more timing requirements
+#define PMIC_I2C_ADDRESS 0x6a
+
+#define PMIC_I2C i2c0
 
 /*
  * Taken from datasheet https://www.ti.com/lit/ds/symlink/bq25628e.pdf

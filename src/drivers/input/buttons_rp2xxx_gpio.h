@@ -6,6 +6,10 @@
 
 #include "pico/types.h"
 
+#define PIN_BUTTON_LEFT     23
+#define PIN_BUTTON_MIDDLE   25
+#define PIN_BUTTON_RIGHT    4
+
 extern bool acknowledge_button_presses;
 
 void pw_pico_setup_buttons();
