@@ -10,17 +10,17 @@ This project is the board-specific firmware for running the "picowalker" softwar
 
 There are multiple branches in this repo, all with similar functionality
 
-This is the branch for the [Waveshare RP2040 Touch LCD 1.28"](https://www.waveshare.com/wiki/RP2040-Touch-LCD-1.28) board.
+This is the branch for the [Waveshare RP2350 Touch LCD 1.28"](https://www.waveshare.com/wiki/RP2350-Touch-LCD-1.28) board. The RP2040 version should be compatible.
 Under development, this is just a starting point to help out.
 
 ## Hardware
 
-- Screen - [GC0A01A by Waveshare](https://files.waveshare.com/wiki/common/GC9A01A.pdf) (SPI 4-wire)
-- Touch - [CST816S](https://files.waveshare.com/upload/5/51/CST816S_Datasheet_EN.pdf) (I2C, unused)
-- Accel - [QMI8658](https://files.waveshare.com/upload/5/5f/QMI8658A_Datasheet_Rev_A.pdf) (I2C)
-- EEPROM - None (linked in at compile time, read only)
-- Flash - Internal (linked in at compile time, read only)
-- PMIC - ETA6096, not digitally controlled
+- Screen  - [GC0A01A by Waveshare](https://files.waveshare.com/wiki/common/GC9A01A.pdf) (SPI 4-wire)
+- Touch   - [CST816S](https://files.waveshare.com/upload/5/51/CST816S_Datasheet_EN.pdf) (I2C, unused)
+- Accel   - [QMI8658](https://files.waveshare.com/upload/5/5f/QMI8658A_Datasheet_Rev_A.pdf) (I2C)
+- EEPROM  - None (linked in at compile time, read only)
+- Flash   - Internal (linked in at compile time, read only)
+- PMIC    - ETA6096, not digitally controlled
 - Buttons - None, touch to be used eventually
 - No IR
 
@@ -43,7 +43,8 @@ Not working:
 - [Pico SDK](https://github.com/raspberrypi/pico-sdk)
 - [Getting Started with Pico C](https://www.raspberrypi.org/documentation/rp2040/getting-started/#getting-started-with-c)
 - [Pico Datasheet](https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf)
-- [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2350/rp2040-datasheet.pdf)
+- [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)
+- [RP2350 Datasheet](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf)
 
 ## Building and Testing
 
