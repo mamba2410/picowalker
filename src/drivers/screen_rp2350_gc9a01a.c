@@ -34,11 +34,11 @@ Parameters:
  {
     // Reset and clear memory
     gpio_put(LCD_PIN_RST, 0);
-    sleep_ms(3);
+    sleep_ms(100);
     gpio_put(LCD_PIN_RST, 1);
-    sleep_ms(50);
+    sleep_ms(100);
     gpio_put(LCD_PIN_CS, 0);
-    sleep_ms(50);
+    sleep_ms(100);
 }
 
 /********************************************************************************
@@ -50,7 +50,7 @@ void lcd_send_command(uint8_t command)
 {
     // DCX goes high to indicate data being sent
     gpio_put(LCD_PIN_DC, 0);
-    spi_write_blocking(LCD_SPI_PORT, &command, 1)
+    spi_write_blocking(LCD_SPI, &command, 1)
 }
 
 /********************************************************************************
@@ -62,7 +62,7 @@ void lcd_send_data(uint8_t data)
 {
     // DCX goes high to indicate data being sent
     gpio_put(LCD_PIN_DC, 1);
-    spi_write_blocking(LCD_SPI_PORT, &data, 1)
+    spi_write_blocking(LCD_SPI, &data, 1)
 }
 
 /********************************************************************************
@@ -431,7 +431,7 @@ void lcd_display(uint16_t *image)
     gpio_put(LCD_PIN_DC, 1);
     for (i = 0; i < LCD_HEIGHT; i++)
     {
-        spi_write_blocking(LCD_SPI_PORT, (uint8_t *)&image[i*LCD_WIDTH], LCD_WIDTH*2);
+        spi_write_blocking(LCD_SPI, (uint8_t *)&image[i*LCD_WIDTH], LCD_WIDTH*2);
     }
 }
 
@@ -453,7 +453,7 @@ void lcd_display_windows(uint16_t *image, uint16_t x_start, uint16_t y_start, ui
     for (i = y_start; i < width; i++)
     {
         address = x_start + (i * LCD_WIDTH);
-        spi_write_blocking(LCD_SPI_PORT, (uint8_t *)&image[address], (width-x_start)*2);
+        spi_write_blocking(LCD_SPI, (uint8_t *)&image[address], (width-x_start)*2);
     }
 }
 

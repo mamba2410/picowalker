@@ -5,6 +5,20 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+/********************************************************************************
+ * Development Board Configuration 
+ * from RP2040-LCD-1.28 & RP2350-LCD-1.28
+ * Found in /RP*-LCD-1.28/c/lib/DEV_CONFIG.h
+********************************************************************************/
+#define LCD_SPI      spi1
+#define LCD_PIN_DC   8
+#define LCD_PIN_CS   9
+#define LCD_PIN_CLK  10
+#define LCD_PIN_MOSI 11
+#define LCD_PIN_MISO 12
+#define LCD_PIN_RST  13
+#define LCD_PIN_BL   25
+
 #define LCD_WIDTH           240
 #define LCD_HEIGHT          240
 #define LCD_BYTES_PER_PIXEL 2
@@ -40,11 +54,11 @@ const uint16_t colour_map[4] = {
 };
 
 
-/*
+/********************************************************************************
  * https://files.waveshare.com/wiki/common/GC9A01A.pdf
  * Section 6 for list of commands (page 91)
  * Note the need for DCX line
- */
+********************************************************************************/
 enum screen_cmd {
     CMD_NOP                = 0x00,
     CMD_READ_ID            = 0x04,
@@ -119,17 +133,5 @@ typedef struct lcd_attributes_s
 
 } lcd_attributes_t
 
-/*
- Development Board Configuration from RP2040-LCD-1.28 & RP2350-LCD-1.28
- /RP*-LCD-1.28/c/lib/DEV_CONFIG.h
-*/
-#define LCD_SPI_PORT spi1
-#define LCD_PIN_DC   8
-#define LCD_PIN_CS   9
-#define LCD_PIN_CLK  10
-#define LCD_PIN_MOSI 11
-#define LCD_PIN_MISO 12
-#define LCD_PIN_RST  13
-#define LCD_PIN_BL   25
 
 #endif /* PW_SCREEN_RP2350_GC9A01A_H */
