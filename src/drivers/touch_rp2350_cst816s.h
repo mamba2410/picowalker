@@ -1,5 +1,5 @@
-#ifndef PW_BUTTONS_RP2350_CST816S_H
-#define PW_BUTTONS_RP2350_CST816S_H
+#ifndef PW_TOUCH_RP2350_CST816S_H
+#define PW_TOUCH_RP2350_CST816S_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -84,4 +84,4 @@ typedef struct
     touch_mode_t mode;
 } touch_screen;
 
-#endif /* PW_BUTTONS_RP2350_CST816S_H */
+#endif /* PW_TOUCH_RP2350_CST816S_H */

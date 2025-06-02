@@ -17,17 +17,17 @@ add_executable(picowalker
     src/drivers/screen_rp2350_gc9a01a.h
     src/drivers/accel_rp2350_qmi8658a.c
     src/drivers/accel_rp2350_qmi8658a.h
-    src/drivers/buttons_rp2350_cst816s.c
-    src/drivers/buttons_rp2350_cst816s.h
+    src/drivers/touch_rp2350_cst816s.c
+    src/drivers/touch_rp2350_cst816s.h
     src/drivers/ir_pico_pio.c
     src/drivers/ir_pico_pio.h
-    src/drivers/buttons_pico.c
-    src/drivers/buttons_pico.h
+    #src/drivers/buttons_pico.c
+    #src/drivers/buttons_pico.h
     #src/drivers/eeprom_pico_ram.S
     #src/drivers/eeprom_pico_ram.c
     #src/drivers/eeprom_pico_ram.h
-    src/drivers/eeprom_pico_m95512.c        # TODO: Hardware-v0.2
-    src/drivers/eeprom_pico_m95512.h        # TODO: Hardware-v0.2
+    #src/drivers/eeprom_pico_m95512.c        # TODO: Hardware-v0.2
+    #src/drivers/eeprom_pico_m95512.h        # TODO: Hardware-v0.2
     src/drivers/timer_pico.c
     src/drivers/extras_pico.S
     src/drivers/extras_pico.h
@@ -36,12 +36,12 @@ add_executable(picowalker
     src/drivers/flash_pico_internal.c
     src/drivers/flash_pico_internal.S
     src/drivers/flash_pico_internal.h
-    src/drivers/battery_pico_bq25628e.c
-    src/drivers/battery_pico_bq25628e.h
-    src/drivers/gpio_interrupts_pico.c
-    src/drivers/gpio_interrupts_pico.h
-    src/drivers/power_pico.c
-    src/drivers/power_pico.h
+    #src/drivers/battery_pico_bq25628e.c
+    #src/drivers/battery_pico_bq25628e.h
+    #src/drivers/gpio_interrupts_pico.c
+    #src/drivers/gpio_interrupts_pico.h
+    #src/drivers/power_pico.c
+    #src/drivers/power_pico.h
     src/drivers/audio_pico_pwm.c            # TODO: Hardware-v0.2
     src/picowalker-defs.h
 )

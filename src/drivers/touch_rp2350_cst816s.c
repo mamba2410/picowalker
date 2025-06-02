@@ -1,4 +1,6 @@
-#include "buttons_rp2350_cst816s.h"
+
+#include "../picowalker-defs.h"
+#include "touch_rp2350_cst816s.h"
 
 touch_screen TOUCH;
 
@@ -8,9 +10,9 @@ Parameters:
         register_address : register address to write to
         value : value to write
 ********************************************************************************/
-void i2c_write(uint8_t register_address, uint8_t value)
+void touch_i2c_write(uint8_t register_address, uint8_t value)
 {
-    uint8_t buffer[2] = {id, register_address};
+    uint8_t buffer[2] = {register_address, value};
     i2c_write_blocking(I2C, TOUCH_ADDRESS, buffer, 2, false);
 }
 
@@ -19,7 +21,7 @@ Function: Reads from I2C
 Parameters:
         register_address : register address to read from
 ********************************************************************************/
-void i2c_read(uint8_t register_address)
+uint8_t touch_i2c_read(uint8_t register_address)
 {
     uint8_t buffer;
     i2c_write_blocking(I2C, TOUCH_ADDRESS, &register_address, 1, true);
@@ -49,7 +51,7 @@ void touch_wake_up()
     sleep_ms(10);
     gpio_put(TOUCH_PIN_RST, 1);
     sleep_ms(50);
-    i2c_write(TOUCH_DISABLE_AUTO_SLEEP, 0x01);
+    touch_i2c_write(TOUCH_DISABLE_AUTO_SLEEP, 0x01);
 }
 
 /********************************************************************************
@@ -58,7 +60,7 @@ Parameters:
 ********************************************************************************/
 void touch_stop_sleep()
 {
-    i2c_write(TOUCH_DISABLE_AUTO_SLEEP, 0x01);
+    touch_i2c_write(TOUCH_DISABLE_AUTO_SLEEP, 0x01);
 }
 
 /********************************************************************************
@@ -70,16 +72,16 @@ void touch_set_mode(uint8_t mode)
 {
     if (mode == TOUCH_POINT_MODE)
     {
-        i2c_write(TOUCH_IRQ_CONTROL, 0x41);
+        touc_i2c_write(TOUCH_IRQ_CONTROL, 0x41);
     }
     else if (mode == TOUCH_GESTURE_MODE)
     {
-        i2c_write(TOUCH_IRQ_CONTROL, 0x11);
-        i2c_write(TOUCH_MOTION_MASK, 0x01);
+        touch_i2c_write(TOUCH_IRQ_CONTROL, 0x11);
+        touch_i2c_write(TOUCH_MOTION_MASK, 0x01);
     }
     else
     {
-        i2c_write(TOUCH_IRQ_CONTROL, 0x71);
+        touch_i2c_write(TOUCH_IRQ_CONTROL, 0x71);
     }
 }
 
@@ -97,8 +99,8 @@ void touch_init(uint8_t mode)
     touch_set_mode(mode);
     TOUCH.x_point = 0;
     TOUCH.y_point = 0;
-    i2c_write(TOUCH_IRQ_PULSE_WIDTH, 0x01);
-    i2c_write(TOUCH_NORMAL_SCAN_PERIOD, 0x01);
+    touch_i2c_write(TOUCH_IRQ_PULSE_WIDTH, 0x01);
+    touch_i2c_write(TOUCH_NORMAL_SCAN_PERIOD, 0x01);
 
     TOUCH.mode = mode;
 
@@ -114,10 +116,10 @@ touch_screen touch_get_point()
     uint8_t x_point_high, x_point_low; 
     uint8_t y_point_high, y_point_low;
 
-    x_point_high = i2c_read(TOUCH_X_POS_HIGH);
-    x_point_low = i2c_read(TOUCH_X_POS_LOW);
-    y_point_high = i2c_read(TOUCH_Y_POS_HIGH);
-    y_point_low = i2c_read(TOUCH_Y_POS_LOW);
+    x_point_high = touch_i2c_read(TOUCH_X_POS_HIGH);
+    x_point_low = touch_i2c_read(TOUCH_X_POS_LOW);
+    y_point_high = touch_i2c_read(TOUCH_Y_POS_HIGH);
+    y_point_low = touch_i2c_read(TOUCH_Y_POS_LOW);
 
     TOUCH.x_point = ((x_point_high & 0x0F) << 8) | x_point_low;
     TOUCH.y_point = ((y_point_high & 0x0F) << 8) | y_point_low;
@@ -132,6 +134,11 @@ Parameters:
 uint8_t touch_get_gesture()
 {
     uint8_t gesture;
-    gesture = i2c_read(TOUCH_GESTURE_ID);
+    gesture = touch_i2c_read(TOUCH_GESTURE_ID);
     return gesture;
+}
+
+void pw_button_init()
+{
+    //TODO Fil out what the 3 buttons do and where are they located...
 }
