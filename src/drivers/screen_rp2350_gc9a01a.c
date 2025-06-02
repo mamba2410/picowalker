@@ -612,10 +612,10 @@ void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y)
 }
 
 
-void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_pos_t h) 
+void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height) 
 {
 
-    pw_area = (screen_area_t){.x = x, .y = y, .width = w, .height = h};
+    pw_area = (screen_area_t){.x = x, .y = y, .width = width, .height = height};
     screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
 
     // Clear Area via White Colour
