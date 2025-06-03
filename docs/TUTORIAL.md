@@ -34,8 +34,13 @@ First, lets install `git` and `cmake`.
 I'm running void linux so I'll use the xbps package manager, so make sure to
 modify the command for your own distro's one.
 
+Void Linux
 ```
 sudo xbps-install -S git cmake
+```
+Ubuntu / WSL
+```
+sudo apt install git cmake
 ```
 
 Great, now next lets install a cross-compiler.
@@ -45,10 +50,14 @@ that looks like `arm-none-eabi`.
 On void linux, the package is called `cross-arm-none-eabi` but this will likely
 be different on other distros (on debian, it is called `gcc-arm-none-eabi`).
 
-For void linux, I will run
-
+Void Linux
 ```
 sudo xbps-install -S cross-arm-none-eabi
+```
+Ubuntu / WSL
+```
+sudo apt install gcc-arm-none-eabi
+sudo apt install build-essential
 ```
 
 Next, we'll need to install the raspberry pi pico C/C++ SDK.
@@ -106,7 +115,7 @@ This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 So now, lets run
 
 ```bash
-cmake -B build/waveshare -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico.cmake .
+cmake -B build/waveshare -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
 cmake --build build/waveshare
 ```
 
@@ -126,8 +135,17 @@ Now we can move on to compiling the picowalker drivers for our hardware.
 First, we'll need to clone the repo.
 Inside of our project directory:
 
+Main Branch
 ```
+cd ~/repos
 git clone https://github.com/mamba2410/picowalker
+cd picowalker
+```
+
+Waveshare Branch
+```
+cd ~/repos
+git clone --single-branch --branch waveshare https://github.com/DaveuRrr/picowalker
 cd picowalker
 ```
 
@@ -142,7 +160,7 @@ cp ../picowalker-core/build/waveshare/libpicowalker-core.a lib/
 And now we get to build it with `cmake`:
 
 ```
-cmake -B build/waveshare -DPICO_BOARD=pico .
+cmake -B build/waveshare -DPICO_BOARD=pico2 .
 cmake --build build/waveshare
 ```
 

@@ -9,7 +9,7 @@
 #include "picowalker.h"
 #include "picowalker-defs.h"
 
-void pw_time_init_rtc() {}
+//void pw_time_init_rtc() {}
 
 int main() {
     bi_decl(bi_program_description("picowalker"));
