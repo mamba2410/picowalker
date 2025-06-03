@@ -19,7 +19,7 @@
 
 static lcd_t lcd = {0};
 static uint8_t lcd_buffer[LCD_BUFFER_SIZE] = {0};
-static lcd_attributes_t lcd_attributes = {0}
+static lcd_attributes_t lcd_attributes = {0};
 
 /*
  * Screen for the Waveshare rp2350 touch LCS 1.28"
