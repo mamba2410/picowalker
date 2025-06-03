@@ -2,7 +2,7 @@
 #include "../picowalker-defs.h"
 #include "touch_rp2350_cst816s.h"
 
-touch_screen TOUCH;
+static touch_screen_t TOUCH = {0};
 
 /********************************************************************************
 Function: Writes to I2C

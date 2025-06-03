@@ -19,6 +19,7 @@
 
 static lcd_t lcd = {0};
 static uint8_t lcd_buffer[LCD_BUFFER_SIZE] = {0};
+static lcd_attributes_t lcd_attributes = {0}
 
 /*
  * Screen for the Waveshare rp2350 touch LCS 1.28"
@@ -114,7 +115,7 @@ void lcd_clear_screen()
     gpio_put(LCD_PIN_DC, 1);
     for (i = 0; i < LCD_WIDTH*LCD_HEIGHT; i++) 
     {
-        spi_write_blocking(LCD_SPI_PORT, (uint8_t *)&image[i*LCD_WIDTH], LCD_WIDTH*2);
+        spi_write_blocking(LCD_SPI, (uint8_t *)&image[i*LCD_WIDTH], LCD_WIDTH*2);
     }
         
 }
@@ -127,21 +128,21 @@ Parameters:
 void lcd_set_attributes(uint8_t scan_direction)
 {
     // Set screen scan direction
-    lcd_attributes_t.SCAN_DIRECTION = scan_direction;
+    lcd_attributes.SCAN_DIRECTION = scan_direction;
     uint8_t memory_access_register = 0x08;
 
     // Get GRAM and LCD width and height
     if (scan_direction == HORIZONTAL)
     {
-        lcd_attributes_s.HEIGHT = LCD_HEIGHT;
-        lcd_attributes_s.WIDTH = LCD_WIDTH;
+        lcd_attributes.HEIGHT = LCD_HEIGHT;
+        lcd_attributes.WIDTH = LCD_WIDTH;
 
         memory_access_register = 0xC8;
     }
     else 
     {
-        lcd_attributes_s.HEIGHT = LCD_WIDTH;
-        lcd_attributes_s.WIDTH = LCD_HEIGHT;
+        lcd_attributes.HEIGHT = LCD_WIDTH;
+        lcd_attributes.WIDTH = LCD_HEIGHT;
         memory_access_register = 0x68;
     }
 

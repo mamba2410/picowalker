@@ -82,6 +82,6 @@ typedef struct
     uint16_t x_point;
     uint16_t y_point;
     touch_mode_t mode;
-} touch_screen;
+} touch_screen_t;
 
 #endif /* PW_TOUCH_RP2350_CST816S_H */
