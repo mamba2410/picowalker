@@ -111,7 +111,7 @@ void touch_init(uint8_t mode)
 Function: Gets touch point
 Parameters:
 ********************************************************************************/
-touch_screen touch_get_point()
+touch_screen_t touch_get_point()
 {
     uint8_t x_point_high, x_point_low; 
     uint8_t y_point_high, y_point_low;
