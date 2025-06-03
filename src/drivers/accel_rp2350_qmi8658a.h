@@ -65,7 +65,8 @@ enum accel_low_pass_filter_mode
     G_LOW_PASS_FILTER_MODE_2 = 0x02 << 5,
     G_LOW_PASS_FILTER_MODE_3 = 0x03 << 5,
 
-}
+};
+
 enum accel_filter
 {
     ACCEL_DISABLE,

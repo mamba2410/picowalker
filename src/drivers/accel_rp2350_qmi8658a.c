@@ -6,6 +6,7 @@
 //#include "hardware/spi.h"
 //#include "hardware/gpio.h"
 
+#include "pico.time.h"
 #include "accel_rp2350_qmi8658a.h"
 //#include "gpio_interrupts_pico.h"
 
@@ -66,9 +67,9 @@ uint32_t pw_accel_get_new_steps()
     xyz[1] = (raw_xyz[1] * ONE_G) / least_signed_bits;
     xyz[2] = (raw_xyz[2] * ONE_G) / least_signed_bits;
 
-    float magnitude = sqrtf(xyz[0]*xyz[0] + xyz[1]*xyz[1] + xyz[2]*xyz[2]);.
-    float low_pass_filter = 0.9f * previous_steps (1.0f - 0.9f) * magnitude;
-    uint32_t current_time = get_current_time_ms();
+    float magnitude = sqrtf(xyz[0]*xyz[0] + xyz[1]*xyz[1] + xyz[2]*xyz[2]);
+    float low_pass_filter = 0.9f * previous_filtered (1.0f - 0.9f) * magnitude;
+    uint32_t current_time = to_ms_since_boot(get_absolute_time());
 
     if (previous_filtered < STEP_THRESHOLD && low_pass_filter >= STEP_THRESHOLD)
     {
