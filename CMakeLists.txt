@@ -23,9 +23,9 @@ add_executable(picowalker
     src/drivers/ir_pico_pio.h
     #src/drivers/buttons_pico.c
     #src/drivers/buttons_pico.h
-    #src/drivers/eeprom_pico_ram.S
-    #src/drivers/eeprom_pico_ram.c
-    #src/drivers/eeprom_pico_ram.h
+    src/drivers/eeprom_pico_ram.S
+    src/drivers/eeprom_pico_ram.c
+    src/drivers/eeprom_pico_ram.h
     #src/drivers/eeprom_pico_m95512.c        # TODO: Hardware-v0.2
     #src/drivers/eeprom_pico_m95512.h        # TODO: Hardware-v0.2
     src/drivers/timer_pico.c
