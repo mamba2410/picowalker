@@ -17,7 +17,7 @@
 #include "../picowalker-defs.h"
 #include "screen_rp2350_gc9a01a.h"
 
-static lcd_t lcd = {0}|;
+static lcd_t lcd = {0};
 static uint8_t lcd_buffer[LCD_BUFFER_SIZE] = {0};
 
 /*
@@ -50,7 +50,7 @@ void lcd_send_command(uint8_t command)
 {
     // DCX goes high to indicate data being sent
     gpio_put(LCD_PIN_DC, 0);
-    spi_write_blocking(LCD_SPI, &command, 1)
+    spi_write_blocking(LCD_SPI, &command, 1);
 }
 
 /********************************************************************************
@@ -62,7 +62,7 @@ void lcd_send_data(uint8_t data)
 {
     // DCX goes high to indicate data being sent
     gpio_put(LCD_PIN_DC, 1);
-    spi_write_blocking(LCD_SPI, &data, 1)
+    spi_write_blocking(LCD_SPI, &data, 1);
 }
 
 /********************************************************************************
@@ -102,16 +102,16 @@ void lcd_clear_screen()
     // Clear Screen by sending all zeroes
     uint16_t i;
     uint16_t colour = 0x0000;
-    uitn16_t image[LCD_WIDTH*LCD_HEIGHT];
-    clear_colour = ((colour<<8)&0xff00)|(color>>8);
+    uint16_t image[LCD_WIDTH*LCD_HEIGHT];
+    colour = ((colour<<8)&0xff00)|(colour>>8);
 
     for(i = 0; i < LCD_WIDTH*LCD_HEIGHT; i++) 
     {
-        image[i] = clear_colour;
+        image[i] = colour;
     }
 
     lcd_set_windows(0, 0, LCD_WIDTH, LCD_HEIGHT);
-    gpio_put(LCD_PIN_DC)
+    gpio_put(LCD_PIN_DC, 1);
     for (i = 0; i < LCD_WIDTH*LCD_HEIGHT; i++) 
     {
         spi_write_blocking(LCD_SPI_PORT, (uint8_t *)&image[i*LCD_WIDTH], LCD_WIDTH*2);
@@ -127,7 +127,7 @@ Parameters:
 void lcd_set_attributes(uint8_t scan_direction)
 {
     // Set screen scan direction
-    lcd_attributes_s.SCAN_DIRECTION = scan_direction;
+    lcd_attributes_t.SCAN_DIRECTION = scan_direction;
     uint8_t memory_access_register = 0x08;
 
     // Get GRAM and LCD width and height
@@ -146,7 +146,7 @@ void lcd_set_attributes(uint8_t scan_direction)
     }
 
     // Set read / write scan direction
-    lcd_send_command(CMD_MEMORY_ACCESS)
+    lcd_send_command(CMD_MEMORY_ACCESS);
     lcd_send_data(memory_access_register);
 
 }
@@ -466,12 +466,12 @@ Parameters:
     width   : width of buffer
     height  : height of buffer
 *********************************************************************************/
-void lcd_draw_buffer(uint16_t *buffer, int x_start, int y_start, int width, int height) 
+void lcd_draw_buffer(uint8_t *buffer, int x_start, int y_start, int width, int height) 
 {
     uint16_t i;
 
     // TODO Fix the window to be more in the middle of the screen
-    lcd_set_windows(x, y, x + width - 1, y + height - 1);
+    lcd_set_windows(x_start, y_start, x_start + width - 1, y_start + height - 1);
 
     gpio_put(LCD_PIN_DC, 1);
     gpio_put(LCD_PIN_CS, 0);
@@ -598,7 +598,7 @@ void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y)
     decode_img(img, LCD_BUFFER_SIZE, lcd_buffer);
 
     // Transform image area to lcd coordinates
-    pw_area = (screen_area_t){.x = x, .y = y, .width = img->width, .height = img->height};
+    screen_area_t pw_area = (screen_area_t){.x = x, .y = y, .width = img->width, .height = img->height};
     screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
 
     lcd_draw_buffer(lcd_buffer, lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
@@ -615,7 +615,7 @@ void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y)
 void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height) 
 {
 
-    pw_area = (screen_area_t){.x = x, .y = y, .width = width, .height = height};
+    screen_area_t pw_area = (screen_area_t){.x = x, .y = y, .width = width, .height = height};
     screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
 
     // Clear Area via White Colour
@@ -631,7 +631,7 @@ void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, sc
 
 void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_colour_t c) 
 {
-    pw_area = (screen_area_t){.x = x, .y = y, .width = w, .height = 1};
+    screen_area_t pw_area = (screen_area_t){.x = x, .y = y, .width = w, .height = 1};
     screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
     
     lcd_draw_buffer(colour_map[c], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
@@ -701,8 +701,8 @@ void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1, screen_pos_t widt
 
 void pw_screen_clear() 
 {
-    pw_area = (screen_area_t){.x=0, .y=0, .width=SCREEN_WIDTH, .height=SCREEN_HEIGHT};
-    lcd_area = transform_pw_to_lcd(pw_area, lcd);
+    screen_area_t pw_area = (screen_area_t){.x=0, .y=0, .width=SCREEN_WIDTH, .height=SCREEN_HEIGHT};
+    screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
     lcd_draw_buffer(colour_map[0], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
     /*
     lcd_draw_block(
@@ -716,7 +716,7 @@ void pw_screen_clear()
 
 void pw_screen_fill_area(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_pos_t h, screen_colour_t c) 
 {
-    pw_area = (screen_area_t){.x = x, .y = y, .width = w, .height = h};
+    screen_area_t pw_area = (screen_area_t){.x = x, .y = y, .width = w, .height = h};
     screen_area_t lcd_area = transform_pw_to_lcd(pw_area, lcd);
     lcd_draw_buffer(colour_map[c], lcd_area.x, lcd_area.y, lcd_area.width, lcd_area.height);
     /*

@@ -131,7 +131,7 @@ typedef struct lcd_attributes_s
     uint16_t WIDTH;
     uint8_t SCAN_DIRECTION;
 
-} lcd_attributes_t
+} lcd_attributes_t;
 
 
 #endif /* PW_SCREEN_RP2350_GC9A01A_H */
