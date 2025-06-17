@@ -26,6 +26,10 @@ static const char* CHARGE_STATUS_STRINGS[4] = {
     "top-off timer active charge",
 };
 
+static const char* CHARGE_STATUS_SHORT[4] = {
+    "D", "CC", "CV", "TOP",
+};
+
 static char* TS_STAT_STRINGS[] = {
     "TS_NORMAL",
     "TS_COLD",
@@ -331,7 +335,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     // TODO: Some form of LUT
     // Value here is 0x000 - 0xaf0, max resolution of 1.99mV
     float vbat_f = ((float)vbat / (float)0xaf0) * 5572.0;
-    printf("[Log  ] VBAT: %4.0f mV\n", vbat_f);
+    //printf("[Log  ] VBAT: %4.0f mV\n", vbat_f);
     float percent_f = 100.0f*(vbat_f - VBAT_ABS_MINIMUM_MV)/(VBAT_ABS_MAXIMUM_MV-VBAT_ABS_MINIMUM_MV);
     bs.percent = (uint8_t)percent_f;
     if(percent_f > 105) {
@@ -352,6 +356,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     pw_pmic_read_reg(REG_IBAT_ADC, buf, 2);
     raw_val = REG_IBAT_ADC_VAL(buf16[0]);
     if(raw_val > 0x1fff) { raw_val = (raw_val^0x3fff) + 1; neg = -1.0; }
+    float ibat_f = neg * (float)(raw_val) / (float)(0x3e8) * 4000.0;
     //printf("[Log ] IBAT: %4.0f mA\n", neg * (float)(raw_val) / (float)(0x3e8) * 4000.0);
 
     // Read bus current draw
@@ -365,6 +370,10 @@ pw_battery_status_t pw_power_get_battery_status() {
     pw_pmic_read_reg(REG_VSYS_ADC, buf, 2);
     raw_val = REG_VSYS_ADC_VAL(buf16[0]);
     //printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
+
+    printf("[Log  ] {\"VBAT_mV\": %4.0f, \"IBAT_mA\": %4.0f, \"Status\": \"%s\"}\n",
+            vbat_f, ibat_f, CHARGE_STATUS_SHORT[charge_status]
+    );
 
     // ADC gets auto-disabled if we're in one-shot mode
 
