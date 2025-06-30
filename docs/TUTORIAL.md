@@ -164,7 +164,11 @@ cd picowalker
 Now we'll need to copy over our library to be included in the `picowalker`
 project.
 
+<<<<<<< HEAD
 #### Picowalker-core
+=======
+#### Pokewalker-core
+>>>>>>> 996b184 (LVGL Introduction and Testing)
 ```sh
 mkdir lib
 cp ../picowalker-core/build/libpicowalker-core.a lib/

@@ -4,6 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
+<<<<<<< HEAD
                 "${env:PICO_SDK_PATH}/**"
             ],
             "defines": [
@@ -14,6 +15,16 @@
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "gcc-arm"
+=======
+                "${env:PICO_SDK_PATH}/**",
+                "${env:PICO_EXTRA_PATH}/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64"
+>>>>>>> 996b184 (LVGL Introduction and Testing)
         }
     ],
     "version": 4
