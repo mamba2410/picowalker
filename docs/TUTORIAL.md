@@ -35,11 +35,11 @@ I'm running void linux so I'll use the xbps package manager, so make sure to
 modify the command for your own distro's one.
 
 Void Linux
-```
+```sh
 sudo xbps-install -S git cmake
 ```
 Ubuntu / WSL
-```
+```sh
 sudo apt install git cmake
 ```
 
@@ -51,11 +51,11 @@ On void linux, the package is called `cross-arm-none-eabi` but this will likely
 be different on other distros (on debian, it is called `gcc-arm-none-eabi`).
 
 Void Linux
-```
+```sh
 sudo xbps-install -S cross-arm-none-eabi
 ```
 Ubuntu / WSL
-```
+```sh
 sudo apt install gcc-arm-none-eabi
 sudo apt install build-essential
 ```
@@ -68,7 +68,7 @@ but I will write some rough instructions here:
 First, create a directory and clone the [pico-sdk](https://github.com/raspberrypi/pico-sdk)
 git repository into it.
 
-```
+```sh
 mkdir ~/repos
 cd ~/repos
 git clone https://github.com/raspberrypi/pico-sdk
@@ -81,7 +81,7 @@ find the pico SDK.
 We'll add it to our `.profile` file which automatically sets environment
 variables when we log in.
 
-```
+```sh
 echo "export PICO_SDK_PATH=$HOME/repos/pico-sdk" >> ~/.profile
 source ~/.profile
 ```
@@ -102,7 +102,7 @@ This is the platform-independant code to make the picowalker run.
 First, we need to clone it.
 Inside of our project directory:
 
-```
+```sh
 git clone https://github.com/mamba2410/picowalker-core
 cd picowalker-core
 ```
@@ -114,7 +114,7 @@ This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 
 So now, lets run
 
-```bash
+```sh
 cmake -B build/waveshare -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
 cmake --build build/waveshare
 ```
@@ -136,14 +136,14 @@ First, we'll need to clone the repo.
 Inside of our project directory:
 
 Main Branch
-```
+```sh
 cd ~/repos
 git clone https://github.com/mamba2410/picowalker
 cd picowalker
 ```
 
 Waveshare Branch
-```
+```sh
 cd ~/repos
 git clone --single-branch --branch waveshare https://github.com/DaveuRrr/picowalker
 cd picowalker
@@ -152,14 +152,24 @@ cd picowalker
 Now we'll need to copy over our library to be included in the `picowalker`
 project.
 
-```
+#### Pokewalker-core
+```sh
 mkdir lib
 cp ../picowalker-core/build/waveshare/libpicowalker-core.a lib/
+```
+#### LVGL
+Include LVGL
+```sh
+git clone https://github.com/lvgl/lvgl  lib/lvgl
+```
+#### RP2350TouchLCD128
+```sh
+git clone https://github.com/DaveuRrr/RP2350TouchLCD128 lib/RP2350TouchLCD128
 ```
 
 And now we get to build it with `cmake`:
 
-```
+```sh
 cmake -B build/waveshare -DPICO_BOARD=pico2 .
 cmake --build build/waveshare
 ```
@@ -197,4 +207,3 @@ of different hardware so that people can mix-and-match with what they have.
 
 Any questions you have, shoot me a message on the Pokewalker Discord and I'll
 be happy to help!
-
