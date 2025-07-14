@@ -8,7 +8,7 @@
 #include "lib/RP2350TouchLCD128/Touch/CST816S.h"
 #include "lib/RP2350TouchLCD128/QMI8658/QMI8658.h"
 #include "lvgl.h"
-#include "pokeball.h"
+//#include "pokeball.h"
 
 #define DISP_HOR_RES 240
 #define DISP_VER_RES 240
