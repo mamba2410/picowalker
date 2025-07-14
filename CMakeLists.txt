@@ -36,8 +36,8 @@ add_executable(picowalker
     src/main.c
     src/RP2350TouchLCD128.c
     src/RP2350TouchLCD128.h
-    src/pokeball.c
-    src/pokeball.h
+    #src/pokeball.c
+    #src/pokeball.h
     #src/picowalker-defs.h
 )
 

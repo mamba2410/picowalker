@@ -11,8 +11,8 @@ lv_display_t *display;
 static lv_color_t buffer0[BUFFER_PIXELS];
 static lv_color_t buffer1[BUFFER_PIXELS];
 
-#define CANVAS_WIDTH 96
-#define CANVAS_HEIGHT 64
+#define CANVAS_WIDTH 144  // Original 96, 1.5 x 96 = 144
+#define CANVAS_HEIGHT 96  // Original 64, 1.5 x 64 = 96
 static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
 
 // Touch variables
@@ -176,43 +176,49 @@ int RP2350TouchLCD128PW(void)
     irq_set_exclusive_handler(DMA_IRQ_0, direct_memory_access_handler);
     irq_set_enabled(DMA_IRQ_0, true);
 
-    // Declare Pokeball image
-    //LV_IMAGE_DECLARE(pokeball);
     lv_obj_t *screen = lv_screen_active();
-    //lv_obj_t *image = lv_image_create(screen);
-    //lv_image_set_src(image, &pokeball);
-    //lv_obj_set_align(image, LV_ALIGN_CENTER);
-    //lv_obj_set_height(image, LV_SIZE_CONTENT);
-    //lv_obj_set_width(image, LV_SIZE_CONTENT);
 
     /* Create the canvas widget */
+    //LV_DRAW_BUF_DEFINE_STATIC(canvas_buffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_COLOR_FORMAT_RGB565);
+    //LV_DRAW_BUF_INIT_STATIC(canvas_buffer);
     //lv_obj_t *canvas = lv_canvas_create(screen);
-    //lv_canvas_set_buffer(canvas, canvas_buffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_COLOR_FORMAT_RGB565);
-    //lv_obj_center(canvas);
-    //lv_canvas_fill_bg(canvas, lv_palette_lighten(LV_PALETTE_GREY, 3), LV_OPA_COVER);
-
-    /* Optional: Add a border to visually separate the canvas area */
+    //lv_canvas_set_draw_buf(canvas, &canvas_buffer);
+    //lv_obj_align(canvas, LV_ALIGN_CENTER, 0, -10);
+    //lv_obj_clear_flag(canvas, LV_OBJ_FLAG_CLICKABLE);
+    //lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_COVER); //lv_palette_lighten(LV_PALETTE_GREY, 3), LV_OPA_COVER);
     //lv_obj_set_style_border_width(canvas, 2, 0);
     //lv_obj_set_style_border_color(canvas, lv_color_black(), 0);
-
+    //lv_layer_t layer;
+    //lv_canvas_init_layer(canvas, &layer);
+    //lv_canvas_finish_layer(canvas, &layer);
+    
     /* Your round buttons below the canvas */
-    //lv_obj_t *left_button = lv_btn_create(screen);
-    //lv_obj_add_event_cb(left_button, event_handler, LV_EVENT_ALL, NULL);
-    //lv_obj_align(left_button, LV_ALIGN_BOTTOM_LEFT, 10, -10);
-    //lv_obj_set_size(left_button, 35, 35);
-    //lv_obj_set_style_radius(left_button, 17, 0);
+    lv_obj_t *left_button = lv_btn_create(screen);
+    lv_obj_add_event_cb(left_button, event_handler, LV_EVENT_ALL, NULL);
+    lv_obj_align(left_button, LV_ALIGN_CENTER, -60, 70);
+    lv_obj_set_size(left_button, 30, 30);
+    lv_obj_set_style_radius(left_button, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(left_button, lv_color_white(), 0);
+    lv_obj_set_style_border_width(left_button, 2, 0);
+    lv_obj_set_style_border_color(left_button, lv_color_black(), 0);
 
-    //lv_obj_t *center_button = lv_btn_create(screen);
-    //lv_obj_add_event_cb(center_button, event_handler, LV_EVENT_ALL, NULL);
-    //lv_obj_align(center_button, LV_ALIGN_BOTTOM_MID, 0, -10);
-    //lv_obj_set_size(center_button, 35, 35);
-    //lv_obj_set_style_radius(center_button, 17, 0);
+    lv_obj_t *center_button = lv_btn_create(screen);
+    lv_obj_add_event_cb(center_button, event_handler, LV_EVENT_ALL, NULL);
+    lv_obj_align(center_button, LV_ALIGN_CENTER, 0, 80);
+    lv_obj_set_size(center_button, 37, 37);
+    lv_obj_set_style_radius(center_button, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(center_button, lv_color_white(), 0);
+    lv_obj_set_style_border_width(center_button, 2, 0);
+    lv_obj_set_style_border_color(center_button, lv_color_black(), 0);
 
-    //lv_obj_t *right_button = lv_btn_create(screen);
-    //lv_obj_add_event_cb(right_button, event_handler, LV_EVENT_ALL, NULL);
-    //lv_obj_align(right_button, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
-    //lv_obj_set_size(right_button, 35, 35);
-    //lv_obj_set_style_radius(right_button, 17, 0);
+    lv_obj_t *right_button = lv_btn_create(screen);
+    lv_obj_add_event_cb(right_button, event_handler, LV_EVENT_ALL, NULL);
+    lv_obj_align(right_button, LV_ALIGN_CENTER, 60, 70);
+    lv_obj_set_size(right_button, 30, 30);
+    lv_obj_set_style_radius(right_button, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(right_button, lv_color_white(), 0);
+    lv_obj_set_style_border_width(right_button, 2, 0);
+    lv_obj_set_style_border_color(right_button, lv_color_black(), 0);
 
     /*Change the active screen's background color*/
     //lv_obj_t *screen = lv_screen_active();
@@ -221,26 +227,17 @@ int RP2350TouchLCD128PW(void)
 
 
     /*Create a white label, set its text and align it to the center*/
-    lv_obj_t *label = lv_label_create(screen);
-    lv_obj_set_align(label, LV_ALIGN_CENTER);
-    lv_obj_set_height(label, LV_SIZE_CONTENT);
-    lv_obj_set_width(label, LV_SIZE_CONTENT);
-    lv_obj_set_style_text_font(label, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(label, lv_color_black(), 0);
-    lv_label_set_text(label, "Hello World!");
-    printf("Label created\n");
+    //lv_obj_t *label = lv_label_create(screen);
+    //lv_obj_set_align(label, LV_ALIGN_CENTER);
+    //lv_obj_set_height(label, LV_SIZE_CONTENT);
+    //lv_obj_set_width(label, LV_SIZE_CONTENT);
+    //lv_obj_set_style_text_font(label, &lv_font_montserrat_14, 0);
+    //lv_obj_set_style_text_color(label, lv_color_black(), 0);
+    //lv_label_set_text(label, "Hello World!");
+    //printf("Label created\n");
 
     tick_timer = lv_timer_create(tick_timer_callback, 5, NULL);
 
     printf("LVGL Initialized Successfully!\r\n");
     return 0;
-    
-    //lv_obj_set_size(image, LV_HOR_RES, LV_VER_RES);
-    //lv_obj_align(image, LV_ALIGN_CENTER, 0, 0);
-
-    //lv_obj_t *overlay = lv_obj_create(screen);
-    //lv_obj_set_size(overlay, 80, 40);
-    //lv_obj_align(overlay, LV_ALIGN_BOTTOM_MID, 0, -10);
-    //lv_obj_set_style_bg_color(overlay, lv_color_black(), 0);
-    //lv_obj_set_style_bg_opa(overlay, LV_OPA_70, 0);
 }
