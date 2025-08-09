@@ -103,9 +103,9 @@ typedef struct screen_area_s {
 #define PIN_PIO_SD1    11
 #define PIN_PIO_SD2    10
 #define PIN_PIO_SD3    9
-#define PIN_PIO_CSB    7
+#define PIN_PIO_CSB    6
 
-#define PIN_SCREEN_RST  6
+#define PIN_SCREEN_RST  7
 #define PIN_SCREEN_PWREN    5
 
 #endif /* PW_SCREEN_PICO2_DWO_HSTX_H */

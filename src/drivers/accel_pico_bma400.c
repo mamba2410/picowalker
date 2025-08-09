@@ -90,7 +90,7 @@ void pw_accel_reset_int() {
     buf[0] = ACCEL_REG_STATUS;
     pw_accel_read_spi(buf, 1);
 
-    printf("[Debug] Read status: 0x%02x\n", buf[0]);
+    printf("[Debug] Accel status byte: 0x%02x\n", buf[0]);
 
     buf[0] = ACCEL_REG_INT_STAT0;
     pw_accel_read_spi(buf, 3);
@@ -140,7 +140,7 @@ uint32_t pw_accel_get_new_steps() {
 }
 
 int8_t pw_accel_init() {
-    accel_spi = spi1;
+    accel_spi = spi0;
 
     gpio_init(ACCEL_CS_PIN);
     gpio_set_dir(ACCEL_CS_PIN, GPIO_OUT);

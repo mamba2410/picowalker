@@ -17,7 +17,7 @@
 #define UNIX_TIME_OFFSET 946684800ul
 #define TIMER_INTERVAL_SEC 60
 
-#define RTC_CLK_PIN 20
+#define RTC_CLK_PIN 22
 
 #define USE_EXTERNAL_RTC true
 

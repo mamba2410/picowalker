@@ -48,8 +48,8 @@ pico_generate_pio_header(picowalker ${CMAKE_CURRENT_LIST_DIR}/src/drivers/qspi.p
 #pico_enable_stdio_usb(picowalker 1)
 target_compile_definitions(picowalker PRIVATE
     PICO_DEFAULT_UART=0
-    PICO_DEFAULT_UART_TX_PIN=16
-    PICO_DEFAULT_UART_RX_PIN=17
+    PICO_DEFAULT_UART_TX_PIN=28
+    PICO_DEFAULT_UART_RX_PIN=29
 )
 pico_enable_stdio_uart(picowalker 1)
 #pico_enable_stdio_semihosting(picowalker 1)

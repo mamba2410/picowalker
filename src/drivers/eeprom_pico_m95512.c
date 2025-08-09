@@ -34,7 +34,7 @@ static void pw_eeprom_wait_for_ready() {
 }
 
 void pw_eeprom_init() {
-    eeprom_spi = spi1;
+    eeprom_spi = spi0;
 
     // TODO: needs external pull-up, so don't drive high to avoid contention
     gpio_init(EEPROM_CS_PIN);
