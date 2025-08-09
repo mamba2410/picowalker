@@ -6,7 +6,7 @@
 #include <stddef.h>
 
 #define BAT_INT_PIN 3
-#define BAT_CE_PIN  2
+#define BAT_CE_PIN  4
 
 #define PMIC_I2C_SCL_PIN 1
 #define PMIC_I2C_SDA_PIN 0
@@ -15,6 +15,8 @@
 #define PMIC_I2C_ADDRESS 0x6a
 
 #define PMIC_I2C i2c0
+
+#define ADC_TIMEOUT_MS 100
 
 /*
  * Taken from datasheet https://www.ti.com/lit/ds/symlink/bq25628e.pdf

@@ -60,7 +60,10 @@ static char* FAULT_STATUS_0_STRINGS[] = {"", "", "", "TSHUT", "", "SYS_FAULT", "
 
 static uint8_t ADC_SHIFTS[] = { 1, 2, 2, 2, 1, 1, 0, 0 };
 
-static volatile bool adc_done;
+static volatile uint8_t interrupt_flags[4];
+static volatile uint8_t interrupt_status[4];
+static volatile bool adc_done = false;
+static volatile uint32_t adc_timeout_stamp = 0;
 
 static void pw_pmic_read_reg(uint8_t reg, uint8_t *buf, size_t len) {
     if(buf == NULL) { return; }
@@ -141,22 +144,21 @@ void print_flags_and_status(uint8_t flags[3], uint8_t status[3]) {
 void pw_battery_int(uint gp, uint32_t events) {
     
     if(gp == BAT_INT_PIN) {
-        uint8_t flags[4], status[4];
 
         // Read `FLAG` registers to clear interrupts
-        pw_pmic_read_reg(REG_CHARGER_FLAG_0, flags, 3);
+        pw_pmic_read_reg(REG_CHARGER_FLAG_0, interrupt_flags, 3);
+        pw_pmic_read_reg(REG_CHARGER_STATUS_0, interrupt_status, 3);
 
         // Latch up, don't reset. Otherwise interrupts before we check the flag
         // will cause things to spin forever
-        if(flags[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) {
+        if(interrupt_flags[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) {
             adc_done = true;
         }
 
         // Debug print if any of the fault flags show up
-        if(flags[2] > 0) {
+        if(interrupt_flags[2] > 0) {
             // Should probably do something with this info, like notify core about something like a fault, low battery, on charge
-            pw_pmic_read_reg(REG_CHARGER_STATUS_0, status, 3);
-            print_flags_and_status(flags, status);
+            print_flags_and_status(interrupt_flags, interrupt_status);
         }
 
     } else {
@@ -217,19 +219,22 @@ void pw_battery_init() {
     gpio_put(BAT_CE_PIN, 0);
 
     // Set up ADC targets for conversion
-    // Allow: VBAT, IBAT, VBUS, IBUS, VSYS
-    // Probably just allow VBAT, VSYS in prod
-    //buf[0] = REG_ADC_FUNCTION_DISABLE_0_VPMID |
-    //    REG_ADC_FUNCTION_DISABLE_0_TDIE |
-    //    REG_ADC_FUNCTION_DISABLE_0_TS ;
-    //pw_pmic_write_reg(REG_ADC_FUNCTION_DISABLE_0, buf, 1);
+    // Allow: VBAT, VSYS
+    buf[0] = REG_ADC_FUNCTION_DISABLE_0_VPMID |
+        REG_ADC_FUNCTION_DISABLE_0_TDIE |
+        REG_ADC_FUNCTION_DISABLE_0_IBAT |
+        REG_ADC_FUNCTION_DISABLE_0_IBUS |
+        REG_ADC_FUNCTION_DISABLE_0_VBUS |
+        REG_ADC_FUNCTION_DISABLE_0_TS ;
+    pw_pmic_write_reg(REG_ADC_FUNCTION_DISABLE_0, buf, 1);
 
+    /*
     // Set ADC to one-shot mode, don't enable to save power
     // Have long ADC samples at first to "prime" the ADC
     buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
              REG_ADC_CONTROL_ADC_RATE_ONESHOT |
              //REG_ADC_CONTROL_ADC_SAMPLE_9_BIT | // default
-             REG_ADC_CONTROL_ADC_SAMPLE_12_BIT | // extend ADC sample time to 30 ms
+             //REG_ADC_CONTROL_ADC_SAMPLE_12_BIT | // extend ADC sample time to 30 ms
              REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
     uint8_t my_reg = buf[0];
     pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
@@ -239,13 +244,14 @@ void pw_battery_init() {
     for(size_t i = 0; i < 3; i++) {
         pw_power_get_battery_status();
     }
+    */
 
     // Back to normal length ADC samples
     buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
              REG_ADC_CONTROL_ADC_RATE_ONESHOT |
              REG_ADC_CONTROL_ADC_SAMPLE_10_BIT | // 7.5 ms each
              REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
-    my_reg = buf[0];
+    //my_reg = buf[0];
     pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
 
     // Just for fun
@@ -289,10 +295,16 @@ pw_battery_status_t pw_power_get_battery_status() {
     uint16_t *buf16 = (uint16_t*)buf;
 
     // Enable the ADC and start conversion
-    pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
-    buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
-    buf[0] |= REG_ADC_CONTROL_ADC_EN_ENABLED;
-    pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
+    if(adc_timeout_stamp == 0) {
+        pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
+        buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
+        buf[0] |= REG_ADC_CONTROL_ADC_EN_ENABLED;
+        pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
+        adc_timeout_stamp = pw_time_get_ms() + ADC_TIMEOUT_MS;
+    }
+
+    // Check why we interrupted, if at all
+    //print_flags_and_status(interrupt_flags, interrupt_status);
 
     // Pet the watchdog
     // TODO: Can't rely on this in sleep mode
@@ -321,8 +333,16 @@ pw_battery_status_t pw_power_get_battery_status() {
     }
 
     // Wait for interrupt to say that ADC function is done
-    while(!adc_done);
+    while(!adc_done && (pw_time_get_ms() < adc_timeout_stamp));
+    if(!adc_done) {
+        printf("[Warn ] Battery ADC measurement exceeded %d ms\n", ADC_TIMEOUT_MS);
+        bs.flags |= PW_BATTERY_STATUS_FLAGS_TIMEOUT;
+        adc_timeout_stamp = 0;
+        return bs;
+    }
+    uint32_t adc_conversion_time = pw_time_get_ms() - (adc_timeout_stamp - ADC_TIMEOUT_MS);
     adc_done = false;
+    adc_timeout_stamp = 0;
 
     // Read ADC registers that we're interested in 
     buf[0] = buf[1] = 0;
@@ -339,13 +359,14 @@ pw_battery_status_t pw_power_get_battery_status() {
     float percent_f = 100.0f*(vbat_f - VBAT_ABS_MINIMUM_MV)/(VBAT_ABS_MAXIMUM_MV-VBAT_ABS_MINIMUM_MV);
     bs.percent = (uint8_t)percent_f;
     if(percent_f > 105) {
-        printf("[Warn ] Battery percentage above 100%%: %d%%\n", percent_f);
+        printf("[Warn ] Battery percentage above 100%%: %d%%\n", (uint8_t)percent_f);
         bs.percent = 100;
     }
     if(percent_f < 0) {
-        printf("[Warn ] Battery percentage below 0%%: %d%%\n", percent_f);
+        printf("[Warn ] Battery percentage below 0%%: %d%%\n", (uint8_t)percent_f);
         bs.percent = 0;
     }
+    //bs.percent = 80;
     //printf("[Info ] Battery is at %.2f%%\n", percent_f);
 
 
@@ -353,10 +374,10 @@ pw_battery_status_t pw_power_get_battery_status() {
 
     // Read battery current draw
     // Convert to 2's compliment - negative means discharge
-    pw_pmic_read_reg(REG_IBAT_ADC, buf, 2);
-    raw_val = REG_IBAT_ADC_VAL(buf16[0]);
-    if(raw_val > 0x1fff) { raw_val = (raw_val^0x3fff) + 1; neg = -1.0; }
-    float ibat_f = neg * (float)(raw_val) / (float)(0x3e8) * 4000.0;
+    //pw_pmic_read_reg(REG_IBAT_ADC, buf, 2);
+    //raw_val = REG_IBAT_ADC_VAL(buf16[0]);
+    //if(raw_val > 0x1fff) { raw_val = (raw_val^0x3fff) + 1; neg = -1.0; }
+    //float ibat_f = neg * (float)(raw_val) / (float)(0x3e8) * 4000.0;
     //printf("[Log ] IBAT: %4.0f mA\n", neg * (float)(raw_val) / (float)(0x3e8) * 4000.0);
 
     // Read bus current draw
@@ -369,10 +390,11 @@ pw_battery_status_t pw_power_get_battery_status() {
     // This gets converted down, but good to note what we're feeding the screen
     pw_pmic_read_reg(REG_VSYS_ADC, buf, 2);
     raw_val = REG_VSYS_ADC_VAL(buf16[0]);
+    float vsys_f = (float)raw_val * 5572.0 / (float)0x0af0;
     //printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
 
-    printf("[Log  ] {\"VBAT_mV\": %4.0f, \"IBAT_mA\": %4.0f, \"Status\": \"%s\"}\n",
-            vbat_f, ibat_f, CHARGE_STATUS_SHORT[charge_status]
+    printf("[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"ADC_conversion_ms\": %d}\n",
+            vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], adc_conversion_time
     );
 
     // ADC gets auto-disabled if we're in one-shot mode
