@@ -18,7 +18,24 @@ int main() {
     // to have a lower clock
     //set_sys_clock_khz(48000, true);
 
+    /*
+    // emergency blink routine
+    gpio_init(27);
+    gpio_set_dir(27, GPIO_OUT);
+
+    while(1) {
+        gpio_put(27, 0);
+        sleep_ms(1000);
+        gpio_put(27, 1);
+        sleep_ms(1000);
+    }
+    */
+
+
+
     stdio_init_all();
+
+    sleep_ms(1000);
 
     printf("[Info] ==== Hello, picowalker! ====\n");
 

@@ -8,7 +8,7 @@
 
 #include "../picowalker-defs.h"
 
-#define PW_SPEAKER_PIN 24
+#define PW_SPEAKER_PIN 2
 
 #define AUDIO_ALARM_NUM 1
 #define AUDIO_SYSCLK 150e6
