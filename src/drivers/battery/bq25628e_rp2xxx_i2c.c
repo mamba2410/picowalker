@@ -473,6 +473,7 @@ void bq25628e_log_vbat(float vbat) {
             );
     (void)len;
     printf(log_staging);
+    pw_log(log_staging, len);
 }
 
 
