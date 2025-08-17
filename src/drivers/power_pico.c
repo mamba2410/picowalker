@@ -59,14 +59,14 @@ void pw_power_enter_sleep() {
     // Start the POWMAN timer from LPOSC which we aren't turning off
     struct timespec ts;
     aon_timer_get_time(&ts);
-    printf("[Debug] Sleep saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
+    //printf("[Debug] Sleep saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
 
     powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
     //powman_timer_set_ms(powman_ms);
     aon_timer_set_time(&ts);
 
     // Actually do the sleep
-    printf("[Info] Sleeping MCU\n");
+    printf("[Info ] Sleeping MCU at 0x%08x s\n", (uint32_t)ts.tv_sec);
 
     // === Start of danger zone ===
 
@@ -89,7 +89,7 @@ void pw_power_enter_sleep() {
     //xosc_dormant();
 
     sleep_power_up();
-    printf("[Info] MCU is awake\n");
+    printf("[Info ] MCU is awake, wake reason: 0x%02x\n", wake_reason);
 
     // === End of danger zone ===
 
@@ -102,9 +102,9 @@ void pw_power_enter_sleep() {
     //powman_timer_set_ms(powman_ms);
 
     aon_timer_get_time(&ts);
-    printf("[Debug] Wake saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
+    //printf("[Debug] Wake saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
     //powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
-    powman_timer_set_1khz_tick_source_xosc();
+    //powman_timer_set_1khz_tick_source_xosc();
     aon_timer_set_time(&ts);
 
     // TODO: Check what caused the wakeup, if it was AON timer then go back to sleep
