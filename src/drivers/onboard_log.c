@@ -3,15 +3,30 @@
 #include <stdint.h>
 
 #include <stdio.h>
+<<<<<<< HEAD
 #include <string.h>
+=======
+>>>>>>> 69909d8 (logging: add functio to log to flash)
 
 #include <hardware/flash.h>
 #include <pico/flash.h>
 #include <pico/stdlib.h>
 
+<<<<<<< HEAD
 #include "onboard_log.h"
 
 pw_flash_log_t flash_log = {};
+=======
+#define LOG_LIMIT_BYTES (512*1024) // 
+#define FLASH_LOG_START_OFFSET (256*1024) // 256k from start of flash, read at XIP_BASE+offset
+#define LOG_PAGE_SIZE FLASH_SECTOR_SIZE // match flash page size
+#define N_BUFFERS 2 // Power of 2, shouldn't need more than 2^1
+
+static char log_ram_buffers[N_BUFFERS][LOG_PAGE_SIZE];
+static uint8_t current_buffer = 0;
+static size_t cursor = 0;
+static size_t flash_write_offset = FLASH_LOG_START_OFFSET;
+>>>>>>> 69909d8 (logging: add functio to log to flash)
 
 
 /**
@@ -34,6 +49,7 @@ static void call_flash_range_erase(void* param) {
  * Commit RAM log to NVM
  * Using pico-examples flash_program from sdk 2.2.0
  */
+<<<<<<< HEAD
 static void pw_commit_page() {
 
     uintptr_t write_addr = LOG_FLASH_OFFSET + flash_log.flash_write_head;
@@ -56,10 +72,26 @@ static void pw_commit_page() {
     
     // RAM page written to flash, so now we reset
     flash_log.ram_write_head = 0;
+=======
+static void pw_commit_page(uint8_t page) {
+
+    // Erase whatever is already in the page
+    int rc = flash_safe_execute(call_flash_range_erase, (void*)flash_write_offset, UINT32_MAX);
+    hard_assert(rc == PICO_OK);
+
+    // Reprogram it with what we want
+    uintptr_t params[] = {flash_write_offset, (uintptr_t)log_ram_buffers[page]};
+    rc = flash_safe_execute(call_flash_range_program, params, UINT32_MAX);
+    hard_assert(rc == PICO_OK);
+    
+    // Increment next offset
+    flash_write_offset = (flash_write_offset + LOG_PAGE_SIZE) % LOG_LIMIT_BYTES;
+>>>>>>> 69909d8 (logging: add functio to log to flash)
 }
 
 
 void pw_log(char *msg, size_t len) {
+<<<<<<< HEAD
     // TODO: Breaks if `len` >= 4096
 
     if(flash_log.ram_write_head + len >= LOG_PAGE_SIZE) {
@@ -86,5 +118,27 @@ void pw_log(char *msg, size_t len) {
 
 void pw_log_dump() {
     uart_write_blocking(uart0, (uint8_t*)LOG_READ_ADDRESS, LOG_PAGE_SIZE);
+=======
+    if(cursor + len >= LOG_PAGE_SIZE) {
+
+        // FIll up rest of page with partial message
+        memcpy(&log_ram_buffers[current_buffer][cursor], msg, LOG_PAGE_SIZE-cursor);
+        len = cursor + len - LOG_PAGE_SIZE;
+
+        // Write full page to NVM
+        printf("[Debug] Wrote log page to NVM at 0x%08x\n", flash_write_offset);
+        pw_commit_page(current_buffer);
+        current_buffer = (current_buffer+1) & N_BUFFERS;
+        cursor = 0;
+    }
+
+    memcpy(&log_ram_buffers[current_buffer][cursor], msg, len);
+    cursor += len;
+    printf("[Debug] Cached log in RAM (%d/%d)\n", cursor, LOG_PAGE_SIZE);
+}
+
+void pw_log_dump() {
+    uart_write_blocking(uart0, (uint8_t*)(XIP_BASE+FLASH_LOG_START_OFFSET), LOG_PAGE_SIZE);
+>>>>>>> 69909d8 (logging: add functio to log to flash)
 }
 
