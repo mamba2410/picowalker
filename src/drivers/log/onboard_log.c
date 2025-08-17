@@ -25,8 +25,7 @@ pw_flash_log_t flash_log = {};
 static char log_ram_buffers[N_BUFFERS][LOG_PAGE_SIZE];
 static uint8_t current_buffer = 0;
 static size_t cursor = 0;
-static size_t flash_write_offset = FLASH_LOG_START_OFFSET;
->>>>>>> 69909d8 (logging: add functio to log to flash)
+size_t flash_write_offset = FLASH_LOG_START_OFFSET;
 
 
 /**
