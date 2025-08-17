@@ -16,7 +16,7 @@
 static char log_ram_buffers[N_BUFFERS][LOG_PAGE_SIZE];
 static uint8_t current_buffer = 0;
 static size_t cursor = 0;
-static size_t flash_write_offset = FLASH_LOG_START_OFFSET;
+size_t flash_write_offset = FLASH_LOG_START_OFFSET;
 
 
 /**
