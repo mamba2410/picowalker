@@ -12,6 +12,13 @@
 static spi_inst_t *accel_spi;
 static int32_t prev_steps;
 
+#define ACCEL_STEP_COUNT_SETTINGS_LEN 24
+static const uint8_t NON_WRIST_OPTIMAL_SETTINGS[ACCEL_STEP_COUNT_SETTINGS_LEN] = {
+    0x59,
+    1, 50, 120, 230, 135, 0, 132,
+    108, 156, 117, 100, 126, 170, 12, 12, 74, 160, 0, 0, 12, 60, 240, 1, 0
+};
+
 static void pw_accel_cs_enable() {
     gpio_put(ACCEL_CS_PIN, 0);
 }
@@ -135,6 +142,7 @@ uint32_t pw_accel_get_new_steps() {
     int32_t steps = (buf[2]<<16) | (buf[1]<<8) | (buf[0]);
     int32_t new_steps = steps - prev_steps;
     prev_steps = steps;
+    printf("[Debug] Accel has %u steps\n", steps);
     if(new_steps < 0) return 0;
     else return (uint32_t)new_steps;
 }
@@ -216,6 +224,8 @@ int8_t pw_accel_init() {
     prev_steps = 0;
 
     pw_accel_reset_int();
+
+    pw_accel_write_spi(NON_WRIST_OPTIMAL_SETTINGS, ACCEL_STEP_COUNT_SETTINGS_LEN);
 
     return 0;
 }
