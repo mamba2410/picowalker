@@ -20,6 +20,8 @@
 #define VBAT_ABS_MAXIMUM_MV 4250.0f
 #define VBAT_SAFE_MINIMUM_MV 3600.0f
 
+static char log_staging[128] = "";
+
 static const char* CHARGE_STATUS_STRINGS[4] = {
     "not charging",
     "trickle, pre-charge or fast charge",
@@ -390,9 +392,15 @@ pw_battery_status_t pw_power_get_battery_status() {
     float vsys_f = (float)raw_val * 5572.0 / (float)0x0af0;
     //printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
 
-    printf("[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"ADC_conversion_ms\": %d}\n",
-            vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], adc_conversion_time
-    );
+    int len = snprintf(log_staging, 128,
+            "[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"Mode\": \"%s\", \"Timestamp\":%lu}\n",
+            vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"Sleep":"Normal", pw_time_get_rtc()
+            );
+    //printf("[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"ADC_conversion_ms\": %d}\n",
+            //vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], adc_conversion_time
+    //);
+    printf(log_staging);
+    pw_log(log_staging, len);
 
     // ADC gets auto-disabled if we're in one-shot mode
 
