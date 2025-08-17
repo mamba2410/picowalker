@@ -67,5 +67,6 @@ target_link_libraries(picowalker
     hardware_timer
     hardware_pwm
     hardware_dma
+    hardware_flash
     ${CMAKE_SOURCE_DIR}/lib/libpicowalker-core.a
 )
