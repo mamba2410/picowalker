@@ -13,9 +13,9 @@
 #define LOG_PAGE_SIZE FLASH_SECTOR_SIZE // match flash page size
 #define N_BUFFERS 2 // Power of 2, shouldn't need more than 2^1
 
-static char log_ram_buffers[N_BUFFERS][LOG_PAGE_SIZE];
-static uint8_t current_buffer = 0;
-static size_t cursor = 0;
+char log_ram_buffers[N_BUFFERS][LOG_PAGE_SIZE];
+uint8_t current_buffer = 0;
+size_t flash_buffer_cursor = 0;
 size_t flash_write_offset = FLASH_LOG_START_OFFSET;
 
 
@@ -56,22 +56,22 @@ static void pw_commit_page(uint8_t page) {
 
 
 void pw_log(char *msg, size_t len) {
-    if(cursor + len >= LOG_PAGE_SIZE) {
+    if(flash_buffer_cursor + len >= LOG_PAGE_SIZE) {
 
         // FIll up rest of page with partial message
-        memcpy(&log_ram_buffers[current_buffer][cursor], msg, LOG_PAGE_SIZE-cursor);
-        len = cursor + len - LOG_PAGE_SIZE;
+        memcpy(&log_ram_buffers[current_buffer][flash_buffer_cursor], msg, LOG_PAGE_SIZE-flash_buffer_cursor);
+        len = flash_buffer_cursor + len - LOG_PAGE_SIZE;
 
         // Write full page to NVM
         printf("[Debug] Wrote log page to NVM at 0x%08x\n", flash_write_offset);
         pw_commit_page(current_buffer);
         current_buffer = (current_buffer+1) & N_BUFFERS;
-        cursor = 0;
+        flash_buffer_cursor = 0;
     }
 
-    memcpy(&log_ram_buffers[current_buffer][cursor], msg, len);
-    cursor += len;
-    printf("[Debug] Cached log in RAM (%d/%d)\n", cursor, LOG_PAGE_SIZE);
+    memcpy(&log_ram_buffers[current_buffer][flash_buffer_cursor], msg, len);
+    flash_buffer_cursor += len;
+    printf("[Debug] Cached log in RAM (%d/%d)\n", flash_buffer_cursor, LOG_PAGE_SIZE);
 }
 
 void pw_log_dump() {
