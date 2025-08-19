@@ -37,6 +37,7 @@ add_executable(picowalker
     ${MAIN_SRC_DIR}/drivers/sleep/dormant_rp2xxx.h
     ${MAIN_SRC_DIR}/drivers/time/rp2350_powman.c
     ${MAIN_SRC_DIR}/drivers/usb/msc_disk.c
+    ${MAIN_SRC_DIR}/drivers/usb/msc_disk.h
     ${MAIN_SRC_DIR}/drivers/usb/usb_descriptors.c
     ${MAIN_SRC_DIR}/drivers/usb/tusb_config.h
     ${MAIN_SRC_DIR}/drivers/log/onboard_log.c
