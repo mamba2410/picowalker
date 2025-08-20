@@ -128,6 +128,7 @@ void pw_log_dump() {
         printf("[Debug] Wrote log page to NVM at 0x%08x\n", flash_write_offset);
         pw_commit_page(current_buffer);
         current_buffer = (current_buffer+1) & N_BUFFERS;
+        msg += LOG_PAGE_SIZE - flash_buffer_cursor;
         flash_buffer_cursor = 0;
     }
 
