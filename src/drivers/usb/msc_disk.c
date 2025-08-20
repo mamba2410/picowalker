@@ -164,7 +164,8 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
         printf("from flash\n");
       } else if(read_start_bytes < flash_bytes_written + flash_buffer_cursor) {
         // Not written to flash yet, still in RAM
-        data = log_ram_buffers[current_buffer] + read_start_bytes;
+        // RAM read starts at (read_start_bytes - flash_bytes_written) into RAM.
+        data = log_ram_buffers[current_buffer] + read_start_bytes - flash_bytes_written;
         printf("[Log  ] Reading log file offset %u (flash committed %u bytes) ", read_start_bytes, flash_bytes_written);
         printf("from ram\n");
       } else {
