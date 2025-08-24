@@ -3,10 +3,7 @@
 #include <stdint.h>
 
 #include <stdio.h>
-<<<<<<< HEAD
 #include <string.h>
-=======
->>>>>>> 69909d8 (logging: add functio to log to flash)
 
 #include <hardware/flash.h>
 #include <pico/flash.h>
@@ -22,10 +19,7 @@ pw_flash_log_t flash_log = {};
 #define LOG_PAGE_SIZE FLASH_SECTOR_SIZE // match flash page size
 #define N_BUFFERS 2 // Power of 2, shouldn't need more than 2^1
 
-char log_ram_buffers[N_BUFFERS][LOG_PAGE_SIZE];
-uint8_t current_buffer = 0;
-size_t flash_buffer_cursor = 0;
-size_t flash_write_offset = FLASH_LOG_START_OFFSET;
+pw_flash_log_t flash_log = {};
 
 
 /**
@@ -75,11 +69,11 @@ static void pw_commit_page() {
 static void pw_commit_page(uint8_t page) {
 
     // Erase whatever is already in the page
-    int rc = flash_safe_execute(call_flash_range_erase, (void*)flash_write_offset, UINT32_MAX);
+    int rc = flash_safe_execute(call_flash_range_erase, (void*)write_addr, UINT32_MAX);
     hard_assert(rc == PICO_OK);
 
     // Reprogram it with what we want
-    uintptr_t params[] = {flash_write_offset, (uintptr_t)log_ram_buffers[page]};
+    uintptr_t params[] = {write_addr, (uintptr_t)flash_log.buffer};
     rc = flash_safe_execute(call_flash_range_program, params, UINT32_MAX);
     hard_assert(rc == PICO_OK);
     
@@ -121,20 +115,20 @@ void pw_log_dump() {
     if(cursor + len >= LOG_PAGE_SIZE) {
 
         // FIll up rest of page with partial message
-        memcpy(&log_ram_buffers[current_buffer][flash_buffer_cursor], msg, LOG_PAGE_SIZE-flash_buffer_cursor);
-        len = flash_buffer_cursor + len - LOG_PAGE_SIZE;
+        memcpy(&flash_log.buffer[flash_log.ram_write_head], msg, partial_write_len);
 
         // Write full page to NVM
-        printf("[Debug] Wrote log page to NVM at 0x%08x\n", flash_write_offset);
-        pw_commit_page(current_buffer);
-        current_buffer = (current_buffer+1) & N_BUFFERS;
-        msg += LOG_PAGE_SIZE - flash_buffer_cursor;
-        flash_buffer_cursor = 0;
+        printf("[Debug] Wrote log page to NVM at 0x%08x\n", flash_log.flash_write_head);
+        pw_commit_page();
+
+        // Message is now the remaining portion
+        len -= partial_write_len;
+        msg += partial_write_len;
     }
 
-    memcpy(&log_ram_buffers[current_buffer][flash_buffer_cursor], msg, len);
-    flash_buffer_cursor += len;
-    printf("[Debug] Cached log in RAM (%d/%d)\n", flash_buffer_cursor, LOG_PAGE_SIZE);
+    memcpy(&flash_log.buffer[flash_log.ram_write_head], msg, len);
+    flash_log.ram_write_head += len;
+    printf("[Debug] Cached log in RAM (%d/%d)\n", flash_log.ram_write_head, LOG_PAGE_SIZE);
 }
 
 void pw_log_dump() {
