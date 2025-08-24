@@ -26,12 +26,10 @@
 #include "bsp/board_api.h"
 #include "tusb.h"
 
-#include "msc_disk.h"
 
-extern uint32_t flash_write_offset;
-extern uint32_t flash_buffer_cursor;
-extern char log_ram_buffers[2][4096];
-extern uint8_t current_buffer;
+#include "picowalker-defs.h"
+#include "drivers/onboard_log.h"
+#include "msc_disk.h"
 
 // whether host does safe-eject
 static bool ejected = false;
@@ -139,7 +137,7 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
     uint8_t const* addr = msc_disk[DISK_ROOT_DIR_INDEX] + offset;
     memcpy(buffer, addr, bufsize);
     uint32_t *log_size = (uint32_t*)&buffer[LOG_TXT_ENTRY_OFFSET+32-4];
-    *log_size = flash_write_offset - 256*1024 + flash_buffer_cursor;
+    *log_size = flash_log.flash_write_head + flash_log.ram_write_head;
     return (int32_t)bufsize;
   }
 
@@ -152,22 +150,23 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
 
   // LOG_TXT
   if(lba >= LOG_TXT_FIRST_LBA && lba <= LOG_TXT_LAST_LBA) {
+
       // This does have buffer overflow but oh well
       uint32_t read_start_bytes = (lba-LOG_TXT_FIRST_LBA)*DISK_SECTOR_SIZE + offset;
-      uint32_t flash_bytes_written = flash_write_offset-256*1024;
+      uint32_t flash_bytes_written = flash_log.flash_write_head;
 
       uint8_t *data = 0;
       if( read_start_bytes < flash_bytes_written) {
         // This part is in flash, get it
-        data = XIP_BASE + (256*1024) + read_start_bytes;
-        printf("[Log  ] Reading log file offset %u (flash committed %u bytes) ", read_start_bytes, flash_bytes_written);
-        printf("from flash\n");
-      } else if(read_start_bytes < flash_bytes_written + flash_buffer_cursor) {
+        data = LOG_READ_ADDRESS + read_start_bytes;
+        //printf("[Log  ] Reading log file offset %u (flash committed %u bytes) ", read_start_bytes, flash_bytes_written);
+        //printf("from flash\n");
+      } else if(read_start_bytes < flash_bytes_written + flash_log.ram_write_head) {
         // Not written to flash yet, still in RAM
         // RAM read starts at (read_start_bytes - flash_bytes_written) into RAM.
-        data = log_ram_buffers[current_buffer] + read_start_bytes - flash_bytes_written;
-        printf("[Log  ] Reading log file offset %u (flash committed %u bytes) ", read_start_bytes, flash_bytes_written);
-        printf("from ram\n");
+        data = &flash_log.buffer[read_start_bytes - flash_bytes_written];
+        //printf("[Log  ] Reading log file offset %u (flash committed %u bytes) ", read_start_bytes, flash_bytes_written);
+        //printf("from ram\n");
       } else {
         // Not even been generated, send zeros
         memset(buffer, 0, bufsize);
@@ -210,28 +209,28 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
 
   // BPB
   if(lba == BPB_FIRST_LBA) {
-    uint8_t const* addr = msc_disk[DISK_BPB_INDEX] + offset;
+    uint8_t *addr = msc_disk[DISK_BPB_INDEX] + offset;
     memcpy(addr, buffer, bufsize);
     return (int32_t)bufsize;
   }
 
   // FAT1
   if(lba == FAT1_FIRST_LBA) {
-    uint8_t const* addr = msc_disk[DISK_FAT1_INDEX] + offset;
+    uint8_t *addr = msc_disk[DISK_FAT1_INDEX] + offset;
     memcpy(addr, buffer, bufsize);
     return (int32_t)bufsize;
   }
 
   // FAT2
   if(lba == FAT2_FIRST_LBA) {
-    uint8_t const* addr = msc_disk[DISK_FAT2_INDEX] + offset;
+    uint8_t *addr = msc_disk[DISK_FAT2_INDEX] + offset;
     memcpy(addr, buffer, bufsize);
     return (int32_t)bufsize;
   }
 
   // Root dir
   if(lba == ROOT_DIR_FIRST_LBA) {
-    uint8_t const* addr = msc_disk[DISK_ROOT_DIR_INDEX] + offset;
+    uint8_t *addr = msc_disk[DISK_ROOT_DIR_INDEX] + offset;
     memcpy(addr, buffer, bufsize);
     return (int32_t)bufsize;
   }

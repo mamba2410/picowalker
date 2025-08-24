@@ -37,6 +37,13 @@ add_executable(picowalker
     src/assets/pokewalker_rp2xxx_inbuilt.c
     src/assets/pokewalker_rp2xxx_inbuilt.h
 
+    src/drivers/log/onboard_log.c
+    src/drivers/log/onboard_log.h
+    src/drivers/usb/msc_disk.c
+    src/drivers/usb/msc_disk.h
+    src/drivers/usb/usb_descriptors.c
+    src/drivers/usb/tusb_config.h
+
     src/picowalker-defs.h
 )
 
