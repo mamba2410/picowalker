@@ -2,7 +2,8 @@
     "files.associations": {
         "*.bt": "cpp",
         "*.py": "python",
-        "rp2350touchlcd128.h": "c",
-        "dev_config.h": "c"
+        "*.S": "pio",
+        "*.h": "c",
+        "*.c": "c"
     }
 }

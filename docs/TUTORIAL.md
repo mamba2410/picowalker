@@ -115,8 +115,9 @@ This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 So now, lets run
 
 ```sh
-cmake -B build/waveshare -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
-cmake --build build/waveshare
+rm -rf build
+cmake -B build -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
+cmake --build build
 ```
 
 if you encounter errors here, it likely means that `cmake` can't find your
@@ -152,29 +153,44 @@ cd picowalker
 Now we'll need to copy over our library to be included in the `picowalker`
 project.
 
-#### Pokewalker-core
+#### Picowalker-core
 ```sh
 mkdir lib
-cp ../picowalker-core/build/waveshare/libpicowalker-core.a lib/
-```
-#### LVGL
-Include LVGL
-```sh
-git clone https://github.com/lvgl/lvgl  lib/lvgl
-```
-#### RP2350TouchLCD128
-```sh
-git clone https://github.com/DaveuRrr/RP2350TouchLCD128 lib/RP2350TouchLCD128
+cp ../picowalker-core/build/libpicowalker-core.a lib/
 ```
 
-And now we get to build it with `cmake`:
-
+#### LVGL Library
+Include LVGL library target LVGL v8.4
 ```sh
-cmake -B build/waveshare -DPICO_BOARD=pico2 .
-cmake --build build/waveshare
+rm -rf lib/lvgl
+git clone --branch release/v8.4 https://github.com/lvgl/lvgl lib/lvgl
 ```
 
-If that all went well, you should have a file called `build/waveshare/picowalker.uf2`.
+#### WaveShare Drivers
+```sh
+git clone https://github.com/DaveuRrr/pico_waveshare_drivers lib/pico_waveshare_drivers
+```
+
+#### Board Specific Build
+And now we get to build a with `cmake`
+
+Picowalker v0.X
+```sh
+cp src/boards/picowalker-v0.3
+rm -rf build
+cmake -B build -DPICO_BOARD=pico2 .
+cmake --build build/
+```
+
+RP2350TouchLCD128 LVGL
+```sh
+cd src/boards/rp2350touchlcd128
+rm -rf build
+cmake -B build -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build build
+```
+
+If that all went well, you should have a file called `build/picowalker.uf2`.
 This is the file you'll want to copy to your pico.
 
 If that didn't work out for you, make sure that you have installed the
