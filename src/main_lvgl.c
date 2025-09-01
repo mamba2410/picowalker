@@ -2,12 +2,15 @@
 #include "hardware/timer.h"
 #include "hardware/irq.h"
 #include "hardware/structs/timer.h"
+<<<<<<< HEAD
 #include "hardware/clocks.h"
 #include "hardware/pll.h"
 
 #include <tusb.h>
 //#include "bsp/board_api.h"
 //#include "tusb_config.h"
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
 #include "lvgl.h"
 //#include "screen_ws.h"
@@ -15,18 +18,27 @@
 // Picowalker
 #include "picowalker.h"
 #include "picowalker-defs.h"
+<<<<<<< HEAD
 //#include "msc_disk.h"
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
 // LVGL
 static struct repeating_timer lvgl_timer;
 
 extern void (*current_loop)(void);
 
+<<<<<<< HEAD
 bool power_sleep_enabled;
 
 /********************************************************************************
  * @brief       Repeating Tick Increment
  * @param timer LVGL Struct Repeating Timer
+=======
+/********************************************************************************
+function:	
+parameter:
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 ********************************************************************************/
 static bool repeating_lvgl_timer_callback(struct repeating_timer *timer)
 {
@@ -35,6 +47,7 @@ static bool repeating_lvgl_timer_callback(struct repeating_timer *timer)
 }
 
 /********************************************************************************
+<<<<<<< HEAD
  * @brief       Mount Callback
  * @param N/A
 ********************************************************************************/
@@ -129,10 +142,20 @@ void tud_cdc_rx_cb(uint8_t itf) {
 ********************************************************************************/
 int main() 
 {
+=======
+function:	
+parameter:
+********************************************************************************/
+int main() 
+{
+    // Initialize USB for debugging
+    //tusb_init();
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
     lv_init();
     add_repeating_timer_ms(5,   repeating_lvgl_timer_callback,       NULL, &lvgl_timer);
 
+<<<<<<< HEAD
     tusb_rhport_init_t dev_init = {
         .role = TUSB_ROLE_DEVICE,
         .speed = TUSB_SPEED_AUTO
@@ -141,14 +164,22 @@ int main()
     board_init();
     tusb_init(BOARD_TUD_RHPORT, &dev_init); // TODO Expanded Define...needs review
 
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
     walker_setup();
 
     while(true)
     {
+<<<<<<< HEAD
         tud_task();
         lv_task_handler();
         current_loop();
         cdc_task();
+=======
+        lv_task_handler();
+        //tud_task(); // TinyUSB device task for USB processing
+        current_loop();
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
     }
 
     return 0;

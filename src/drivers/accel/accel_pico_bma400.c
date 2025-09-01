@@ -12,6 +12,7 @@
 static spi_inst_t *accel_spi;
 static int32_t prev_steps;
 
+<<<<<<< HEAD
 #define ACCEL_STEP_COUNT_SETTINGS_LEN 24
 static const uint8_t NON_WRIST_OPTIMAL_SETTINGS[ACCEL_STEP_COUNT_SETTINGS_LEN] = {
     0x59,
@@ -19,6 +20,8 @@ static const uint8_t NON_WRIST_OPTIMAL_SETTINGS[ACCEL_STEP_COUNT_SETTINGS_LEN] =
     108, 156, 117, 100, 126, 170, 12, 12, 74, 160, 0, 0, 12, 60, 240, 1, 0
 };
 
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 static void pw_accel_cs_enable() {
     gpio_put(ACCEL_CS_PIN, 0);
 }
@@ -97,7 +100,11 @@ void pw_accel_reset_int() {
     buf[0] = ACCEL_REG_STATUS;
     pw_accel_read_spi(buf, 1);
 
+<<<<<<< HEAD
     printf("[Debug] Accel status byte: 0x%02x\n", buf[0]);
+=======
+    printf("[Debug] Read status: 0x%02x\n", buf[0]);
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
     buf[0] = ACCEL_REG_INT_STAT0;
     pw_accel_read_spi(buf, 3);
@@ -142,7 +149,10 @@ uint32_t pw_accel_get_new_steps() {
     int32_t steps = (buf[2]<<16) | (buf[1]<<8) | (buf[0]);
     int32_t new_steps = steps - prev_steps;
     prev_steps = steps;
+<<<<<<< HEAD
     printf("[Debug] Accel has %u steps\n", steps);
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
     if(new_steps < 0) return 0;
     else return (uint32_t)new_steps;
 }
@@ -225,8 +235,11 @@ int8_t pw_accel_init() {
 
     pw_accel_reset_int();
 
+<<<<<<< HEAD
     pw_accel_write_spi(NON_WRIST_OPTIMAL_SETTINGS, ACCEL_STEP_COUNT_SETTINGS_LEN);
 
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
     return 0;
 }
 

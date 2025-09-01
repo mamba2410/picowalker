@@ -17,6 +17,7 @@
 #define DRIVER_EEPROM_WRITE_ALIGN   1           // write sizes must be aligned to this many bytes
 
 #ifndef __ASSEMBLER__
+<<<<<<< HEAD
 
 // New RAM cache management functions
 bool pw_eeprom_is_cache_dirty();
@@ -26,6 +27,9 @@ int pw_eeprom_reload_from_flash();
 int pw_eeprom_read_flash_direct(eeprom_addr_t addr, uint8_t *buf, size_t len);
 size_t pw_eeprom_get_size();
 
+=======
+// ?
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 #endif /* __ASSEMBLER__ */
 
 #endif /* PW_DRIVER_EEPROM_RP2XXX_EMULATED_H */

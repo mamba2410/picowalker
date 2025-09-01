@@ -5,19 +5,30 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+<<<<<<< HEAD
 #define BAT_INT_PIN 3
 #define BAT_CE_PIN  4
 
 #define PMIC_I2C_SCL_PIN 1
 #define PMIC_I2C_SDA_PIN 0
+=======
+#define BAT_INT_PIN 27  // GP27, phys 32
+#define BAT_CE_PIN  28  // GP28, phys 34
+
+#define PMIC_I2C_SCL_PIN 21  // GP21, phys 27
+#define PMIC_I2C_SDA_PIN 20  // GP20, phys 26
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
 #define PMIC_I2C_SPEED_KHZ 100 // Supports 400 and 1000 also but needs more timing requirements
 #define PMIC_I2C_ADDRESS 0x6a
 
 #define PMIC_I2C i2c0
 
+<<<<<<< HEAD
 #define ADC_TIMEOUT_MS 100
 
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 /*
  * Taken from datasheet https://www.ti.com/lit/ds/symlink/bq25628e.pdf
  * For limits and ADC values, see associated table for range, step, etc.

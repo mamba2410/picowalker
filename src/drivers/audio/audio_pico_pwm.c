@@ -8,7 +8,13 @@
 
 #include "picowalker-defs.h"
 
+<<<<<<< HEAD
 #define PW_SPEAKER_PIN 2
+=======
+#ifndef PW_SPEAKER_PIN
+#define PW_SPEAKER_PIN 2
+#endif
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
 #define AUDIO_ALARM_NUM 1
 #define AUDIO_SYSCLK 150e6

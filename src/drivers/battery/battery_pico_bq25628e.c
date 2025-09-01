@@ -15,10 +15,13 @@
 #define I2C_READ_MASK   (0x00)
 #define I2C_WRITE_MASK  (0x00)
 
+<<<<<<< HEAD
 #define VBAT_ABS_MINIMUM_MV 3500.0f
 #define VBAT_ABS_MAXIMUM_MV 4250.0f
 #define VBAT_SAFE_MINIMUM_MV 3600.0f
 
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 static const char* CHARGE_STATUS_STRINGS[4] = {
     "not charging",
     "trickle, pre-charge or fast charge",
@@ -26,10 +29,13 @@ static const char* CHARGE_STATUS_STRINGS[4] = {
     "top-off timer active charge",
 };
 
+<<<<<<< HEAD
 static const char* CHARGE_STATUS_SHORT[4] = {
     "D", "CC", "CV", "TOP",
 };
 
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 static char* TS_STAT_STRINGS[] = {
     "TS_NORMAL",
     "TS_COLD",
@@ -60,10 +66,14 @@ static char* FAULT_STATUS_0_STRINGS[] = {"", "", "", "TSHUT", "", "SYS_FAULT", "
 
 static uint8_t ADC_SHIFTS[] = { 1, 2, 2, 2, 1, 1, 0, 0 };
 
+<<<<<<< HEAD
 static volatile uint8_t interrupt_flags[4];
 static volatile uint8_t interrupt_status[4];
 static volatile bool adc_done = false;
 static volatile uint32_t adc_timeout_stamp = 0;
+=======
+static volatile bool adc_done;
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
 static void pw_pmic_read_reg(uint8_t reg, uint8_t *buf, size_t len) {
     if(buf == NULL) { return; }
@@ -144,6 +154,7 @@ void print_flags_and_status(uint8_t flags[3], uint8_t status[3]) {
 void pw_battery_int(uint gp, uint32_t events) {
     
     if(gp == BAT_INT_PIN) {
+<<<<<<< HEAD
 
         // Read `FLAG` registers to clear interrupts
         pw_pmic_read_reg(REG_CHARGER_FLAG_0, interrupt_flags, 3);
@@ -152,13 +163,30 @@ void pw_battery_int(uint gp, uint32_t events) {
         // Latch up, don't reset. Otherwise interrupts before we check the flag
         // will cause things to spin forever
         if(interrupt_flags[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) {
+=======
+        uint8_t flags[4], status[4];
+
+        // Read `FLAG` registers to clear interrupts
+        pw_pmic_read_reg(REG_CHARGER_FLAG_0, flags, 3);
+
+        // Latch up, don't reset. Otherwise interrupts before we check the flag
+        // will cause things to spin forever
+        if(flags[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) {
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
             adc_done = true;
         }
 
         // Debug print if any of the fault flags show up
+<<<<<<< HEAD
         if(interrupt_flags[2] > 0) {
             // Should probably do something with this info, like notify core about something like a fault, low battery, on charge
             print_flags_and_status(interrupt_flags, interrupt_status);
+=======
+        if(flags[2] > 0) {
+            // Should probably do something with this info, like notify core about something like a fault, low battery, on charge
+            pw_pmic_read_reg(REG_CHARGER_STATUS_0, status, 3);
+            print_flags_and_status(flags, status);
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
         }
 
     } else {
@@ -167,11 +195,14 @@ void pw_battery_int(uint gp, uint32_t events) {
 }
 
 
+<<<<<<< HEAD
 void pw_battery_shutdown() {
     uint8_t val = REG_CHARGER_CONTROL_2_BATFET_CTRL_SHUTDOWN;
     pw_pmic_write_reg(REG_CHARGER_CONTROL_2, &val, 1);
 }
 
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 void pw_battery_init() {
 
     // I2C bus
@@ -200,7 +231,11 @@ void pw_battery_init() {
 
     // Check for part number
     pw_pmic_read_reg(REG_PART_INFO, buf, 3);
+<<<<<<< HEAD
     printf("[Info ] BQ25628E part info: 0x%02x\n", buf[0]);
+=======
+    printf("[Info] BQ25628E part info: 0x%02x\n", buf[0]);
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
     // Read `FLAG` registers to clear interrupts
     // (possibly) important to clear "power-on" interrupt
@@ -215,6 +250,7 @@ void pw_battery_init() {
     buf[0] |= REG_CHARGER_CONTROL_0_WATCHDOG_DISABLED;
     pw_pmic_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
 
+<<<<<<< HEAD
     // Enable charge
     gpio_put(BAT_CE_PIN, 0);
 
@@ -235,10 +271,25 @@ void pw_battery_init() {
              REG_ADC_CONTROL_ADC_RATE_ONESHOT |
              //REG_ADC_CONTROL_ADC_SAMPLE_9_BIT | // default
              //REG_ADC_CONTROL_ADC_SAMPLE_12_BIT | // extend ADC sample time to 30 ms
+=======
+    // Set up ADC targets for conversion
+    // Allow: VBAT, IBAT, VBUS, IBUS, VSYS
+    // Probably just allow VBAT, VSYS in prod
+    //buf[0] = REG_ADC_FUNCTION_DISABLE_0_VPMID |
+    //    REG_ADC_FUNCTION_DISABLE_0_TDIE |
+    //    REG_ADC_FUNCTION_DISABLE_0_TS ;
+    //pw_pmic_write_reg(REG_ADC_FUNCTION_DISABLE_0, buf, 1);
+
+    // Set ADC to one-shot mode, don't enable to save power
+    buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
+             REG_ADC_CONTROL_ADC_RATE_ONESHOT |
+             REG_ADC_CONTROL_ADC_SAMPLE_9_BIT | // default
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
              REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
     uint8_t my_reg = buf[0];
     pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
 
+<<<<<<< HEAD
     // Do a few samples to prime the ADC and stop it from instantly shutting down.
     // TODO: Do this a better way
     for(size_t i = 0; i < 3; i++) {
@@ -254,10 +305,21 @@ void pw_battery_init() {
     //my_reg = buf[0];
     pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
 
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
     // Just for fun
     //pw_pmic_read_reg(reg_charger_status_0, buf, 3);
     //printf("[info] bq25628e charge status: %s\n", charge_status_strings[(buf[1]>>3)&0x03]);
 
+<<<<<<< HEAD
+=======
+    // Enable charge
+    gpio_put(BAT_CE_PIN, 0);
+
+    // Debug: For testing
+    pw_power_get_battery_status();
+
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
     // TODO: Set REG_CHARGER_CONTROL_3.IBAT_PK to 0x0 for 1.5A discharge limit
     // TODO: Charge current limit default 320mA, can reprogram. See REG_CHARGE_CURRENT_LIMIT
     // TODO: VSYSMIN is 3520mV, can change with REG_MINIMAL_SYSTEM_VOLTAGE
@@ -295,6 +357,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     uint16_t *buf16 = (uint16_t*)buf;
 
     // Enable the ADC and start conversion
+<<<<<<< HEAD
     if(adc_timeout_stamp == 0) {
         pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
         buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
@@ -305,6 +368,12 @@ pw_battery_status_t pw_power_get_battery_status() {
 
     // Check why we interrupted, if at all
     //print_flags_and_status(interrupt_flags, interrupt_status);
+=======
+    pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
+    buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
+    buf[0] |= REG_ADC_CONTROL_ADC_EN_ENABLED;
+    pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
     // Pet the watchdog
     // TODO: Can't rely on this in sleep mode
@@ -315,6 +384,7 @@ pw_battery_status_t pw_power_get_battery_status() {
 
     // Read status registers while we wait for ADC conversion
     pw_pmic_read_reg(REG_CHARGER_STATUS_0, buf, 3);
+<<<<<<< HEAD
     uint8_t charge_status = (buf[1]>>3)&0x03;
     //printf("[Info] bq25628e charge status: %s\n", CHARGE_STATUS_STRINGS[charge_status]);
     if(charge_status != 0) {
@@ -343,6 +413,13 @@ pw_battery_status_t pw_power_get_battery_status() {
     uint32_t adc_conversion_time = pw_time_get_ms() - (adc_timeout_stamp - ADC_TIMEOUT_MS);
     adc_done = false;
     adc_timeout_stamp = 0;
+=======
+    printf("[Info] bq25628e charge status: %s\n", CHARGE_STATUS_STRINGS[(buf[1]>>3)&0x03]);
+
+    // Wait for interrupt to say that ADC function is done
+    while(!adc_done);
+    adc_done = false;
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
     // Read ADC registers that we're interested in 
     buf[0] = buf[1] = 0;
@@ -355,6 +432,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     // TODO: Some form of LUT
     // Value here is 0x000 - 0xaf0, max resolution of 1.99mV
     float vbat_f = ((float)vbat / (float)0xaf0) * 5572.0;
+<<<<<<< HEAD
     //printf("[Log  ] VBAT: %4.0f mV\n", vbat_f);
     float percent_f = 100.0f*(vbat_f - VBAT_ABS_MINIMUM_MV)/(VBAT_ABS_MAXIMUM_MV-VBAT_ABS_MINIMUM_MV);
     bs.percent = (uint8_t)percent_f;
@@ -369,16 +447,26 @@ pw_battery_status_t pw_power_get_battery_status() {
     //bs.percent = 80;
     //printf("[Info ] Battery is at %.2f%%\n", percent_f);
 
+=======
+    printf("[Log ] VBAT: %4.0f mV\n", vbat_f);
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
     float neg = 1.0;
 
     // Read battery current draw
     // Convert to 2's compliment - negative means discharge
+<<<<<<< HEAD
     //pw_pmic_read_reg(REG_IBAT_ADC, buf, 2);
     //raw_val = REG_IBAT_ADC_VAL(buf16[0]);
     //if(raw_val > 0x1fff) { raw_val = (raw_val^0x3fff) + 1; neg = -1.0; }
     //float ibat_f = neg * (float)(raw_val) / (float)(0x3e8) * 4000.0;
     //printf("[Log ] IBAT: %4.0f mA\n", neg * (float)(raw_val) / (float)(0x3e8) * 4000.0);
+=======
+    pw_pmic_read_reg(REG_IBAT_ADC, buf, 2);
+    raw_val = REG_IBAT_ADC_VAL(buf16[0]);
+    if(raw_val > 0x1fff) { raw_val = (raw_val^0x3fff) + 1; neg = -1.0; }
+    printf("[Log ] IBAT: %4.0f mA\n", neg * (float)(raw_val) / (float)(0x3e8) * 4000.0);
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
     // Read bus current draw
     //pw_pmic_read_reg(REG_IBUS_ADC, buf, 2);
@@ -390,12 +478,16 @@ pw_battery_status_t pw_power_get_battery_status() {
     // This gets converted down, but good to note what we're feeding the screen
     pw_pmic_read_reg(REG_VSYS_ADC, buf, 2);
     raw_val = REG_VSYS_ADC_VAL(buf16[0]);
+<<<<<<< HEAD
     float vsys_f = (float)raw_val * 5572.0 / (float)0x0af0;
     //printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
 
     printf("[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"ADC_conversion_ms\": %d}\n",
             vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], adc_conversion_time
     );
+=======
+    printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
     // ADC gets auto-disabled if we're in one-shot mode
 

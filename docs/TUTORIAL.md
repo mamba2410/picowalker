@@ -165,10 +165,14 @@ Now we'll need to copy over our library to be included in the `picowalker`
 project.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #### Picowalker-core
 =======
 #### Pokewalker-core
 >>>>>>> 996b184 (LVGL Introduction and Testing)
+=======
+#### Picowalker-core
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 ```sh
 mkdir lib
 cp ../picowalker-core/build/libpicowalker-core.a lib/

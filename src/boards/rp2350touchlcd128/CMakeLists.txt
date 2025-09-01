@@ -11,7 +11,11 @@ include(${CMAKE_SOURCE_DIR}/pico_sdk_import.cmake)
 include(${CMAKE_SOURCE_DIR}/pico_extras_import.cmake)
 
 ### Set project name
+<<<<<<< HEAD
 project(picowalker_rp2350touchlcd128)
+=======
+project(picowalker)
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
 ### LVGL version options
 option(USE_LVGL "Use LVGL" OFF)
@@ -60,7 +64,11 @@ if (USE_LVGL)
   include_directories(${CMAKE_SOURCE_DIR}/src/globals)
   include_directories(${CMAKE_SOURCE_DIR}/src)
 
+<<<<<<< HEAD
   add_executable(picowalker_rp2350touchlcd128
+=======
+  add_executable(picowalker
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
       # ${CMAKE_SOURCE_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.c
       # ${CMAKE_SOURCE_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.h
       ${CMAKE_SOURCE_DIR}/src/main_lvgl.c
@@ -88,24 +96,34 @@ if (USE_LVGL)
       ${CMAKE_SOURCE_DIR}/src/drivers/extras_pico.S
       ${CMAKE_SOURCE_DIR}/src/drivers/extras_pico.h
       ${CMAKE_SOURCE_DIR}/src/drivers/timer_pico.c
+<<<<<<< HEAD
       ${CMAKE_SOURCE_DIR}/src/drivers/onboard_log.c
       ${CMAKE_SOURCE_DIR}/src/drivers/onboard_log.h
       ${CMAKE_SOURCE_DIR}/src/msc_disk.c
       ${CMAKE_SOURCE_DIR}/src/msc_disk.h
       ${CMAKE_SOURCE_DIR}/src/usb_descriptors.c
       ${CMAKE_SOURCE_DIR}/src/tusb_config.h
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
       ${CMAKE_SOURCE_DIR}/src/picowalker-defs.h
   )
 
   # Link these libs together
+<<<<<<< HEAD
   target_link_libraries(picowalker_rp2350touchlcd128
+=======
+  target_link_libraries(picowalker
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
       WaveShare
       GC9A01A
       CST816S
       QMI8658
       lvgl
       pico_stdlib
+<<<<<<< HEAD
       pico_aon_timer
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
       hardware_sleep
       hardware_spi
       hardware_i2c
@@ -119,7 +137,11 @@ if (USE_LVGL)
       ${CMAKE_SOURCE_DIR}/lib/libpicowalker-core.a
   )
 else()
+<<<<<<< HEAD
   add_executable(picowalker_rp2350touchlcd128
+=======
+  add_executable(picowalker
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
       ${CMAKE_SOURCE_DIR}/src/main.c
       ${CMAKE_SOURCE_DIR}/src/drivers/screen/screen_rp2xxx_gc9a01a.c
       ${CMAKE_SOURCE_DIR}/src/drivers/screen/screen_rp2xxx_gc9a01a.h
@@ -145,6 +167,7 @@ else()
       ${CMAKE_SOURCE_DIR}/src/picowalker-defs.h
   )
   ## Link these libs together
+<<<<<<< HEAD
   target_link_libraries(picowalker_rp2350touchlcd128
     pico_stdlib
     pico_aon_timer
@@ -154,10 +177,20 @@ else()
     hardware_pio
     hardware_timer
     hardware_pwm
+=======
+  target_link_libraries(picowalker
+      pico_stdlib
+      hardware_sleep
+      hardware_spi
+      hardware_i2c
+      hardware_pio
+      hardware_timer
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
       ${CMAKE_SOURCE_DIR}/lib/libpicowalker-core.a
   )
 endif()
 
+<<<<<<< HEAD
 ### Add src/ as a header location for tinyusb
 target_include_directories(picowalker_rp2350touchlcd128 PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -174,3 +207,11 @@ pico_enable_stdio_uart(picowalker_rp2350touchlcd128 1)
 
 ### Add outputs other than .elf file
 pico_add_extra_outputs(picowalker_rp2350touchlcd128)
+=======
+### Enable usb, uart etc for stdio
+pico_enable_stdio_usb(picowalker 1)
+# pico_enable_stdio_uart(picowalker 0)
+
+### Add outputs other than .elf file
+pico_add_extra_outputs(picowalker)
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)

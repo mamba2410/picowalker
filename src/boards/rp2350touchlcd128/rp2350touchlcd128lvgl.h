@@ -9,7 +9,10 @@
 #include "WS_Config.h"
 #include "GC9A01A.h"
 #include "CST816S.h"
+<<<<<<< HEAD
 #include "QMI8658.h"
+=======
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
 // LVGL
 #include "lvgl.h"
@@ -23,8 +26,13 @@
 #define DISP_HOR_RES 240
 #define DISP_VER_RES 240  
 
+<<<<<<< HEAD
 //#define CANVAS_WIDTH  ((SCREEN_WIDTH * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR)   // 96 * 3 / 2 = 144
 //#define CANVAS_HEIGHT ((SCREEN_HEIGHT * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR) // 64 * 3 / 2 = 96
+=======
+#define CANVAS_WIDTH  ((SCREEN_WIDTH * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR)   // 96 * 3 / 2 = 144
+#define CANVAS_HEIGHT ((SCREEN_HEIGHT * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR) // 64 * 3 / 2 = 96
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
 // Global variables
 extern bool is_sleeping;

@@ -284,14 +284,22 @@
 /*1: Show CPU usage and FPS count*/
 #define LV_USE_PERF_MONITOR 0
 #if LV_USE_PERF_MONITOR
+<<<<<<< HEAD
     #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_MID
+=======
+    #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_RIGHT
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 #endif
 
 /*1: Show the used memory and the memory fragmentation
  * Requires LV_MEM_CUSTOM = 0*/
 #define LV_USE_MEM_MONITOR 0
 #if LV_USE_MEM_MONITOR
+<<<<<<< HEAD
     #define LV_USE_MEM_MONITOR_POS LV_ALIGN_TOP_MID
+=======
+    #define LV_USE_MEM_MONITOR_POS LV_ALIGN_BOTTOM_LEFT
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 #endif
 
 /*1: Draw random colored rectangles over the redrawn areas*/
@@ -583,7 +591,11 @@
     #define LV_THEME_DEFAULT_DARK 0
 
     /*1: Enable grow on press*/
+<<<<<<< HEAD
     #define LV_THEME_DEFAULT_GROW 0
+=======
+    #define LV_THEME_DEFAULT_GROW 1
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
     /*Default transition time in [ms]*/
     #define LV_THEME_DEFAULT_TRANSITION_TIME 80

@@ -3,7 +3,11 @@
 
 #include "../picowalker-defs.h"
 
+<<<<<<< HEAD
 #define USER_IDLE_TIMEOUT_MS (30*1000)
+=======
+#define USER_IDLE_TIMEOUT_MS (10*1000)
+>>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 
 #define USER_IDLE_ALARM_NUM (0u)
 
