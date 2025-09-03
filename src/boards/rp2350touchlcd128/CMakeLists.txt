@@ -12,10 +12,14 @@ include(${CMAKE_SOURCE_DIR}/pico_extras_import.cmake)
 
 ### Set project name
 <<<<<<< HEAD
+<<<<<<< HEAD
 project(picowalker_rp2350touchlcd128)
 =======
 project(picowalker)
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+project(picowalker_rp2350touchlcd128)
+>>>>>>> 8cd97d1 (Directory Clean up)
 
 ### LVGL version options
 option(USE_LVGL "Use LVGL" OFF)
@@ -65,10 +69,14 @@ if (USE_LVGL)
   include_directories(${CMAKE_SOURCE_DIR}/src)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   add_executable(picowalker_rp2350touchlcd128
 =======
   add_executable(picowalker
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+  add_executable(picowalker_rp2350touchlcd128
+>>>>>>> 8cd97d1 (Directory Clean up)
       # ${CMAKE_SOURCE_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.c
       # ${CMAKE_SOURCE_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.h
       ${CMAKE_SOURCE_DIR}/src/main_lvgl.c
@@ -110,10 +118,14 @@ if (USE_LVGL)
 
   # Link these libs together
 <<<<<<< HEAD
+<<<<<<< HEAD
   target_link_libraries(picowalker_rp2350touchlcd128
 =======
   target_link_libraries(picowalker
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+  target_link_libraries(picowalker_rp2350touchlcd128
+>>>>>>> 8cd97d1 (Directory Clean up)
       WaveShare
       GC9A01A
       CST816S
@@ -138,10 +150,14 @@ if (USE_LVGL)
   )
 else()
 <<<<<<< HEAD
+<<<<<<< HEAD
   add_executable(picowalker_rp2350touchlcd128
 =======
   add_executable(picowalker
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+  add_executable(picowalker_rp2350touchlcd128
+>>>>>>> 8cd97d1 (Directory Clean up)
       ${CMAKE_SOURCE_DIR}/src/main.c
       ${CMAKE_SOURCE_DIR}/src/drivers/screen/screen_rp2xxx_gc9a01a.c
       ${CMAKE_SOURCE_DIR}/src/drivers/screen/screen_rp2xxx_gc9a01a.h
@@ -168,6 +184,7 @@ else()
   )
   ## Link these libs together
 <<<<<<< HEAD
+<<<<<<< HEAD
   target_link_libraries(picowalker_rp2350touchlcd128
     pico_stdlib
     pico_aon_timer
@@ -179,6 +196,9 @@ else()
     hardware_pwm
 =======
   target_link_libraries(picowalker
+=======
+  target_link_libraries(picowalker_rp2350touchlcd128
+>>>>>>> 8cd97d1 (Directory Clean up)
       pico_stdlib
       hardware_sleep
       hardware_spi
@@ -209,9 +229,13 @@ pico_enable_stdio_uart(picowalker_rp2350touchlcd128 1)
 pico_add_extra_outputs(picowalker_rp2350touchlcd128)
 =======
 ### Enable usb, uart etc for stdio
-pico_enable_stdio_usb(picowalker 1)
+pico_enable_stdio_usb(picowalker_rp2350touchlcd128 1)
 # pico_enable_stdio_uart(picowalker 0)
 
 ### Add outputs other than .elf file
+<<<<<<< HEAD
 pico_add_extra_outputs(picowalker)
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+pico_add_extra_outputs(picowalker_rp2350touchlcd128)
+>>>>>>> 8cd97d1 (Directory Clean up)
