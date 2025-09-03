@@ -11,7 +11,7 @@ include(${CMAKE_SOURCE_DIR}/pico_sdk_import.cmake)
 include(${CMAKE_SOURCE_DIR}/pico_extras_import.cmake)
 
 ### Set project name
-project(picowalker)
+project(picowalker_rp2350touchlcd128)
 
 ### LVGL version options
 option(USE_LVGL "Use LVGL" OFF)
@@ -60,7 +60,7 @@ if (USE_LVGL)
   include_directories(${CMAKE_SOURCE_DIR}/src/globals)
   include_directories(${CMAKE_SOURCE_DIR}/src)
 
-  add_executable(picowalker
+  add_executable(picowalker_rp2350touchlcd128
       # ${CMAKE_SOURCE_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.c
       # ${CMAKE_SOURCE_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.h
       ${CMAKE_SOURCE_DIR}/src/main_lvgl.c
@@ -92,7 +92,7 @@ if (USE_LVGL)
   )
 
   # Link these libs together
-  target_link_libraries(picowalker
+  target_link_libraries(picowalker_rp2350touchlcd128
       WaveShare
       GC9A01A
       CST816S
@@ -112,7 +112,7 @@ if (USE_LVGL)
       ${CMAKE_SOURCE_DIR}/lib/libpicowalker-core.a
   )
 else()
-  add_executable(picowalker
+  add_executable(picowalker_rp2350touchlcd128
       ${CMAKE_SOURCE_DIR}/src/main.c
       ${CMAKE_SOURCE_DIR}/src/drivers/screen/screen_rp2xxx_gc9a01a.c
       ${CMAKE_SOURCE_DIR}/src/drivers/screen/screen_rp2xxx_gc9a01a.h
@@ -138,7 +138,7 @@ else()
       ${CMAKE_SOURCE_DIR}/src/picowalker-defs.h
   )
   ## Link these libs together
-  target_link_libraries(picowalker
+  target_link_libraries(picowalker_rp2350touchlcd128
       pico_stdlib
       hardware_sleep
       hardware_spi
@@ -150,8 +150,8 @@ else()
 endif()
 
 ### Enable usb, uart etc for stdio
-pico_enable_stdio_usb(picowalker 1)
+pico_enable_stdio_usb(picowalker_rp2350touchlcd128 1)
 # pico_enable_stdio_uart(picowalker 0)
 
 ### Add outputs other than .elf file
-pico_add_extra_outputs(picowalker)
+pico_add_extra_outputs(picowalker_rp2350touchlcd128)
