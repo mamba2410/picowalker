@@ -1,13 +1,23 @@
 #include "rp2350touchlcd128lvgl.h"
 
 // LVGL
-static lv_disp_draw_buf_t display_buffer;
-static lv_color_t buffer0[DISP_HOR_RES * DISP_VER_RES/2];
-static lv_color_t buffer1[DISP_HOR_RES * DISP_VER_RES/2];
 static lv_disp_drv_t driver_display;
+static lv_disp_draw_buf_t display_buffer;
+#ifdef PICO_RP2350
+#define LVGL_BUFFER_DIVISOR 2
+static lv_color_t buffer0[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer1[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
+#else
+#define LVGL_BUFFER_DIVISOR 2
+static lv_color_t *buffer0;
+static lv_color_t *buffer1;
+#endif
+
 
 #define CANVAS_WIDTH  144  // Original 96, 1.5 x 96 = 144, 2 x 96 = 192
 #define CANVAS_HEIGHT 96   // Original 64, 1.5 x 64 = 96,  2 x 64 = 128
+static lv_obj_t *canvas;
+static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
 
 static lv_indev_drv_t driver_touch;
 static lv_indev_drv_t driver_accel;
@@ -185,7 +195,11 @@ int main()
     printf("LVGL initialized\n");
 
     // Initialize LVGL Display
-    lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / 2); 
+    #ifdef PICO_RP2040
+    buffer0 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
+    buffer1 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
+    #endif
+    lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR); 
     lv_disp_drv_init(&driver_display);    
     driver_display.flush_cb = display_flush_callback;
     driver_display.draw_buf = &display_buffer;        
@@ -223,38 +237,31 @@ int main()
     lv_obj_set_scrollbar_mode(tile_view,  LV_SCROLLBAR_MODE_OFF);
     lv_group_add_obj(group, tile_view);
 
-    lv_obj_t *tile_picowalker = lv_tileview_add_tile(tile_view, 0, 0, LV_DIR_TOP);
+    lv_obj_t *tile_picowalker = lv_tileview_add_tile(tile_view, 0, 0, LV_DIR_BOTTOM);
 
     LV_IMG_DECLARE(picowalker_background);
     lv_obj_t *background = lv_img_create(tile_picowalker);
     lv_img_set_src(background, &picowalker_background);
     lv_obj_align(background, LV_ALIGN_CENTER, 0, 0);
 
-    // Button Style Base
+    // Button Style Not Pressed
     static lv_style_t button_style_base;
     lv_style_init(&button_style_base);
     lv_style_set_radius(&button_style_base, LV_RADIUS_CIRCLE);
     lv_style_set_bg_opa(&button_style_base, LV_OPA_TRANSP);
     lv_style_set_bg_color(&button_style_base, lv_color_white());
-    lv_style_set_border_opa(&button_style_base, LV_OPA_40);
     lv_style_set_border_width(&button_style_base, 2);
+    lv_style_set_border_opa(&button_style_base, LV_OPA_40);
     lv_style_set_border_color(&button_style_base, lv_palette_main(LV_PALETTE_GREY));
-    //lv_style_set_shadow_width(&button_style_base, 8);
-    //lv_style_set_shadow_color(&button_style_base, lv_palette_main(LV_PALETTE_GREY));
-    //lv_style_set_shadow_offset_x(&button_style_base, 8);
-    //lv_style_set_shadow_offset_y(&button_style_base, 8);
     lv_style_set_outline_opa(&button_style_base, LV_OPA_COVER);
     lv_style_set_outline_color(&button_style_base, lv_color_white());
 
-    // Button Style Press
+    // Button Style Pressed
     static lv_style_t button_style_press;
     lv_style_init(&button_style_press);
+    lv_style_set_translate_y(&button_style_press, 5);
     lv_style_set_outline_width(&button_style_press, 5);
-    lv_style_set_translate_y(&button_style_press, 2);      // Move down slightly
-    //lv_style_set_outline_width(&button_style_press, 30);
     lv_style_set_outline_opa(&button_style_press, LV_OPA_TRANSP);
-    //lv_style_set_translate_y(&button_style_press, 5);
-    //lv_style_set_shadow_offset_y(&button_style_press, 3);
     lv_style_set_bg_color(&button_style_press, lv_palette_main(LV_PALETTE_GREY));
 
     // Left Button
@@ -289,55 +296,67 @@ int main()
     // lv_label_set_text(label_right, "▷");
     // lv_obj_center(label_right);
     
-    // Canvas
-    static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
-    lv_obj_t *canvas = lv_canvas_create(tile_picowalker);
+    // Picowalker Canvas (no styling)
+    canvas = lv_canvas_create(tile_picowalker);
     lv_canvas_set_buffer(canvas, canvas_buffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
     lv_obj_set_size(canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
     lv_obj_align(canvas, LV_ALIGN_CENTER, 0, -10);
     lv_obj_clear_flag(canvas, LV_OBJ_FLAG_CLICKABLE);
     lv_canvas_fill_bg(canvas, lv_color_make(195, 205, 185), LV_OPA_COVER);
-    lv_obj_set_style_border_width(canvas, 2, 0);
-    lv_obj_set_style_border_color(canvas, lv_color_black(), 0);
+    
+    // Rounded overlay to create rounded corners effect
+    lv_obj_t *canvas_overlay = lv_obj_create(tile_picowalker);
+    lv_obj_set_size(canvas_overlay, CANVAS_WIDTH + 10, CANVAS_HEIGHT + 10);
+    lv_obj_align(canvas_overlay, LV_ALIGN_CENTER, 0, -10);
+    lv_obj_set_style_radius(canvas_overlay, 10, 0);
+    lv_obj_set_style_border_width(canvas_overlay, 5, 0);
+    lv_obj_set_style_border_color(canvas_overlay, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(canvas_overlay, LV_OPA_TRANSP, 0);
+    lv_obj_clear_flag(canvas_overlay, LV_OBJ_FLAG_CLICKABLE);
 
     // Drawing on canvas in v8 is done directly
 
 
     // System Menu Tile
-    lv_obj_t *tile_menu = lv_tileview_add_tile(tile_view, 0, 2, LV_DIR_BOTTOM);
+    lv_obj_t *tile_menu = lv_tileview_add_tile(tile_view, 0, 2, LV_DIR_TOP);
 
+    //  Slider Style
     static lv_style_t slider_style_base;
     lv_style_set_bg_color(&slider_style_base, lv_palette_main(LV_PALETTE_ORANGE));
     lv_style_set_border_color(&slider_style_base, lv_palette_darken(LV_PALETTE_ORANGE, 3));
 
+    // Slider Style Indicator
     static lv_style_t slider_style_indictator;
     lv_style_init(&slider_style_indictator);
     lv_style_set_bg_color(&slider_style_indictator, lv_palette_lighten(LV_PALETTE_DEEP_ORANGE, 3));
     lv_style_set_bg_grad_color(&slider_style_indictator, lv_palette_main(LV_PALETTE_DEEP_ORANGE));
     lv_style_set_bg_grad_dir(&slider_style_indictator, LV_GRAD_DIR_HOR);
 
+    // Slider Style Press
     static lv_style_t slider_style_indictator_press;
     lv_style_init(&slider_style_indictator_press);
     lv_style_set_shadow_color(&slider_style_indictator_press, lv_palette_main(LV_PALETTE_DEEP_ORANGE));
     lv_style_set_shadow_width(&slider_style_indictator_press, 10);
     lv_style_set_shadow_spread(&slider_style_indictator_press, 3);
+
     
+    // Brightness Slider
     lv_obj_t *brightness_slider = lv_slider_create(tile_menu);
     lv_obj_set_size(brightness_slider, 150, 10);
     lv_obj_align(brightness_slider, LV_ALIGN_CENTER, 0, 0);
     lv_slider_set_range(brightness_slider, 0, 100);
     lv_slider_set_value(brightness_slider, 10, LV_ANIM_OFF);    // TODO review a saved state in eeprom.
-    
-    lv_obj_t *label = lv_label_create(brightness_slider);
-    lv_label_set_text(label, "Brightness");
-    lv_obj_center(label);
-    lv_group_add_obj(group, brightness_slider);
     lv_obj_add_style(brightness_slider, &slider_style_base,0);
     lv_obj_add_style(brightness_slider, &slider_style_indictator,LV_PART_INDICATOR);
     lv_obj_add_style(brightness_slider, &slider_style_indictator_press, LV_PART_INDICATOR | LV_STATE_PRESSED);
     lv_obj_add_style(brightness_slider, &slider_style_base,LV_PART_KNOB);
     lv_obj_add_event_cb(brightness_slider, brightness_slider_event_callback, LV_EVENT_VALUE_CHANGED, NULL);
-    // Add a Callback event for the brightness..
+    
+    // Label for Brightness Slider
+    lv_obj_t *label = lv_label_create(brightness_slider);
+    lv_label_set_text(label, "Brightness");
+    lv_obj_center(label);
+    lv_group_add_obj(group, brightness_slider);
 
 
     while(1)

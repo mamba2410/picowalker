@@ -9,6 +9,7 @@
 #include "WS_Config.h"
 #include "GC9A01A.h"
 #include "CST816S.h"
+#include "QMI8658.h"
 
 // LVGL
 #include "lvgl.h"
@@ -22,8 +23,8 @@
 #define DISP_HOR_RES 240
 #define DISP_VER_RES 240  
 
-#define CANVAS_WIDTH  ((SCREEN_WIDTH * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR)   // 96 * 3 / 2 = 144
-#define CANVAS_HEIGHT ((SCREEN_HEIGHT * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR) // 64 * 3 / 2 = 96
+//#define CANVAS_WIDTH  ((SCREEN_WIDTH * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR)   // 96 * 3 / 2 = 144
+//#define CANVAS_HEIGHT ((SCREEN_HEIGHT * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR) // 64 * 3 / 2 = 96
 
 // Global variables
 extern bool is_sleeping;

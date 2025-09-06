@@ -112,11 +112,18 @@ Since we're cross-compiling it, we need to specify which toolchain we want to
 use.
 This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 
-So now, lets run
+So now, lets run for Pico2 / RP2350
 
 ```sh
 rm -rf build
 cmake -B build -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
+cmake --build build
+```
+
+Pico / RP2040
+```sh
+rm -rf build
+cmake -B build -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico.cmake .
 cmake --build build
 ```
 
@@ -180,6 +187,14 @@ cp src/boards/picowalker-v0.3
 rm -rf build
 cmake -B build -DPICO_BOARD=pico2 .
 cmake --build build/
+```
+
+RP2040TouchLCD128 LVGL
+```sh
+cd src/boards/rp2040touchlcd128
+rm -rf build
+cmake -B build -DPICO_BOARD=pico -DUSE_LVGL=ON
+cmake --build build
 ```
 
 RP2350TouchLCD128 LVGL

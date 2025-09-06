@@ -25,9 +25,7 @@ if (USE_LVGL)
   # LVGL Configuration
   set(LV_CONF_PATH ${CMAKE_SOURCE_DIR}/src/globals/lv_conf.h CACHE STRING "" FORCE)
 
-  # Pico config for Waveshare RP2040TouchLCD128
-  add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128)
-  add_compile_definitions(PICO_FLASH_SPI_CLKDIV=8)
+  # LVGL Remove Examples
   add_compile_definitions(LV_CONF_INCLUDE_SIMPLE)
   
   # Force include board resources before other headers
@@ -48,7 +46,7 @@ if (USE_LVGL)
   include_directories(${CMAKE_SOURCE_DIR}/lib/lvgl)
   
   # Add driver include directories
-  include_directories(${CMAKE_SOURCE_DIR}/src/boards/rp2040ouchlcd128)
+  include_directories(${CMAKE_SOURCE_DIR}/src/boards/rp2040touchlcd128)
   include_directories(${CMAKE_SOURCE_DIR}/src/drivers/battery)
   include_directories(${CMAKE_SOURCE_DIR}/src/drivers/screen)
   include_directories(${CMAKE_SOURCE_DIR}/src/drivers/accel)
@@ -61,8 +59,8 @@ if (USE_LVGL)
   include_directories(${CMAKE_SOURCE_DIR}/src)
 
   add_executable(picowalker_rp2040touchlcd128
-      # ${CMAKE_SOURCE_DIR}/src/boards/rp2040touchlcd128/rp2040touchlcd128lvgl.c
-      # ${CMAKE_SOURCE_DIR}/src/boards/rp2040touchlcd128/rp2040touchlcd128lvgl.h
+    #   ${CMAKE_SOURCE_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.c
+    #   ${CMAKE_SOURCE_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.h
       ${CMAKE_SOURCE_DIR}/src/main_lvgl.c
       ${CMAKE_SOURCE_DIR}/src/boards/rp2040touchlcd128/board_resources.h
       ${CMAKE_SOURCE_DIR}/src/drivers/accel/accel_rp2xxx_qmi8658.c
@@ -88,6 +86,12 @@ if (USE_LVGL)
       ${CMAKE_SOURCE_DIR}/src/drivers/extras_pico.S
       ${CMAKE_SOURCE_DIR}/src/drivers/extras_pico.h
       ${CMAKE_SOURCE_DIR}/src/drivers/timer_pico.c
+      ${CMAKE_SOURCE_DIR}/src/drivers/onboard_log.c
+      ${CMAKE_SOURCE_DIR}/src/drivers/onboard_log.h
+      ${CMAKE_SOURCE_DIR}/src/msc_disk.c
+      ${CMAKE_SOURCE_DIR}/src/msc_disk.h
+      ${CMAKE_SOURCE_DIR}/src/usb_descriptors.c
+      ${CMAKE_SOURCE_DIR}/src/tusb_config.h
       ${CMAKE_SOURCE_DIR}/src/picowalker-defs.h
   )
 
@@ -149,9 +153,20 @@ else()
   )
 endif()
 
+### Add src/ as a header location for tinyusb
+target_include_directories(picowalker_rp2040touchlcd128 PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 ### Enable usb, uart etc for stdio
-pico_enable_stdio_usb(picowalker_rp2040touchlcd128 1)
-# pico_enable_stdio_uart(picowalker 0)
+# pico_enable_stdio_usb(picowalker_rp2040touchlcd128 1)
+target_compile_definitions(picowalker_rp2040touchlcd128 PRIVATE
+    CFG_TUSB_MCU=OPT_MCU_RP2040
+    PICO_DEFAULT_UART=0
+    PICO_DEFAULT_UART_TX_PIN=28
+    PICO_DEFAULT_UART_RX_PIN=29
+)
+pico_enable_stdio_uart(picowalker_rp2040touchlcd128 1)
 
 ### Add outputs other than .elf file
 pico_add_extra_outputs(picowalker_rp2040touchlcd128)

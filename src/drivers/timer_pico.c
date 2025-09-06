@@ -16,7 +16,8 @@
 #define UNIX_TIME_OFFSET 946684800ul
 #define TIMER_INTERVAL_SEC 60
 
-#define RTC_CLK_PIN 20
+// TODO probably should implement an #ifndef
+#define RTC_CLK_PIN 20 // Why is PIN 22 used?
 
 #define USE_EXTERNAL_RTC false
 

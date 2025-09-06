@@ -88,6 +88,12 @@ if (USE_LVGL)
       ${CMAKE_SOURCE_DIR}/src/drivers/extras_pico.S
       ${CMAKE_SOURCE_DIR}/src/drivers/extras_pico.h
       ${CMAKE_SOURCE_DIR}/src/drivers/timer_pico.c
+      ${CMAKE_SOURCE_DIR}/src/drivers/onboard_log.c
+      ${CMAKE_SOURCE_DIR}/src/drivers/onboard_log.h
+      ${CMAKE_SOURCE_DIR}/src/msc_disk.c
+      ${CMAKE_SOURCE_DIR}/src/msc_disk.h
+      ${CMAKE_SOURCE_DIR}/src/usb_descriptors.c
+      ${CMAKE_SOURCE_DIR}/src/tusb_config.h
       ${CMAKE_SOURCE_DIR}/src/picowalker-defs.h
   )
 
@@ -99,6 +105,7 @@ if (USE_LVGL)
       QMI8658
       lvgl
       pico_stdlib
+      pico_aon_timer
       hardware_sleep
       hardware_spi
       hardware_i2c
@@ -139,19 +146,31 @@ else()
   )
   ## Link these libs together
   target_link_libraries(picowalker_rp2350touchlcd128
-      pico_stdlib
-      hardware_sleep
-      hardware_spi
-      hardware_i2c
-      hardware_pio
-      hardware_timer
+    pico_stdlib
+    pico_aon_timer
+    hardware_sleep
+    hardware_spi
+    hardware_i2c
+    hardware_pio
+    hardware_timer
+    hardware_pwm
       ${CMAKE_SOURCE_DIR}/lib/libpicowalker-core.a
   )
 endif()
 
+### Add src/ as a header location for tinyusb
+target_include_directories(picowalker_rp2350touchlcd128 PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 ### Enable usb, uart etc for stdio
-pico_enable_stdio_usb(picowalker_rp2350touchlcd128 1)
-# pico_enable_stdio_uart(picowalker 0)
+#pico_enable_stdio_usb(picowalker_rp2350touchlcd128 1)
+target_compile_definitions(picowalker_rp2350touchlcd128 PRIVATE
+    PICO_DEFAULT_UART=0
+    PICO_DEFAULT_UART_TX_PIN=28
+    PICO_DEFAULT_UART_RX_PIN=29
+)
+pico_enable_stdio_uart(picowalker_rp2350touchlcd128 1)
 
 ### Add outputs other than .elf file
 pico_add_extra_outputs(picowalker_rp2350touchlcd128)

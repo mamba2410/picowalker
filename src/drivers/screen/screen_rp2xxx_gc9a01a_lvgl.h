@@ -49,4 +49,7 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
 static void direct_memory_access_handler(void);
 static bool repeating_lvgl_timer_callback(struct repeating_timer *timer);
 
+// Battery functions
+void pw_screen_update_battery();
+
 #endif /* PW_DRIVER_SCREEN_RP2XXX_GC9A01A_LVGL_H */

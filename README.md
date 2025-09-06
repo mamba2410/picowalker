@@ -10,31 +10,40 @@ This project is the board-specific firmware for running the "picowalker" softwar
 
 There are multiple branches in this repo, all with similar functionality
 
-This is the branch for the [Waveshare RP2350 Touch LCD 1.28"](https://www.waveshare.com/wiki/RP2350-Touch-LCD-1.28) board. The RP2040 version should be compatible.
-Under development, this is just a starting point to help out.
+This is the branch for the [Waveshare RP2350 Touch LCD 1.28"](https://www.waveshare.com/wiki/RP2350-Touch-LCD-1.28) board. The RP2040 version currently has bugs at this time. 
+> [!Note]
+> Corrupt eeprom when transferring eeprom file
 
 ## Hardware
 
-- Screen  - [GC0A01A by Waveshare](https://files.waveshare.com/wiki/common/GC9A01A.pdf) (SPI 4-wire)
-- Touch   - [CST816S](https://files.waveshare.com/upload/5/51/CST816S_Datasheet_EN.pdf) (I2C, unused)
-- Accel   - [QMI8658](https://files.waveshare.com/upload/5/5f/QMI8658A_Datasheet_Rev_A.pdf) (I2C)
-- EEPROM  - None (linked in at compile time, read only)
-- Flash   - Internal (linked in at compile time, read only)
-- PMIC    - ETA6096, not digitally controlled
-- Buttons - None, touch to be used eventually
-- No IR
+| Hardware | Implementation | Information
+| ---      | ---            | ---
+| Screen   | Screen          | [GC0A01A](https://files.waveshare.com/wiki/common/GC9A01A.pdf) (SPI 4-wire)
+| Touch    | Buttons / Menu | [CST816S](https://files.waveshare.com/upload/5/51/CST816S_Datasheet_EN.pdf) (I2C)
+| Accel    | Steps          | [QMI8658](https://files.waveshare.com/upload/5/5f/QMI8658A_Datasheet_Rev_A.pdf) (I2C)
+| EEPROM   | Emulated       | None 
+| Flash    | Internal       | Internal
+| PMIC     | None           | [ETA6096](https://www.eta-semi.com/wp-content/uploads/2022/03/ETA6096_V1.4.pdf), not digitally controlled
+| Buttons  | Touchscreen    | None
+| IR       | External       | TBD
+| Audio    | External       | [0.5W 8 Ohm Speaker](https://www.amazon.com/dp/B0826YLV6C)
+| Battery  | External       | TBD
 
 ## Project state
 
 Working (as intended):
 
-Probably eeprom, flash and PMIC because they don't do a lot.
+- Screen
+- Touch
+- EEPROM
+- Flash
 
 Not working:
 
-- Screen
-- Accel
-- Buttons/touch
+- Accel - Needs review of how to count steps.
+- IR
+- Audio
+
 
 ## Resources
 
