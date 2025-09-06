@@ -10,9 +10,13 @@
 #include "GC9A01A.h"
 #include "CST816S.h"
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include "QMI8658.h"
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+#include "QMI8658.h"
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 
 // LVGL
 #include "lvgl.h"
@@ -27,12 +31,17 @@
 #define DISP_VER_RES 240  
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //#define CANVAS_WIDTH  ((SCREEN_WIDTH * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR)   // 96 * 3 / 2 = 144
 //#define CANVAS_HEIGHT ((SCREEN_HEIGHT * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR) // 64 * 3 / 2 = 96
 =======
 #define CANVAS_WIDTH  ((SCREEN_WIDTH * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR)   // 96 * 3 / 2 = 144
 #define CANVAS_HEIGHT ((SCREEN_HEIGHT * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR) // 64 * 3 / 2 = 96
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+//#define CANVAS_WIDTH  ((SCREEN_WIDTH * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR)   // 96 * 3 / 2 = 144
+//#define CANVAS_HEIGHT ((SCREEN_HEIGHT * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR) // 64 * 3 / 2 = 96
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 
 // Global variables
 extern bool is_sleeping;

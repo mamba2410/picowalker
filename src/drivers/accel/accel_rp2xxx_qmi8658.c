@@ -240,21 +240,20 @@ uint32_t pw_accel_get_new_steps()
     // Simple peak detection
     static float threshold = 1.2f;
     static uint64_t min_step_interval = 300000;
-    static float prev_magnitude = 0;
-    static uint64_t last_step_time = 0;
-
     uint64_t now = time_us_64();
-
+    float prev_magnitude = 0;
+    uint64_t last_step_time = 0;
+    
     // Detect step: magnitude crosses threshold upward
       if (magnitude > threshold && prev_magnitude <= threshold) {
           if (now - last_step_time > min_step_interval) {
-              //last_step_time = now;
-              //prev_magnitude = magnitude;
+              last_step_time = now;
+              prev_magnitude = magnitude;
               return 1;
           }
       }
 
-      //prev_magnitude = magnitude;
+      prev_magnitude = magnitude;
       return 0;
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 }

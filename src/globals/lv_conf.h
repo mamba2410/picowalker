@@ -285,10 +285,14 @@
 #define LV_USE_PERF_MONITOR 0
 #if LV_USE_PERF_MONITOR
 <<<<<<< HEAD
+<<<<<<< HEAD
     #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_MID
 =======
     #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_RIGHT
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_MID
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 #endif
 
 /*1: Show the used memory and the memory fragmentation
@@ -296,10 +300,14 @@
 #define LV_USE_MEM_MONITOR 0
 #if LV_USE_MEM_MONITOR
 <<<<<<< HEAD
+<<<<<<< HEAD
     #define LV_USE_MEM_MONITOR_POS LV_ALIGN_TOP_MID
 =======
     #define LV_USE_MEM_MONITOR_POS LV_ALIGN_BOTTOM_LEFT
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    #define LV_USE_MEM_MONITOR_POS LV_ALIGN_TOP_MID
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 #endif
 
 /*1: Draw random colored rectangles over the redrawn areas*/

@@ -105,14 +105,20 @@ if (USE_LVGL)
       ${CMAKE_SOURCE_DIR}/src/drivers/extras_pico.h
       ${CMAKE_SOURCE_DIR}/src/drivers/timer_pico.c
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
       ${CMAKE_SOURCE_DIR}/src/drivers/onboard_log.c
       ${CMAKE_SOURCE_DIR}/src/drivers/onboard_log.h
       ${CMAKE_SOURCE_DIR}/src/msc_disk.c
       ${CMAKE_SOURCE_DIR}/src/msc_disk.h
       ${CMAKE_SOURCE_DIR}/src/usb_descriptors.c
       ${CMAKE_SOURCE_DIR}/src/tusb_config.h
+<<<<<<< HEAD
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
       ${CMAKE_SOURCE_DIR}/src/picowalker-defs.h
   )
 
@@ -133,9 +139,13 @@ if (USE_LVGL)
       lvgl
       pico_stdlib
 <<<<<<< HEAD
+<<<<<<< HEAD
       pico_aon_timer
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+      pico_aon_timer
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
       hardware_sleep
       hardware_spi
       hardware_i2c
@@ -194,6 +204,7 @@ else()
     hardware_pio
     hardware_timer
     hardware_pwm
+<<<<<<< HEAD
 =======
   target_link_libraries(picowalker
 =======
@@ -206,16 +217,22 @@ else()
       hardware_pio
       hardware_timer
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
       ${CMAKE_SOURCE_DIR}/lib/libpicowalker-core.a
   )
 endif()
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 ### Add src/ as a header location for tinyusb
 target_include_directories(picowalker_rp2350touchlcd128 PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+<<<<<<< HEAD
 ### Enable usb, uart etc for stdio
 #pico_enable_stdio_usb(picowalker_rp2350touchlcd128 1)
 target_compile_definitions(picowalker_rp2350touchlcd128 PRIVATE
@@ -228,9 +245,16 @@ pico_enable_stdio_uart(picowalker_rp2350touchlcd128 1)
 ### Add outputs other than .elf file
 pico_add_extra_outputs(picowalker_rp2350touchlcd128)
 =======
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 ### Enable usb, uart etc for stdio
-pico_enable_stdio_usb(picowalker_rp2350touchlcd128 1)
-# pico_enable_stdio_uart(picowalker 0)
+#pico_enable_stdio_usb(picowalker_rp2350touchlcd128 1)
+target_compile_definitions(picowalker_rp2350touchlcd128 PRIVATE
+    PICO_DEFAULT_UART=0
+    PICO_DEFAULT_UART_TX_PIN=28
+    PICO_DEFAULT_UART_RX_PIN=29
+)
+pico_enable_stdio_uart(picowalker_rp2350touchlcd128 1)
 
 ### Add outputs other than .elf file
 <<<<<<< HEAD

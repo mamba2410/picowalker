@@ -77,6 +77,7 @@ static void direct_memory_access_handler(void);
 static bool repeating_lvgl_timer_callback(struct repeating_timer *timer);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Battery functions
 void pw_screen_update_battery();
 
@@ -85,4 +86,9 @@ lv_color_t get_color(screen_colour_t color);
 
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+// Battery functions
+void pw_screen_update_battery();
+
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 #endif /* PW_DRIVER_SCREEN_RP2XXX_GC9A01A_LVGL_H */

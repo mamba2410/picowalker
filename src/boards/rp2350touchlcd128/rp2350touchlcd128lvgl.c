@@ -24,14 +24,27 @@ static lv_obj_t *brightness_label;  // Global reference to brightness label
 =======
 
 // LVGL
-static lv_disp_draw_buf_t display_buffer;
-static lv_color_t buffer0[DISP_HOR_RES * DISP_VER_RES/2];
-static lv_color_t buffer1[DISP_HOR_RES * DISP_VER_RES/2];
 static lv_disp_drv_t driver_display;
+static lv_disp_draw_buf_t display_buffer;
+#ifdef PICO_RP2350
+#define LVGL_BUFFER_DIVISOR 2
+static lv_color_t buffer0[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer1[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
+#else
+#define LVGL_BUFFER_DIVISOR 2
+static lv_color_t *buffer0;
+static lv_color_t *buffer1;
+#endif
+
 
 #define CANVAS_WIDTH  144  // Original 96, 1.5 x 96 = 144, 2 x 96 = 192
 #define CANVAS_HEIGHT 96   // Original 64, 1.5 x 64 = 96,  2 x 64 = 128
+<<<<<<< HEAD
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+static lv_obj_t *canvas;
+static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 
 static lv_indev_drv_t driver_touch;
 static lv_indev_drv_t driver_accel;
@@ -218,14 +231,20 @@ int main()
 
     // Initialize LVGL Display
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     #ifdef PICO_RP2040
     buffer0 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
     buffer1 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
     #endif
     lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR); 
+<<<<<<< HEAD
 =======
     lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / 2); 
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     lv_disp_drv_init(&driver_display);    
     driver_display.flush_cb = display_flush_callback;
     driver_display.draw_buf = &display_buffer;        
@@ -264,10 +283,14 @@ int main()
     lv_group_add_obj(group, tile_view);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     lv_obj_t *tile_picowalker = lv_tileview_add_tile(tile_view, 0, 0, LV_DIR_BOTTOM);
 =======
     lv_obj_t *tile_picowalker = lv_tileview_add_tile(tile_view, 0, 0, LV_DIR_TOP);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    lv_obj_t *tile_picowalker = lv_tileview_add_tile(tile_view, 0, 0, LV_DIR_BOTTOM);
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 
     LV_IMG_DECLARE(picowalker_background);
     lv_obj_t *background = lv_img_create(tile_picowalker);
@@ -275,15 +298,20 @@ int main()
     lv_obj_align(background, LV_ALIGN_CENTER, 0, 0);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Button Style Not Pressed
 =======
     // Button Style Base
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    // Button Style Not Pressed
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     static lv_style_t button_style_base;
     lv_style_init(&button_style_base);
     lv_style_set_radius(&button_style_base, LV_RADIUS_CIRCLE);
     lv_style_set_bg_opa(&button_style_base, LV_OPA_TRANSP);
     lv_style_set_bg_color(&button_style_base, lv_color_white());
+<<<<<<< HEAD
 <<<<<<< HEAD
     lv_style_set_border_width(&button_style_base, 2);
     lv_style_set_border_opa(&button_style_base, LV_OPA_40);
@@ -299,25 +327,26 @@ int main()
     lv_style_set_outline_opa(&button_style_press, LV_OPA_TRANSP);
 =======
     lv_style_set_border_opa(&button_style_base, LV_OPA_40);
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     lv_style_set_border_width(&button_style_base, 2);
+    lv_style_set_border_opa(&button_style_base, LV_OPA_40);
     lv_style_set_border_color(&button_style_base, lv_palette_main(LV_PALETTE_GREY));
-    //lv_style_set_shadow_width(&button_style_base, 8);
-    //lv_style_set_shadow_color(&button_style_base, lv_palette_main(LV_PALETTE_GREY));
-    //lv_style_set_shadow_offset_x(&button_style_base, 8);
-    //lv_style_set_shadow_offset_y(&button_style_base, 8);
     lv_style_set_outline_opa(&button_style_base, LV_OPA_COVER);
     lv_style_set_outline_color(&button_style_base, lv_color_white());
 
-    // Button Style Press
+    // Button Style Pressed
     static lv_style_t button_style_press;
     lv_style_init(&button_style_press);
+    lv_style_set_translate_y(&button_style_press, 5);
     lv_style_set_outline_width(&button_style_press, 5);
-    lv_style_set_translate_y(&button_style_press, 2);      // Move down slightly
-    //lv_style_set_outline_width(&button_style_press, 30);
     lv_style_set_outline_opa(&button_style_press, LV_OPA_TRANSP);
+<<<<<<< HEAD
     //lv_style_set_translate_y(&button_style_press, 5);
     //lv_style_set_shadow_offset_y(&button_style_press, 3);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     lv_style_set_bg_color(&button_style_press, lv_palette_main(LV_PALETTE_GREY));
 
     // Left Button
@@ -353,6 +382,7 @@ int main()
     // lv_obj_center(label_right);
     
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Picowalker Canvas (no styling)
     canvas = lv_canvas_create(tile_picowalker);
 =======
@@ -360,12 +390,19 @@ int main()
     static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
     lv_obj_t *canvas = lv_canvas_create(tile_picowalker);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    // Picowalker Canvas (no styling)
+    canvas = lv_canvas_create(tile_picowalker);
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     lv_canvas_set_buffer(canvas, canvas_buffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
     lv_obj_set_size(canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
     lv_obj_align(canvas, LV_ALIGN_CENTER, 0, -10);
     lv_obj_clear_flag(canvas, LV_OBJ_FLAG_CLICKABLE);
     lv_canvas_fill_bg(canvas, lv_color_make(195, 205, 185), LV_OPA_COVER);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     
     // Rounded overlay to create rounded corners effect
     lv_obj_t *canvas_overlay = lv_obj_create(tile_picowalker);
@@ -376,15 +413,19 @@ int main()
     lv_obj_set_style_border_color(canvas_overlay, lv_color_black(), 0);
     lv_obj_set_style_bg_opa(canvas_overlay, LV_OPA_TRANSP, 0);
     lv_obj_clear_flag(canvas_overlay, LV_OBJ_FLAG_CLICKABLE);
+<<<<<<< HEAD
 =======
     lv_obj_set_style_border_width(canvas, 2, 0);
     lv_obj_set_style_border_color(canvas, lv_color_black(), 0);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 
     // Drawing on canvas in v8 is done directly
 
 
     // System Menu Tile
+<<<<<<< HEAD
 <<<<<<< HEAD
     lv_obj_t *tile_menu = lv_tileview_add_tile(tile_view, 0, 2, LV_DIR_TOP);
 
@@ -393,14 +434,23 @@ int main()
     lv_obj_t *tile_menu = lv_tileview_add_tile(tile_view, 0, 2, LV_DIR_BOTTOM);
 
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    lv_obj_t *tile_menu = lv_tileview_add_tile(tile_view, 0, 2, LV_DIR_TOP);
+
+    //  Slider Style
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     static lv_style_t slider_style_base;
     lv_style_set_bg_color(&slider_style_base, lv_palette_main(LV_PALETTE_ORANGE));
     lv_style_set_border_color(&slider_style_base, lv_palette_darken(LV_PALETTE_ORANGE, 3));
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Slider Style Indicator
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    // Slider Style Indicator
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     static lv_style_t slider_style_indictator;
     lv_style_init(&slider_style_indictator);
     lv_style_set_bg_color(&slider_style_indictator, lv_palette_lighten(LV_PALETTE_DEEP_ORANGE, 3));
@@ -408,14 +458,19 @@ int main()
     lv_style_set_bg_grad_dir(&slider_style_indictator, LV_GRAD_DIR_HOR);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Slider Style Press
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    // Slider Style Press
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     static lv_style_t slider_style_indictator_press;
     lv_style_init(&slider_style_indictator_press);
     lv_style_set_shadow_color(&slider_style_indictator_press, lv_palette_main(LV_PALETTE_DEEP_ORANGE));
     lv_style_set_shadow_width(&slider_style_indictator_press, 10);
     lv_style_set_shadow_spread(&slider_style_indictator_press, 3);
+<<<<<<< HEAD
 <<<<<<< HEAD
 
     
@@ -423,11 +478,17 @@ int main()
 =======
     
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+
+    
+    // Brightness Slider
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     lv_obj_t *brightness_slider = lv_slider_create(tile_menu);
     lv_obj_set_size(brightness_slider, 150, 10);
     lv_obj_align(brightness_slider, LV_ALIGN_CENTER, 0, 0);
     lv_slider_set_range(brightness_slider, 0, 100);
     lv_slider_set_value(brightness_slider, 10, LV_ANIM_OFF);    // TODO review a saved state in eeprom.
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
     
@@ -436,11 +497,14 @@ int main()
     lv_obj_center(label);
     lv_group_add_obj(group, brightness_slider);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     lv_obj_add_style(brightness_slider, &slider_style_base,0);
     lv_obj_add_style(brightness_slider, &slider_style_indictator,LV_PART_INDICATOR);
     lv_obj_add_style(brightness_slider, &slider_style_indictator_press, LV_PART_INDICATOR | LV_STATE_PRESSED);
     lv_obj_add_style(brightness_slider, &slider_style_base,LV_PART_KNOB);
     lv_obj_add_event_cb(brightness_slider, brightness_slider_event_callback, LV_EVENT_VALUE_CHANGED, NULL);
+<<<<<<< HEAD
 <<<<<<< HEAD
     
     // Label for Brightness Slider
@@ -454,6 +518,14 @@ int main()
 =======
     // Add a Callback event for the brightness..
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    
+    // Label for Brightness Slider
+    lv_obj_t *label = lv_label_create(brightness_slider);
+    lv_label_set_text(label, "Brightness");
+    lv_obj_center(label);
+    lv_group_add_obj(group, brightness_slider);
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 
 
     while(1)

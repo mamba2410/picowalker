@@ -18,12 +18,17 @@ pw_battery_status_t pw_power_get_battery_status()
      
     // Convert to voltage (3.3V reference, 12-bit ADC)
 <<<<<<< HEAD
+<<<<<<< HEAD
     const float conversion_factor = 3.3f / (1 << 12) * 3;
     float voltage = adc_raw * conversion_factor; //3.3f / 4095.0f * 2.0f; // *2 for voltage divider
 =======
     // Battery voltage likely goes through voltage divider
     float voltage = adc_raw * 3.3f / 4095.0f * 2.0f; // *2 for voltage divider
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    const float conversion_factor = 3.3f / (1 << 12) * 3;
+    float voltage = adc_raw * conversion_factor; //3.3f / 4095.0f * 2.0f; // *2 for voltage divider
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
      
     pw_battery_status_t status;
     // Convert voltage to percentage (Li-ion: 3.0V-4.2V range)

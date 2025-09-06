@@ -35,13 +35,25 @@ static lv_color_t buffer1[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
 =======
 
 #include <time.h>
+#include <stdlib.h>
 
 // LVGL Settings
-static lv_disp_draw_buf_t display_buffer;
-static lv_color_t buffer0[DISP_HOR_RES * DISP_VER_RES/2];
-static lv_color_t buffer1[DISP_HOR_RES * DISP_VER_RES/2];
 static lv_disp_drv_t driver_display;
+<<<<<<< HEAD
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+static lv_disp_draw_buf_t display_buffer;
+
+#ifdef PICO_RP2040
+#define LVGL_BUFFER_DIVISOR 2
+static lv_color_t *buffer0;
+static lv_color_t *buffer1;
+#else
+#define LVGL_BUFFER_DIVISOR 2
+static lv_color_t buffer0[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer1[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
+#endif
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 
 static lv_indev_drv_t driver_touch;
 static uint16_t touch_x;
@@ -53,13 +65,17 @@ static lv_obj_t *canvas;
 static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 static lv_obj_t *brightness_slider;
 static lv_obj_t *brightness_label;
 
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 static lv_obj_t *battery_bar;
 static lv_obj_t *battery_label;
 static lv_obj_t *tile_view;
 
+<<<<<<< HEAD
 static struct repeating_timer lvgl_timer;
 static struct repeating_timer battery_timer;
 bool is_sleeping = false;
@@ -97,7 +113,10 @@ static void play_confirm_sound()
 
 /********************************************************************************
 =======
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 static struct repeating_timer lvgl_timer;
+static struct repeating_timer battery_timer;
 bool is_sleeping = false;
 
 /********************************************************************************
@@ -344,6 +363,55 @@ void pw_screen_update_battery()
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 }
 
+/********************************************************************************
+ * @brief           Updates Battery Display
+ * @param timer     Repeating Timer Struct
+ * @return bool
+********************************************************************************/
+static bool repeating_battery_timer_callback(struct repeating_timer *timer)
+{
+    if (is_sleeping || !battery_bar) return true;
+    
+    // Read battery status
+    pw_battery_status_t battery_status = pw_power_get_battery_status();
+    
+    // Update battery bar value with smooth animation
+    lv_bar_set_value(battery_bar, battery_status.percent, LV_ANIM_ON);
+    
+    // Update battery label with percentage
+    if (battery_label) {
+        static char battery_text[8];
+        snprintf(battery_text, sizeof(battery_text), "%d%%", battery_status.percent);
+        lv_label_set_text(battery_label, battery_text);
+    }
+    
+    return true;
+}
+
+/********************************************************************************
+ * @brief           Tileview Event Callback - triggered when tiles change
+ * @param event     LVGL event from tileview
+********************************************************************************/
+static void tileview_event_callback(lv_event_t * event)
+{
+    lv_obj_t *tileview = lv_event_get_target(event);
+    
+    if (event->code == LV_EVENT_SCROLL_END) {
+        // Force immediate battery update when tile changes
+        repeating_battery_timer_callback(NULL);
+        printf("[Debug] Tile changed - battery updated\n");
+    }
+}
+
+/********************************************************************************
+ * @brief           Manual Battery Update (can be called externally)
+ * @param N/A
+********************************************************************************/
+void pw_screen_update_battery()
+{
+    repeating_battery_timer_callback(NULL);
+}
+
 /*
  * ============================================================================
  * Picowalker Driver Functions
@@ -377,16 +445,24 @@ void pw_screen_init()
     GC9A01A_Clear(BLACK);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 #ifdef PICO_RP2040
     buffer0 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
     buffer1 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
 #endif
+<<<<<<< HEAD
     // Initialize LVGL Display
     lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR); 
 =======
     // Initialize LVGL Display
     lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / 2); 
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    // Initialize LVGL Display
+    lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR); 
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     lv_disp_drv_init(&driver_display);    
     driver_display.flush_cb = display_flush_callback;
     driver_display.draw_buf = &display_buffer;        
@@ -424,6 +500,7 @@ void pw_screen_init()
     // Picowalker Tile
     tile_group = lv_group_create();
 <<<<<<< HEAD
+<<<<<<< HEAD
     tile_view = lv_tileview_create(screen);
     lv_obj_set_scrollbar_mode(tile_view,  LV_SCROLLBAR_MODE_OFF);
     lv_group_add_obj(tile_group, tile_view);
@@ -437,16 +514,24 @@ void pw_screen_init()
     lv_obj_t *background = lv_img_create(tile_picowalker);
 =======
     lv_obj_t *tile_view = lv_tileview_create(screen);
+=======
+    tile_view = lv_tileview_create(screen);
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     lv_obj_set_scrollbar_mode(tile_view,  LV_SCROLLBAR_MODE_OFF);
     lv_group_add_obj(tile_group, tile_view);
+    
+    // Add tileview event callback for tile changes
+    lv_obj_add_event_cb(tile_view, tileview_event_callback, LV_EVENT_SCROLL_END, NULL);
     lv_obj_t *tile_picowalker = lv_tileview_add_tile(tile_view, 0, 0, LV_DIR_BOTTOM);
 
     // Pokeball Image ... I want to add more
-    // LV_IMG_DECLARE(pokeball_240x240);
     LV_IMG_DECLARE(picowalker_background);
     lv_obj_t *background = lv_img_create(tile_picowalker);
+<<<<<<< HEAD
     // lv_img_set_src(background, &pokeball_240x240);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     lv_img_set_src(background, &picowalker_background);
     lv_obj_align(background, LV_ALIGN_CENTER, 0, 0);
 
@@ -710,11 +795,28 @@ void pw_screen_init()
     lv_obj_center(label);
     lv_group_add_obj(tile_group, brightness_slider);
 
+    // Battery Bar Style
+    static lv_style_t battery_style_base;
+    lv_style_init(&battery_style_base);
+    lv_style_set_bg_color(&battery_style_base, lv_palette_main(LV_PALETTE_GREY));
+    lv_style_set_border_color(&battery_style_base, lv_palette_darken(LV_PALETTE_GREY, 2));
+    lv_style_set_border_width(&battery_style_base, 1);
+    lv_style_set_radius(&battery_style_base, 3);
+    
+    // Battery Bar Indicator Style
+    static lv_style_t battery_style_indicator;
+    lv_style_init(&battery_style_indicator);
+    lv_style_set_bg_color(&battery_style_indicator, lv_palette_main(LV_PALETTE_GREEN));
+    lv_style_set_bg_grad_color(&battery_style_indicator, lv_palette_lighten(LV_PALETTE_GREEN, 2));
+    lv_style_set_bg_grad_dir(&battery_style_indicator, LV_GRAD_DIR_HOR);
+    lv_style_set_radius(&battery_style_indicator, 3);
+    
     // Battery Bar
-    lv_obj_t *battery_bar = lv_bar_create(tile_menu);
-    lv_obj_set_size(battery_bar, 150, 10);
-    lv_obj_align(battery_bar, LV_ALIGN_CENTER, 0, 30);
+    battery_bar = lv_bar_create(tile_menu);
+    lv_obj_set_size(battery_bar, 120, 15);
+    lv_obj_align(battery_bar, LV_ALIGN_CENTER, 0, 40);
     lv_bar_set_range(battery_bar, 0, 100);
+<<<<<<< HEAD
 
     pw_battery_status_t battery_status = pw_power_get_battery_status();
     lv_bar_set_value(battery_bar, battery_status.percent, LV_ANIM_OFF);
@@ -724,6 +826,22 @@ void pw_screen_init()
     lv_obj_center(battery_label);
     lv_group_add_obj(tile_group, battery_bar);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    lv_obj_add_style(battery_bar, &battery_style_base, 0);
+    lv_obj_add_style(battery_bar, &battery_style_indicator, LV_PART_INDICATOR);
+    
+    // Battery Label
+    battery_label = lv_label_create(tile_menu);
+    lv_label_set_text(battery_label, "0%");
+    lv_obj_align(battery_label, LV_ALIGN_CENTER, 0, 60);
+    lv_obj_set_style_text_font(battery_label, &lv_font_montserrat_14, 0);
+    
+    // Start battery update timer (update every 30 seconds)
+    add_repeating_timer_ms(30000, repeating_battery_timer_callback, NULL, &battery_timer);
+    
+    // Initial battery reading
+    repeating_battery_timer_callback(NULL);
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 
 }
 
@@ -810,9 +928,13 @@ void draw_to_scale(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_po
     }
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 /********************************************************************************
  * @brief           Draws image to Canvas
  * @param image     Incoming image of picowalker
@@ -992,6 +1114,7 @@ void pw_screen_sleep()
     WS_SET_PWM(0);                         // Turn off backlight
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Stop LVGL processing and battery updates
     cancel_repeating_timer(&lvgl_timer);
     cancel_repeating_timer(&battery_timer);
@@ -999,6 +1122,11 @@ void pw_screen_sleep()
     // Stop LVGL processing
     cancel_repeating_timer(&lvgl_timer);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    // Stop LVGL processing and battery updates
+    cancel_repeating_timer(&lvgl_timer);
+    cancel_repeating_timer(&battery_timer);
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     is_sleeping = true;
 }
 
@@ -1014,6 +1142,7 @@ void pw_screen_wake()
     WS_SET_PWM(10);                        // Restore backlight
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Restart LVGL processing and battery updates
     add_repeating_timer_ms(5, repeating_lvgl_timer_callback, NULL, &lvgl_timer);
     add_repeating_timer_ms(30000, repeating_battery_timer_callback, NULL, &battery_timer);
@@ -1023,7 +1152,17 @@ void pw_screen_wake()
     repeating_battery_timer_callback(NULL);
 =======
     // Restart LVGL processing
+=======
+    // Restart LVGL processing and battery updates
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     add_repeating_timer_ms(5, repeating_lvgl_timer_callback, NULL, &lvgl_timer);
+    add_repeating_timer_ms(30000, repeating_battery_timer_callback, NULL, &battery_timer);
     is_sleeping = false;
+<<<<<<< HEAD
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    
+    // Update battery immediately on wake
+    repeating_battery_timer_callback(NULL);
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 }

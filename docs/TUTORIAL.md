@@ -116,6 +116,12 @@ This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 If you are compiling for boards with `rp2040` you use `toolchain-pico.cmake`.
 `rp2350` boards use `toolchain-pico2.cmake`.
 
+<<<<<<< HEAD
+=======
+If you are compiling for boards with `rp2040` you use `toolchain-pico.cmake`.
+`rp2350` boards use `toolchain-pico2.cmake`.
+
+>>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 So now, lets run for Pico2 / RP2350
 
 ```sh
@@ -228,6 +234,14 @@ Now we choose which board to compile. I'll choose `picowalker-v0.3`.
 cd boards/picowalker-v0.3
 cmake -B build/ -DPICO_BOARD=pico2 .
 cmake --build build/
+```
+
+RP2350TouchLCD128 LVGL
+```sh
+cd src/boards/rp2350touchlcd128
+rm -rf build
+cmake -B build -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build build
 ```
 
 If that all went well, you should have a file called `build/picowalker.uf2`.
