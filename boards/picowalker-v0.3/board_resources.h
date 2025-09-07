@@ -65,4 +65,7 @@
 #define SCREEN_PIO_HW pio0
 #define SCREEN_PIO_SM 0
 
+void board_spi_init();
+void board_i2c_init();
+
 #endif /* PW_BOARD_RESOURCES_H */
