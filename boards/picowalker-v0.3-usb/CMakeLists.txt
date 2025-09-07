@@ -31,6 +31,8 @@ add_executable(picowalker
     ${MAIN_SRC_DIR}/drivers/interrupts/rp2xxx_gpio.h
     ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.c
     ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.h
+    ${MAIN_SRC_DIR}/drivers/log/onboard_log.c
+    ${MAIN_SRC_DIR}/drivers/log/onboard_log.h
     ${MAIN_SRC_DIR}/drivers/screen/sh8601z_rp2xxx_qspi_pio.c
     ${MAIN_SRC_DIR}/drivers/screen/sh8601z_rp2xxx_qspi_pio.h
     ${MAIN_SRC_DIR}/drivers/sleep/dormant_rp2xxx.c
@@ -39,10 +41,7 @@ add_executable(picowalker
     ${MAIN_SRC_DIR}/drivers/usb/msc_disk.c
     ${MAIN_SRC_DIR}/drivers/usb/msc_disk.h
     ${MAIN_SRC_DIR}/drivers/usb/usb_descriptors.c
-    ${MAIN_SRC_DIR}/drivers/usb/tusb_config.h
-    ${MAIN_SRC_DIR}/drivers/log/onboard_log.c
-    ${MAIN_SRC_DIR}/assets/picowalker_rp2xxx_inbuilt.S
-    ${MAIN_SRC_DIR}/assets/picowalker_rp2xxx_inbuilt.h
+    ${MAIN_SRC_DIR}/drivers/usb/tusb_config.h ${MAIN_SRC_DIR}/drivers/log/onboard_log.c ${MAIN_SRC_DIR}/assets/picowalker_rp2xxx_inbuilt.S ${MAIN_SRC_DIR}/assets/picowalker_rp2xxx_inbuilt.h
     ${MAIN_SRC_DIR}/assets/pokewalker_rp2xxx_inbuilt.S
     ${MAIN_SRC_DIR}/assets/pokewalker_rp2xxx_inbuilt.c
     ${MAIN_SRC_DIR}/assets/pokewalker_rp2xxx_inbuilt.h
@@ -86,5 +85,6 @@ target_link_libraries(picowalker
 target_include_directories(picowalker PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_CURRENT_LIST_DIR}/../../src/
+    ${CMAKE_CURRENT_LIST_DIR}/../../src/drivers/usb/
 )
 

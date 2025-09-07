@@ -9,6 +9,7 @@
 #include "hardware/pll.h"
 
 //#include "drivers/eeprom/m95512_rp2xxx_spi.h"
+#include "drivers/sleep/dormant_rp2xxx.h"
 #include "picowalker-defs.h"
 
 #include "board_resources.h"
