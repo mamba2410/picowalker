@@ -9,6 +9,7 @@
 
 #include "board_resources.h"
 #include "bq25628e_rp2xxx_i2c.h"
+#include "../sleep/dormant_rp2xxx.h"
 #include "../interrupts/rp2xxx_gpio.h"
 #include "../../picowalker-defs.h"
 
