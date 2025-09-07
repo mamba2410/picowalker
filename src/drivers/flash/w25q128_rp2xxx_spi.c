@@ -1,11 +1,12 @@
 #include <stdint.h>
 
+#include <stdio.h>
+
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
-#include "stdio.h"
 
-#include "../picowalker-defs.h"
-#include "flash_pico.h"
+#include "../../picowalker-defs.h"
+#include "w25q128_rp2xxx_spi.h"
 
 static spi_inst_t *flash_spi;
 

@@ -1,12 +1,13 @@
 #include <stdint.h>
+
 #include <string.h>
 #include <stdlib.h>
 
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
-#include "../picowalker-defs.h"
-#include "eeprom_pico_m95512.h"
+#include "../../picowalker-defs.h"
+#include "m95512_rp2xxx_spi.h"
 
 static spi_inst_t *eeprom_spi;
 

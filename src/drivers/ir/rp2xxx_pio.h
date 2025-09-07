@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <stdlib.h>
 
 #define IR_SD_PIN 15
 #define IR_PIO_RX 14

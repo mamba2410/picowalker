@@ -1,12 +1,14 @@
 #include <stdint.h>
 #include <stddef.h>
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <hardware/uart.h>
-#include <hardware/gpio.h>
+
+#include "hardware/uart.h"
+#include "hardware/gpio.h"
 #include "pico/time.h"
 
-#include "ir_pico_uart1.h"
+#include "rp2xxx_uart.h"
 
 
 int pw_ir_read(uint8_t *buf, size_t max_len) {

@@ -6,10 +6,10 @@
 #include "pico/types.h"
 #include "pico/stdlib.h"
 
-#include "../picowalker-defs.h"
-#include "buttons_pico.h"
-#include "gpio_interrupts_pico.h"
-#include "power_pico.h"
+#include "../../picowalker-defs.h"
+#include "buttons_rp2xxx_gpio.h"
+#include "../interrupts/rp2xxx_gpio.h"
+#include "../sleep/dormant_rp2xxx.h"
 
 bool acknowledge_button_presses;
 uint64_t last_pressed = 0;

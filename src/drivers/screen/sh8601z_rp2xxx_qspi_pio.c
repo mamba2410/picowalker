@@ -3,15 +3,15 @@
 #include <stddef.h>
 
 #include <stdio.h>
-#include <pico/stdlib.h>
 
 #include "hardware/gpio.h"
 #include "hardware/pio.h"
 #include "hardware/resets.h"
 #include "hardware/clocks.h"
+#include "pico/stdlib.h"
 
-#include "../picowalker-defs.h"
-#include "screen_pico2_dwo_pio.h"
+#include "../../picowalker-defs.h"
+#include "sh8601z_rp2xxx_qspi_pio.h"
 
 #include "qspi.pio.h"
 

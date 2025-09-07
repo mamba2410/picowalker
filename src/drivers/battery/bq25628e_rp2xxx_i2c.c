@@ -7,9 +7,9 @@
 
 #include <stdio.h>
 
-#include "battery_pico_bq25628e.h"
-#include "../picowalker-defs.h"
-#include "gpio_interrupts_pico.h"
+#include "bq25628e_rp2xxx_i2c.h"
+#include "../interrupts/rp2xxx_gpio.h"
+#include "../../picowalker-defs.h"
 
 //#define I2C_READ_MASK   (0x80)
 #define I2C_READ_MASK   (0x00)

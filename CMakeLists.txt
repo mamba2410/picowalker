@@ -13,36 +13,35 @@ pico_sdk_init()
 ## Create executable from dependencies
 add_executable(picowalker
     src/main.c
-    src/drivers/screen_pico2_dwo_pio.c
-    src/drivers/screen_pico2_dwo_pio.h
-    src/drivers/accel_pico_bma400.c
-    src/drivers/accel_pico_bma400.h
-    src/drivers/ir_pico_pio.c
-    src/drivers/ir_pico_pio.h
-    src/drivers/buttons_pico.c
-    src/drivers/buttons_pico.h
-    src/drivers/eeprom_pico_m95512.c
-    src/drivers/eeprom_pico_m95512.h
-    src/drivers/timer_pico.c
-    src/drivers/extras_pico.S
-    src/drivers/extras_pico.h
-    #src/drivers/flash_pico_w25q128.c
-    #src/drivers/flash_pico_w25q128.h
-    src/drivers/flash_pico_internal.c
-    src/drivers/flash_pico_internal.S
-    src/drivers/flash_pico_internal.h
-    src/drivers/battery_pico_bq25628e.c
-    src/drivers/battery_pico_bq25628e.h
-    src/drivers/gpio_interrupts_pico.c
-    src/drivers/gpio_interrupts_pico.h
-    src/drivers/power_pico.c
-    src/drivers/power_pico.h
-    src/drivers/audio_pico_pwm.c
+    src/drivers/accel/bma400_rp2xxx_spi.c
+    src/drivers/accel/bma400_rp2xxx_spi.h
+    src/drivers/audio/pwm_rp2xxx.c
+    src/drivers/battery/bq25628e_rp2xxx_i2c.c
+    src/drivers/battery/bq25628e_rp2xxx_i2c.h
+    src/drivers/eeprom/m95512_rp2xxx_spi.c
+    src/drivers/eeprom/m95512_rp2xxx_spi.h
+    src/drivers/input/buttons_rp2xxx_gpio.c
+    src/drivers/input/buttons_rp2xxx_gpio.h
+    src/drivers/interrupts/rp2xxx_gpio.c
+    src/drivers/interrupts/rp2xxx_gpio.h
+    src/drivers/ir/rp2xxx_pio.c
+    src/drivers/ir/rp2xxx_pio.h
+    src/drivers/screen/sh8601z_rp2xxx_qspi_pio.c
+    src/drivers/screen/sh8601z_rp2xxx_qspi_pio.h
+    src/drivers/sleep/dormant_rp2xxx.c
+    src/drivers/sleep/dormant_rp2xxx.h
+    src/drivers/time/rp2350_powman.c
+    src/assets/picowalker_rp2xxx_inbuilt.S
+    src/assets/picowalker_rp2xxx_inbuilt.h
+    src/assets/pokewalker_rp2xxx_inbuilt.S
+    src/assets/pokewalker_rp2xxx_inbuilt.c
+    src/assets/pokewalker_rp2xxx_inbuilt.h
+
     src/picowalker-defs.h
 )
 
 ## PIO stuff for SDK
-pico_generate_pio_header(picowalker ${CMAKE_CURRENT_LIST_DIR}/src/drivers/qspi.pio)
+pico_generate_pio_header(picowalker ${CMAKE_CURRENT_LIST_DIR}/src/drivers/screen/qspi.pio)
 
 ## Enable usb, uart etc for stdio
 #pico_enable_stdio_usb(picowalker 1)
