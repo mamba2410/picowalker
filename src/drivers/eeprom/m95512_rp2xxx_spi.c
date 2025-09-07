@@ -38,18 +38,7 @@ void pw_eeprom_init() {
     gpio_init(EEPROM_CSB_PIN);
     pw_eeprom_cs_disable();
 
-    // 10MHz is max for 3.3V
-    spi_init(EEPROM_SPI_HW, 10*1000*1000);
-
-    // Run in 00 mode since it expects clock to idle low. See AN2014 4.2.3
-    // inst, bits, polarity, phase, endian
-    //spi_set_format(EEPROM_SPI_HW, 8, 1, 1, SPI_MSB_FIRST);
-    spi_set_format(EEPROM_SPI_HW, 8, 0, 0, SPI_MSB_FIRST);
-
-    gpio_set_function(EEPROM_SCK_PIN, GPIO_FUNC_SPI);
-    gpio_set_function(EEPROM_MOSI_PIN, GPIO_FUNC_SPI);
-    gpio_set_function(EEPROM_MISO_PIN, GPIO_FUNC_SPI);
-
+    board_spi_init();
 
     uint8_t msg[3];
 

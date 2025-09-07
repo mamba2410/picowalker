@@ -175,11 +175,7 @@ void pw_battery_shutdown() {
 
 void pw_battery_init() {
 
-    // I2C bus
-    i2c_init(BAT_I2C_HW, BAT_I2C_SPEED_HZ);
-    gpio_set_function(BAT_I2C_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(BAT_I2C_SCK_PIN, GPIO_FUNC_I2C);
-    // hardware I2C pull-ups
+    board_i2c_init();
 
     // Disable charge for now
     gpio_init(BAT_CE_PIN);

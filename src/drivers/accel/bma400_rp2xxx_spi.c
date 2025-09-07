@@ -152,15 +152,7 @@ int8_t pw_accel_init() {
     gpio_set_dir(ACCEL_CSB_PIN, GPIO_OUT);
     pw_accel_cs_disable();
 
-
-    //spi_init(ACCEL_SPI_HW, ACCEL_SPI_SPEED);
-    //// inst, bits, polarity, phase, endian
-    //spi_set_format(ACCEL_SPI_HW, 8, 1, 1, SPI_MSB_FIRST);
-
-    //gpio_set_function(ACCEL_SCL_PIN, GPIO_FUNC_SPI);
-    //gpio_set_function(ACCEL_MOSI_PIN, GPIO_FUNC_SPI);
-    //gpio_set_function(ACCEL_MISO_PIN, GPIO_FUNC_SPI);
-
+    board_spi_init();
 
     uint8_t buf[8];
 
