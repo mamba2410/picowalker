@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 
+#include "board_resources.h"
 #include "bq25628e_rp2xxx_i2c.h"
 #include "../interrupts/rp2xxx_gpio.h"
 #include "../../picowalker-defs.h"
@@ -67,8 +68,8 @@ static volatile uint32_t adc_timeout_stamp = 0;
 
 static void pw_pmic_read_reg(uint8_t reg, uint8_t *buf, size_t len) {
     if(buf == NULL) { return; }
-    i2c_write_blocking(PMIC_I2C, PMIC_I2C_ADDRESS, &reg, 1, true);
-    i2c_read_blocking(PMIC_I2C, PMIC_I2C_ADDRESS, buf, len, false);
+    i2c_write_blocking(BAT_I2C_HW, BAT_I2C_ADDR, &reg, 1, true);
+    i2c_read_blocking(BAT_I2C_HW, BAT_I2C_ADDR, buf, len, false);
 }
 
 static void pw_pmic_write_reg(uint8_t reg, uint8_t *buf, size_t len) {
@@ -79,7 +80,7 @@ static void pw_pmic_write_reg(uint8_t reg, uint8_t *buf, size_t len) {
     for(uint8_t i = 1; i <= len; i++)
         buf2[i] = buf[i-1];
 
-    i2c_write_blocking(PMIC_I2C, PMIC_I2C_ADDRESS | I2C_WRITE_MASK, buf2, len+1, false);
+    i2c_write_blocking(BAT_I2C_HW, BAT_I2C_ADDR | I2C_WRITE_MASK, buf2, len+1, false);
 }
 
 /*
@@ -175,9 +176,9 @@ void pw_battery_shutdown() {
 void pw_battery_init() {
 
     // I2C bus
-    i2c_init(PMIC_I2C, PMIC_I2C_SPEED_KHZ*1000);
-    gpio_set_function(PMIC_I2C_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(PMIC_I2C_SCL_PIN, GPIO_FUNC_I2C);
+    i2c_init(BAT_I2C_HW, BAT_I2C_SPEED_HZ);
+    gpio_set_function(BAT_I2C_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(BAT_I2C_SCK_PIN, GPIO_FUNC_I2C);
     // hardware I2C pull-ups
 
     // Disable charge for now

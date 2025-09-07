@@ -1,13 +1,6 @@
 #ifndef PW_DRIVER_ACCEL_BMA400_H
 #define PW_DRIVER_ACCEL_BMA400_H
 
-#define ACCEL_SCL_PIN       18
-#define ACCEL_MOSI_PIN      19
-#define ACCEL_MISO_PIN      20
-#define ACCEL_CS_PIN        21
-#define ACCEL_SPI_SPEED     1000000 // 1MHz
-#define ACCEL_INT_PIN       23
-
 #define ACCEL_READ_MASK     0x80
 #define ACCEL_WRITE_MASK    0x7f
 

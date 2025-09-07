@@ -4,12 +4,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define IR_SD_PIN 15
-#define IR_PIO_RX 14
-#define IR_PIO_TX 13
+#include "board_resources.h"
 
-#define PIN_IRDA_OUT IR_PIO_TX
-#define PIN_IRDA_IN  IR_PIO_RX
+#define PIN_IRDA_OUT IR_TX_PIN
+#define PIN_IRDA_IN  IR_RX_PIN
 
 #define PW_IR_PIO_FRAME_ERROR_BIT (1<<15)
 

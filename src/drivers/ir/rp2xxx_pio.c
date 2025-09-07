@@ -12,6 +12,7 @@
 #include "pico/time.h"
 #include "pico/stdlib.h"
 
+#include "board_resources.h"
 #include "rp2xxx_pio.h"
 
 #define USE_DMA
@@ -31,8 +32,6 @@
 #define NUM_INSTRS_WE_NEED				9
 #define NUM_SMS_WE_NEED					1
 #define NUM_DMAS_WE_NEED				0
-
-#define IR_DMA_IRQ_NUM 0
 
 //#define CIRC_BUF_SZ						64
 #define CIRC_BUF_LEN    (128+8+1)
@@ -712,9 +711,9 @@ void pw_ir_init() {
     gpio_init(IR_SD_PIN);
     gpio_set_dir(IR_SD_PIN, GPIO_OUT);
 
-    pio_gpio_init(pio1, IR_PIO_TX);
-    gpio_init(IR_PIO_RX);
-    gpio_set_dir(IR_PIO_RX, GPIO_IN);
+    pio_gpio_init(pio1, IR_TX_PIN);
+    gpio_init(IR_RX_PIN);
+    gpio_set_dir(IR_RX_PIN, GPIO_IN);
 
     // De-assert IR_SD
     gpio_put(IR_SD_PIN, 0);
@@ -722,10 +721,10 @@ void pw_ir_init() {
     // Set `g_ir_pio_state` for callbacks, baud rate, etc.
 
     g_ir_pio_state = (struct pw_ir_pio_state_s){
-        .pio_sm = 0,
-        .dma_chan = 0,
+        .pio_sm = IR_PIO_SM,
+        .dma_chan = IR_DMA_CHAN,
         .pio_start_pc = 0,
-        .pio_hw = pio1,
+        .pio_hw = IR_PIO_HW,
 
         .data_bits = 8,
         .parity = 0,

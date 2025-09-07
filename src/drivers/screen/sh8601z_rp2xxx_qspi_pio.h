@@ -96,16 +96,4 @@ typedef struct screen_area_s {
     int height;
 } screen_area_t;
 
-
-#define PIN_PIO_SCK    8
-#define PIN_PIO_SD_START 9
-#define PIN_PIO_SD0    12
-#define PIN_PIO_SD1    11
-#define PIN_PIO_SD2    10
-#define PIN_PIO_SD3    9
-#define PIN_PIO_CSB    6
-
-#define PIN_SCREEN_RST  7
-#define PIN_SCREEN_PWREN    5
-
 #endif /* PW_SCREEN_PICO2_DWO_HSTX_H */

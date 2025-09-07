@@ -6,12 +6,9 @@
 #include <hardware/pwm.h>
 #include "hardware/timer.h"
 
+#include "board_resources.h"
 #include "../../picowalker-defs.h"
 
-#define PW_SPEAKER_PIN 2
-
-#define AUDIO_ALARM_NUM 1
-#define AUDIO_SYSCLK 150e6
 #define AUDIO_CLKDIV 4.0f
 #define AUDIO_PWM_RANGE ((1<<16)-1)
 
@@ -49,13 +46,13 @@ void audio_irq_callback() {
     // Check if we should continue
     if(audio_queue.head >= audio_queue.len) {
         audio_queue.len = 0;
-        pwm_set_gpio_level(PW_SPEAKER_PIN, 0);
+        pwm_set_gpio_level(AUDIO_SPEAKER_PIN, 0);
         return;
     }
 
     // Set note value
-    pwm_set_wrap(pwm_gpio_to_slice_num(PW_SPEAKER_PIN), audio_queue.pwm_values[audio_queue.head]);
-    pwm_set_gpio_level(PW_SPEAKER_PIN, audio_queue.pwm_values[audio_queue.head]/2);
+    pwm_set_wrap(pwm_gpio_to_slice_num(AUDIO_SPEAKER_PIN), audio_queue.pwm_values[audio_queue.head]);
+    pwm_set_gpio_level(AUDIO_SPEAKER_PIN, audio_queue.pwm_values[audio_queue.head]/2);
 
     // Set timer for note duration and callback
     hw_set_bits(&timer_hw->inte, 1u<<AUDIO_ALARM_NUM);
@@ -79,16 +76,16 @@ void audio_play_queue() {
     for(size_t i = 0; i < audio_queue.len; i++) {
 
         // Set wrap to the value given by Pokewalker data
-        pwm_set_wrap(pwm_gpio_to_slice_num(PW_SPEAKER_PIN), audio_queue.pwm_values[i]);
+        pwm_set_wrap(pwm_gpio_to_slice_num(AUDIO_SPEAKER_PIN), audio_queue.pwm_values[i]);
         // Set top to control volume
         // TODO: Change to 1/3 duty for medium volume
-        pwm_set_gpio_level(PW_SPEAKER_PIN, audio_queue.pwm_values[i]/2);
+        pwm_set_gpio_level(AUDIO_SPEAKER_PIN, audio_queue.pwm_values[i]/2);
 
         // Wait for note to finish
         sleep_ms(audio_queue.durations[i]);
 
         // Small delay after note finished to make it distinct
-        pwm_set_gpio_level(PW_SPEAKER_PIN, 0);
+        pwm_set_gpio_level(AUDIO_SPEAKER_PIN, 0);
         sleep_ms(10);
 
     }
@@ -99,7 +96,7 @@ void audio_play_queue() {
     audio_irq_callback();
 
     // No more sound
-    //pwm_set_gpio_level(PW_SPEAKER_PIN, 0);
+    //pwm_set_gpio_level(AUDIO_SPEAKER_PIN, 0);
     //audio_queue.len = 0;
     //audio_queue.head = 0;
 }
@@ -108,14 +105,14 @@ void audio_play_queue() {
  * Functions needed by core
  */
 void pw_audio_init() {
-    gpio_init(PW_SPEAKER_PIN);
-    gpio_set_function(PW_SPEAKER_PIN, GPIO_FUNC_PWM);
-    uint slice_num = pwm_gpio_to_slice_num(PW_SPEAKER_PIN);
+    gpio_init(AUDIO_SPEAKER_PIN);
+    gpio_set_function(AUDIO_SPEAKER_PIN, GPIO_FUNC_PWM);
+    uint slice_num = pwm_gpio_to_slice_num(AUDIO_SPEAKER_PIN);
 
     pwm_config config = pwm_get_default_config();
     // TODO: Modify the clockdiv to make 
     pwm_config_set_clkdiv(&config, 8.f);
-    pwm_set_gpio_level(PW_SPEAKER_PIN, 0);
+    pwm_set_gpio_level(AUDIO_SPEAKER_PIN, 0);
     pwm_init(slice_num, &config, true);
     // PWM is now running
 }

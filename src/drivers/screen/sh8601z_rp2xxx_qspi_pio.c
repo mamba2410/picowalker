@@ -10,6 +10,7 @@
 #include "hardware/clocks.h"
 #include "pico/stdlib.h"
 
+#include "board_resources.h"
 #include "../../picowalker-defs.h"
 #include "sh8601z_rp2xxx_qspi_pio.h"
 
@@ -122,12 +123,12 @@ void pio_configure_1wire() {
         8,
         //37.5f,
         1.0f,
-        PIN_PIO_SCK,
-        PIN_PIO_SD0
+        SCREEN_SCK_PIN,
+        SCREEN_SD0_PIN
     );
-    gpio_deinit(PIN_PIO_SD1);
-    gpio_deinit(PIN_PIO_SD2);
-    gpio_deinit(PIN_PIO_SD3);
+    gpio_deinit(SCREEN_SD1_PIN);
+    gpio_deinit(SCREEN_SD2_PIN);
+    gpio_deinit(SCREEN_SD3_PIN);
     pio_config.is_4wire = false;
 }
 
@@ -140,8 +141,8 @@ void pio_configure_4wire() {
         8, // 8 bit words
         //37.5f,
         1.0f,
-        PIN_PIO_SCK,
-        PIN_PIO_SD_START
+        SCREEN_SCK_PIN,
+        SCREEN_PIO_SD_START_PIN
     );
     pio_config.is_4wire = true;
 }
@@ -160,7 +161,7 @@ void __time_critical_func(amoled_send_1wire)(uint8_t cmd, size_t len, uint8_t da
 
     // can pack inst + addr into single 32-bit
     pio_configure_1wire();
-    gpio_put(PIN_PIO_CSB, 0);
+    gpio_put(SCREEN_CSB_PIN, 0);
     pio_put_word(0x02);    // 1 wire write
     pio_put_word(0x00);
     pio_put_word(cmd&0xff);
@@ -174,7 +175,7 @@ void __time_critical_func(amoled_send_1wire)(uint8_t cmd, size_t len, uint8_t da
     while(!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
     sleep_us(10);
 
-    gpio_put(PIN_PIO_CSB, 1);
+    gpio_put(SCREEN_CSB_PIN, 1);
 }
 
 
@@ -182,7 +183,7 @@ void __time_critical_func(amoled_send_4wire)(uint8_t cmd, size_t len, uint8_t da
 
     // can pack inst + addr into single 32-bit
     pio_configure_1wire();
-    gpio_put(PIN_PIO_CSB, 0);
+    gpio_put(SCREEN_CSB_PIN, 0);
     pio_put_word(0x32);    // 4 wire write
     pio_put_word(0x00);
     pio_put_word(cmd&0xff);
@@ -199,7 +200,7 @@ void __time_critical_func(amoled_send_4wire)(uint8_t cmd, size_t len, uint8_t da
     while(!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
     sleep_us(10);
 
-    gpio_put(PIN_PIO_CSB, 1);
+    gpio_put(SCREEN_CSB_PIN, 1);
 }
 
 
@@ -278,9 +279,9 @@ void amoled_reset() {
     /*
      * Screen initialise sequence
      */
-    gpio_put(PIN_SCREEN_RST, 0);
+    gpio_put(SCREEN_RST_PIN, 0);
     sleep_ms(3);
-    gpio_put(PIN_SCREEN_RST, 1);
+    gpio_put(SCREEN_RST_PIN, 1);
     sleep_ms(50);
 
     params[0] = 0x00;
@@ -355,18 +356,18 @@ void pw_screen_init() {
     /*
      * Set up manual CSB
      */
-    gpio_init(PIN_PIO_CSB);
-    gpio_init(PIN_SCREEN_PWREN);
-    gpio_init(PIN_SCREEN_RST);
-    gpio_set_dir(PIN_PIO_CSB, GPIO_OUT);
-    gpio_set_dir(PIN_SCREEN_PWREN, GPIO_OUT);
-    gpio_set_dir(PIN_SCREEN_RST, GPIO_OUT);
-    gpio_put(PIN_PIO_CSB, 1);
-    gpio_put(PIN_SCREEN_PWREN, 1);
-    gpio_put(PIN_SCREEN_RST, 0);
+    gpio_init(SCREEN_CSB_PIN);
+    gpio_init(SCREEN_PWREN_PIN);
+    gpio_init(SCREEN_RST_PIN);
+    gpio_set_dir(SCREEN_CSB_PIN, GPIO_OUT);
+    gpio_set_dir(SCREEN_PWREN_PIN, GPIO_OUT);
+    gpio_set_dir(SCREEN_RST_PIN, GPIO_OUT);
+    gpio_put(SCREEN_CSB_PIN, 1);
+    gpio_put(SCREEN_PWREN_PIN, 1);
+    gpio_put(SCREEN_RST_PIN, 0);
 
-    pio_config.pio = pio0;
-    pio_config.sm = 0;
+    pio_config.pio = SCREEN_PIO_HW;
+    pio_config.sm = SCREEN_PIO_SM;
     pio_config.qspi_4wire_offset = pio_add_program(pio_config.pio, &qspi_4wire_tx_cpha0_program);
     pio_config.qspi_1wire_offset = pio_add_program(pio_config.pio, &qspi_1wire_tx_cpha0_program);
 

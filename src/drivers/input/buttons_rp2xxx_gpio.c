@@ -6,6 +6,7 @@
 #include "pico/types.h"
 #include "pico/stdlib.h"
 
+#include "board_resources.h"
 #include "../../picowalker-defs.h"
 #include "buttons_rp2xxx_gpio.h"
 #include "../interrupts/rp2xxx_gpio.h"
@@ -19,18 +20,18 @@ void pw_button_init() {
     acknowledge_button_presses = true;
 
     // enable pins
-    gpio_init(PIN_BUTTON_LEFT);
-    gpio_init(PIN_BUTTON_MIDDLE);
-    gpio_init(PIN_BUTTON_RIGHT);
+    gpio_init(BUTTON_LEFT_PIN);
+    gpio_init(BUTTON_MIDDLE_PIN);
+    gpio_init(BUTTON_RIGHT_PIN);
 
     // Internal pull-up
-    gpio_pull_up(PIN_BUTTON_LEFT);
-    gpio_pull_up(PIN_BUTTON_MIDDLE);
-    gpio_pull_up(PIN_BUTTON_RIGHT);
+    gpio_pull_up(BUTTON_LEFT_PIN);
+    gpio_pull_up(BUTTON_MIDDLE_PIN);
+    gpio_pull_up(BUTTON_RIGHT_PIN);
 
-    gpio_set_irq_enabled_with_callback(PIN_BUTTON_LEFT,   GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
-    gpio_set_irq_enabled_with_callback(PIN_BUTTON_MIDDLE, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
-    gpio_set_irq_enabled_with_callback(PIN_BUTTON_RIGHT,  GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
+    gpio_set_irq_enabled_with_callback(BUTTON_LEFT_PIN,   GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
+    gpio_set_irq_enabled_with_callback(BUTTON_MIDDLE_PIN, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
+    gpio_set_irq_enabled_with_callback(BUTTON_RIGHT_PIN,  GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
 }
 
 void pw_pico_button_callback(uint gp, uint32_t events) {
@@ -41,13 +42,13 @@ void pw_pico_button_callback(uint gp, uint32_t events) {
     if(!acknowledge_button_presses) return;
 
     switch(gp) {
-    case PIN_BUTTON_LEFT:
+    case BUTTON_LEFT_PIN:
         b |= BUTTON_L;
         break;
-    case PIN_BUTTON_MIDDLE:
+    case BUTTON_MIDDLE_PIN:
         b |= BUTTON_M;
         break;
-    case PIN_BUTTON_RIGHT:
+    case BUTTON_RIGHT_PIN:
         b |= BUTTON_R;
         break;
     default:

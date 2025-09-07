@@ -6,10 +6,10 @@
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
+#include "board_resources.h"
 #include "bma400_rp2xxx_spi.h"
 #include "../interrupts/rp2xxx_gpio.h"
 
-static spi_inst_t *accel_spi;
 static int32_t prev_steps;
 
 #define ACCEL_STEP_COUNT_SETTINGS_LEN 24
@@ -20,18 +20,18 @@ static const uint8_t NON_WRIST_OPTIMAL_SETTINGS[ACCEL_STEP_COUNT_SETTINGS_LEN] =
 };
 
 static void pw_accel_cs_enable() {
-    gpio_put(ACCEL_CS_PIN, 0);
+    gpio_put(ACCEL_CSB_PIN, 0);
 }
 
 static void pw_accel_cs_disable() {
-    gpio_put(ACCEL_CS_PIN, 1);
+    gpio_put(ACCEL_CSB_PIN, 1);
 }
 
 static void pw_accel_read_spi(uint8_t *buf, size_t len) {
     buf[0] |= ACCEL_READ_MASK;
     pw_accel_cs_enable();
-    spi_write_blocking(accel_spi, buf, 1);
-    spi_read_blocking(accel_spi, 0, buf, len+1);    // first byte is dummy, data starts at byte 2
+    spi_write_blocking(ACCEL_SPI_HW, buf, 1);
+    spi_read_blocking(ACCEL_SPI_HW, 0, buf, len+1);    // first byte is dummy, data starts at byte 2
     pw_accel_cs_disable();
 
     for(size_t i = 0; i < len; i++) {
@@ -43,7 +43,7 @@ static void pw_accel_read_spi(uint8_t *buf, size_t len) {
 static void pw_accel_write_spi(uint8_t *buf, size_t len) {
     buf[0] &= ACCEL_WRITE_MASK;
     pw_accel_cs_enable();
-    spi_write_blocking(accel_spi, buf, len);
+    spi_write_blocking(ACCEL_SPI_HW, buf, len);
     pw_accel_cs_disable();
 }
 
@@ -148,16 +148,14 @@ uint32_t pw_accel_get_new_steps() {
 }
 
 int8_t pw_accel_init() {
-    accel_spi = spi0;
-
-    gpio_init(ACCEL_CS_PIN);
-    gpio_set_dir(ACCEL_CS_PIN, GPIO_OUT);
+    gpio_init(ACCEL_CSB_PIN);
+    gpio_set_dir(ACCEL_CSB_PIN, GPIO_OUT);
     pw_accel_cs_disable();
 
 
-    //spi_init(accel_spi, ACCEL_SPI_SPEED);
+    //spi_init(ACCEL_SPI_HW, ACCEL_SPI_SPEED);
     //// inst, bits, polarity, phase, endian
-    //spi_set_format(accel_spi, 8, 1, 1, SPI_MSB_FIRST);
+    //spi_set_format(ACCEL_SPI_HW, 8, 1, 1, SPI_MSB_FIRST);
 
     //gpio_set_function(ACCEL_SCL_PIN, GPIO_FUNC_SPI);
     //gpio_set_function(ACCEL_MOSI_PIN, GPIO_FUNC_SPI);
