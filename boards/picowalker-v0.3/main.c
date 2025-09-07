@@ -106,7 +106,12 @@ int main() {
     //audio_test_program();
 
     // Start picowalker-core
-    walker_entry();
+    walker_setup();
+
+    extern void (*current_loop)(void);
+    while(1) {
+        current_loop();
+    }
 
     // unreachable
     while(1);
