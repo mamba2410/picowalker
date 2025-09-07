@@ -8,6 +8,7 @@
 #include "pico/sleep.h"
 #include "pico/stdlib.h"
 
+#include "board_resources.h"
 #include "../../picowalker-defs.h"
 #include "../accel/bma400_rp2xxx_spi.h"
 #include "../battery/bq25628e_rp2xxx_i2c.h"
@@ -82,7 +83,7 @@ void pw_power_enter_sleep() {
 
     gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     gpio_set_dormant_irq_enabled(BAT_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
-    gpio_set_dormant_irq_enabled(PIN_BUTTON_MIDDLE, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
+    gpio_set_dormant_irq_enabled(BUTTON_MIDDLE_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     //sleep_goto_dormant_until_pin(PIN_BUTTON_MIDDLE, true, false);
     // We should also be allowed to wake from AON timer
     rosc_set_dormant();

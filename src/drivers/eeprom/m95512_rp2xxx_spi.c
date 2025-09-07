@@ -6,21 +6,20 @@
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
+#include "board_resources.h"
 #include "../../picowalker-defs.h"
 #include "m95512_rp2xxx_spi.h"
 
-static spi_inst_t *eeprom_spi;
-
 static void pw_eeprom_cs_enable() {
     // Configure output, drive low
-    gpio_set_dir(EEPROM_CS_PIN, GPIO_OUT);
-    gpio_put(EEPROM_CS_PIN, 0);
+    gpio_set_dir(EEPROM_CSB_PIN, GPIO_OUT);
+    gpio_put(EEPROM_CSB_PIN, 0);
 }
 
 static void pw_eeprom_cs_disable() {
     // Don't drive high, go to high-z and let pull-up do the work
-    gpio_put(EEPROM_CS_PIN, 1);
-    gpio_set_dir(EEPROM_CS_PIN, GPIO_IN);
+    gpio_put(EEPROM_CSB_PIN, 1);
+    gpio_set_dir(EEPROM_CSB_PIN, GPIO_IN);
 }
 
 static void pw_eeprom_wait_for_ready() {
@@ -28,28 +27,26 @@ static void pw_eeprom_wait_for_ready() {
     do {
         buf[0] = CMD_RDSR;
         pw_eeprom_cs_enable();
-        spi_write_blocking(eeprom_spi, buf, 1);
-        spi_read_blocking(eeprom_spi, 0, buf, 1);
+        spi_write_blocking(EEPROM_SPI_HW, buf, 1);
+        spi_read_blocking(EEPROM_SPI_HW, 0, buf, 1);
         pw_eeprom_cs_disable();
     } while(buf[0] & STATUS_WIP);
 }
 
 void pw_eeprom_init() {
-    eeprom_spi = spi0;
-
     // TODO: needs external pull-up, so don't drive high to avoid contention
-    gpio_init(EEPROM_CS_PIN);
+    gpio_init(EEPROM_CSB_PIN);
     pw_eeprom_cs_disable();
 
     // 10MHz is max for 3.3V
-    spi_init(eeprom_spi, 10*1000*1000);
+    spi_init(EEPROM_SPI_HW, 10*1000*1000);
 
     // Run in 00 mode since it expects clock to idle low. See AN2014 4.2.3
     // inst, bits, polarity, phase, endian
-    //spi_set_format(eeprom_spi, 8, 1, 1, SPI_MSB_FIRST);
-    spi_set_format(eeprom_spi, 8, 0, 0, SPI_MSB_FIRST);
+    //spi_set_format(EEPROM_SPI_HW, 8, 1, 1, SPI_MSB_FIRST);
+    spi_set_format(EEPROM_SPI_HW, 8, 0, 0, SPI_MSB_FIRST);
 
-    gpio_set_function(EEPROM_SCL_PIN, GPIO_FUNC_SPI);
+    gpio_set_function(EEPROM_SCK_PIN, GPIO_FUNC_SPI);
     gpio_set_function(EEPROM_MOSI_PIN, GPIO_FUNC_SPI);
     gpio_set_function(EEPROM_MISO_PIN, GPIO_FUNC_SPI);
 
@@ -58,13 +55,13 @@ void pw_eeprom_init() {
 
     msg[0] = CMD_WREN;
     pw_eeprom_cs_enable();
-    spi_write_blocking(eeprom_spi, msg, 1);
+    spi_write_blocking(EEPROM_SPI_HW, msg, 1);
     pw_eeprom_cs_disable();
 
     msg[0] = CMD_WRSR;
     msg[1] = 0;
     pw_eeprom_cs_enable();
-    spi_write_blocking(eeprom_spi, msg, 2);
+    spi_write_blocking(EEPROM_SPI_HW, msg, 2);
     pw_eeprom_cs_disable();
 }
 
@@ -75,7 +72,7 @@ int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len) {
 
     buf[0] = CMD_WRDI;
     pw_eeprom_cs_enable();
-    spi_write_blocking(eeprom_spi, buf, 1);
+    spi_write_blocking(EEPROM_SPI_HW, buf, 1);
     pw_eeprom_cs_disable();
 
 
@@ -87,8 +84,8 @@ int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len) {
 
 
     pw_eeprom_cs_enable();
-    spi_write_blocking(eeprom_spi, buf, 3);
-    int n_read = spi_read_blocking(eeprom_spi, 0, buf, len);
+    spi_write_blocking(EEPROM_SPI_HW, buf, 3);
+    int n_read = spi_read_blocking(EEPROM_SPI_HW, 0, buf, len);
     pw_eeprom_cs_disable();
 
     return n_read;
@@ -107,7 +104,7 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len) {
 
         msg[0] = CMD_WREN;
         pw_eeprom_cs_enable();
-        spi_write_blocking(eeprom_spi, msg, 1);
+        spi_write_blocking(EEPROM_SPI_HW, msg, 1);
         pw_eeprom_cs_disable();
 
         /*
@@ -122,8 +119,8 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len) {
         msg[2] = (uint8_t)(addr&0xff);
 
         pw_eeprom_cs_enable();
-        spi_write_blocking(eeprom_spi, msg, 3);
-        spi_write_blocking(eeprom_spi, buf, this_write);
+        spi_write_blocking(EEPROM_SPI_HW, msg, 3);
+        spi_write_blocking(EEPROM_SPI_HW, buf, this_write);
         pw_eeprom_cs_disable();
 
         addr += this_write;
