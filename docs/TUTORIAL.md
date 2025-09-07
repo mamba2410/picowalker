@@ -7,16 +7,14 @@ This tutorial aims to help you:
 - Set up a cross-compiling toolchain.
 - Compile the [picowalker-core](https://github.com/mamba2410/picowalker-core) code for the cortex-m33 processor
     (the processor in the pico 2/rp2350 chip).
-- Compile the [picowalker](https://github.com/mamba2410/picowalker) code for the default hardware configuration
-    (see [design.md](./design.md)).
+- Compile the [picowalker](https://github.com/mamba2410/picowalker) code for your chosen hardware configuration.
 - Upload the code to the pico
 
 I assume that you:
 
-- Are running linux
-- Are semi-familiar with the C language
-- Have a build DIY version of the picowalker on a breadboard.
-    (See the [wiring diagram]() for more info.)
+- Are running linux.
+- Have the hardware to test this on.
+- Are vaguely familiar with programming or have the patience to work through errors.
 
 With that out of the way, lets get started.
 
@@ -43,7 +41,7 @@ Ubuntu / WSL
 sudo apt install git cmake
 ```
 
-Great, now next lets install a cross-compiler.
+Great, next lets install a cross-compiler.
 We want one that targets bare-metal 32-bit arm processors, so we want something
 that looks like `arm-none-eabi`.
 
@@ -63,7 +61,10 @@ sudo apt install build-essential
 Next, we'll need to install the raspberry pi pico C/C++ SDK.
 Raspberry pi already has [a tutorial](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf)
 on how to get started with the pico SDK, so go read that for more details,
-but I will write some rough instructions here:
+
+**I highly recommend using the official Raspberry Pi guide as this may become outdated over time**
+
+That being said, I will write some rough instructions here:
 
 First, create a directory and clone the [pico-sdk](https://github.com/raspberrypi/pico-sdk)
 git repository into it.
@@ -112,6 +113,9 @@ Since we're cross-compiling it, we need to specify which toolchain we want to
 use.
 This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 
+If you are compiling for boards with `rp2040` you use `toolchain-pico.cmake`.
+`rp2350` boards use `toolchain-pico2.cmake`.
+
 So now, lets run for Pico2 / RP2350
 
 ```sh
@@ -129,7 +133,7 @@ cmake --build build
 
 if you encounter errors here, it likely means that `cmake` can't find your
 cross-compiler.
-Check the error messages for more details, and try googling the error messages.
+Check the error messages for more details, and try googling them.
 I'm not a CMake expert so that's all I do when something goes wrong ¯\\_(ツ)_/¯
 
 If all went well, you should now have a file located at
@@ -210,8 +214,15 @@ cd src/boards/rp2350touchlcd128
 rm -rf ../../../build/rp2350touchlcd128
 cmake -B ../../../build/rp2350touchlcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
 cmake --build ../../../build/rp2350touchlcd128
+Now we choose which board to compile. I'll choose `picowalker-v0.3`.
+
+```
+cd boards/picowalker-v0.3
+cmake -B build/ -DPICO_BOARD=pico2 .
+cmake --build build/
 ```
 
+If that all went well, you should have a file called `build/picowalker.uf2`.
 If that all went well, you should have a file called `build/picowalker.uf2`.
 This is the file you'll want to copy to your pico.
 
@@ -245,3 +256,5 @@ of different hardware so that people can mix-and-match with what they have.
 
 Any questions you have, shoot me a message on the Pokewalker Discord and I'll
 be happy to help!
+
+
