@@ -28,7 +28,7 @@
 
 
 #include "picowalker-defs.h"
-#include "drivers/onboard_log.h"
+#include "../log/onboard_log.h"
 #include "msc_disk.h"
 
 // whether host does safe-eject
