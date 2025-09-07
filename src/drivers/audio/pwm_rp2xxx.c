@@ -6,7 +6,7 @@
 #include <hardware/pwm.h>
 #include "hardware/timer.h"
 
-#include "../picowalker-defs.h"
+#include "../../picowalker-defs.h"
 
 #define PW_SPEAKER_PIN 2
 

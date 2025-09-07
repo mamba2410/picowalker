@@ -1,7 +1,7 @@
 #ifndef PW_POWER_PICO_H
 #define PW_POWER_PICO_H
 
-#include "../picowalker-defs.h"
+#include "../../picowalker-defs.h"
 
 #define USER_IDLE_TIMEOUT_MS (30*1000)
 

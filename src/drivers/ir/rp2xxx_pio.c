@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include <stdio.h>
+
 #include "hardware/uart.h"
 #include <hardware/dma.h>
 #include <hardware/gpio.h>
@@ -11,7 +12,7 @@
 #include "pico/time.h"
 #include "pico/stdlib.h"
 
-#include "ir_pico_pio.h"
+#include "rp2xxx_pio.h"
 
 #define USE_DMA
 

@@ -34,15 +34,35 @@ add_compile_definitions(PICO_FLASH_SPI_CLKDIV=8)
 ## Create executable from dependencies
 add_executable(picowalker
     src/main.c
-    src/RP2350TouchLCD128.c
-    src/RP2350TouchLCD128.h
-    #src/pokeball.c
-    #src/pokeball.h
-    #src/picowalker-defs.h
+    src/drivers/accel/bma400_rp2xxx_spi.c
+    src/drivers/accel/bma400_rp2xxx_spi.h
+    src/drivers/audio/pwm_rp2xxx.c
+    src/drivers/battery/bq25628e_rp2xxx_i2c.c
+    src/drivers/battery/bq25628e_rp2xxx_i2c.h
+    src/drivers/eeprom/m95512_rp2xxx_spi.c
+    src/drivers/eeprom/m95512_rp2xxx_spi.h
+    src/drivers/input/buttons_rp2xxx_gpio.c
+    src/drivers/input/buttons_rp2xxx_gpio.h
+    src/drivers/interrupts/rp2xxx_gpio.c
+    src/drivers/interrupts/rp2xxx_gpio.h
+    src/drivers/ir/rp2xxx_pio.c
+    src/drivers/ir/rp2xxx_pio.h
+    src/drivers/screen/sh8601z_rp2xxx_qspi_pio.c
+    src/drivers/screen/sh8601z_rp2xxx_qspi_pio.h
+    src/drivers/sleep/dormant_rp2xxx.c
+    src/drivers/sleep/dormant_rp2xxx.h
+    src/drivers/time/rp2350_powman.c
+    src/assets/picowalker_rp2xxx_inbuilt.S
+    src/assets/picowalker_rp2xxx_inbuilt.h
+    src/assets/pokewalker_rp2xxx_inbuilt.S
+    src/assets/pokewalker_rp2xxx_inbuilt.c
+    src/assets/pokewalker_rp2xxx_inbuilt.h
+
+    src/picowalker-defs.h
 )
 
 ## PIO stuff for SDK
-#pico_generate_pio_header(picowalker ${CMAKE_CURRENT_LIST_DIR}/src/drivers/qspi.pio)
+pico_generate_pio_header(picowalker ${CMAKE_CURRENT_LIST_DIR}/src/drivers/screen/qspi.pio)
 
 ## Enable usb, uart etc for stdio
 #pico_enable_stdio_usb(picowalker 1)

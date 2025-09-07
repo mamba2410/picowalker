@@ -8,11 +8,11 @@
 #include "pico/sleep.h"
 #include "pico/stdlib.h"
 
-#include "../picowalker-defs.h"
-#include "accel_pico_bma400.h"
-#include "battery_pico_bq25628e.h"
-#include "buttons_pico.h"
-#include "power_pico.h"
+#include "../../picowalker-defs.h"
+#include "../accel/bma400_rp2xxx_spi.h"
+#include "../battery/bq25628e_rp2xxx_i2c.h"
+#include "../input/buttons_rp2xxx_gpio.h"
+#include "dormant_rp2xxx.h"
 
 static volatile bool power_should_sleep;
 pw_wake_reason_t wake_reason;

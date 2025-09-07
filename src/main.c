@@ -5,7 +5,7 @@
 #include "hardware/clocks.h"
 #include "hardware/pll.h"
 
-#include "drivers/eeprom_pico_m95512.h"
+//#include "drivers/eeprom/m95512_rp2xxx_spi.h"
 #include "picowalker.h"
 #include "picowalker-defs.h"
 

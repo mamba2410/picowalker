@@ -3,7 +3,6 @@
 #include <stddef.h>
 
 #include <stdio.h>
-#include <pico/stdlib.h>
 
 #include "hardware/gpio.h"
 #include "hardware/resets.h"
@@ -11,9 +10,10 @@
 #include "hardware/structs/clocks.h"
 #include "hardware/structs/hstx_ctrl.h"
 #include "hardware/structs/hstx_fifo.h"
+#include <pico/stdlib.h>
 
-#include "../picowalker-defs.h"
-#include "screen_pico2_dwo_hstx.h"
+#include "../../picowalker-defs.h"
+#include "sh8601_rp2350_hstx.h"
 
 static amoled_t amoled = {0};
 

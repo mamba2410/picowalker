@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <stddef.h>
+
 #include <string.h>
 
-#include "../eeprom.h"
-#include "eeprom_pico_ram.h"
+#include "ram_rp2xxx.h"
 
 
 extern uint8_t pw_ram_eeprom[DRIVER_EEPROM_SIZE];

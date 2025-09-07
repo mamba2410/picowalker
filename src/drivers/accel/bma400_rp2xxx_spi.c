@@ -1,13 +1,13 @@
 #include <stdint.h>
-#include <stdlib.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
-#include "accel_pico_bma400.h"
-#include "gpio_interrupts_pico.h"
+#include "bma400_rp2xxx_spi.h"
+#include "../interrupts/rp2xxx_gpio.h"
 
 static spi_inst_t *accel_spi;
 static int32_t prev_steps;

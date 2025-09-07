@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "../picowalker-defs.h"
+#include "../../picowalker-defs.h"
 
 #define FLASH_CSB_PIN   5   // GP5, phys 7
 

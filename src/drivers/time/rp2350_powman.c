@@ -1,8 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include <stdio.h>
-//#include "pico/stdlib.h"
 
 #include "hardware/powman.h"
 #include "pico/bootrom.h"
@@ -11,8 +9,8 @@
 #include "pico/aon_timer.h"
 
 
-
-#include "picowalker-defs.h"
+#include "../sleep/dormant_rp2xxx.h"
+#include "../../picowalker-defs.h"
 
 #define UNIX_TIME_OFFSET 946684800ul
 #define TIMER_INTERVAL_SEC 60

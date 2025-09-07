@@ -5,4 +5,4 @@
 .size pw_ram_eeprom, DRIVER_EEPROM_SIZE
 
 .global pw_ram_eeprom
-pw_ram_eeprom: .incbin "../rom/pweep.rom"
+pw_ram_eeprom: .incbin "../../../rom/pweep.rom"

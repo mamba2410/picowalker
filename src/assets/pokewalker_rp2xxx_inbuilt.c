@@ -1,8 +1,9 @@
 #include <stdint.h>
+
 #include <string.h>
 
 #include "../picowalker-defs.h"
-#include "flash_pico_internal.h"
+#include "pokewalker_rp2xxx_inbuilt.h"
 
 static const size_t offsets[] = {0x0000, 0x0100, 0x0120, 0x0140, 0x0160, 0x0170, 0x180};
 static const size_t sizes[]   = {0x0100, 0x0020, 0x0020, 0x0020, 0x0010, 0x0010, 0x010};

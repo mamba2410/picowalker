@@ -2,12 +2,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "buttons_pico.h"
-#include "battery_pico_bq25628e.h"
-#include "accel_pico_bma400.h"
-
-#include "power_pico.h"
-#include "../picowalker-defs.h"
+#include "../input/buttons_rp2xxx_gpio.h"
+#include "../battery/bq25628e_rp2xxx_i2c.h"
+#include "../accel/bma400_rp2xxx_spi.h"
+#include "../sleep/dormant_rp2xxx.h"
+#include "../../picowalker-defs.h"
 
 void pw_gpio_interrupt_handler(uint gp, uint32_t events) {
     //printf("[Debug] interrupt on pin GP%d\n", gp);

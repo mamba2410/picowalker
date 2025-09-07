@@ -1,4 +1,4 @@
-#include "flash_pico_internal.h"
+#include "pokewalker_rp2xxx_inbuilt.h"
 
 .section .data.flash_images, "ax", %progbits
 .type pw_flash_images, %object
