@@ -67,6 +67,7 @@ static volatile uint8_t interrupt_flags[4];
 static volatile uint8_t interrupt_status[4];
 static volatile bool adc_done = false;
 static volatile uint32_t adc_timeout_stamp = 0;
+static volatile uint32_t adc_finished_time = 0;
 
 static void pw_pmic_read_reg(uint8_t reg, uint8_t *buf, size_t len) {
     if(buf == NULL) { return; }
@@ -156,6 +157,7 @@ void pw_battery_int(uint gp, uint32_t events) {
         // will cause things to spin forever
         if(interrupt_flags[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) {
             adc_done = true;
+            adc_finished_time = pw_time_get_ms();
         }
 
         // Debug print if any of the fault flags show up
@@ -283,15 +285,8 @@ void debug_read_pmic() {
     printf("\tTDIE: %f C\n", (float)(buf16[7]>>ADC_SHIFTS[7]) / (float)(0x118) * 140.0);
 }
 
-
-/*
- * Callback function called periodically by picowalker-core
- * Runs in normal context
- */
-pw_battery_status_t pw_power_get_battery_status() {
-    pw_battery_status_t bs = {.percent = 100, .flags = 0x00};
+void pw_power_start_battery_measurement() {
     uint8_t buf[8];
-    uint16_t *buf16 = (uint16_t*)buf;
 
     // Enable the ADC and start conversion
     if(adc_timeout_stamp == 0) {
@@ -300,8 +295,39 @@ pw_battery_status_t pw_power_get_battery_status() {
         buf[0] |= REG_ADC_CONTROL_ADC_EN_ENABLED;
         pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
         adc_timeout_stamp = pw_time_get_ms() + ADC_TIMEOUT_MS;
+        adc_finished_time = 0;
     }
 
+    // return control until ADC is finished
+
+}
+
+
+/**
+ * Return true if ADC finished or timed out
+ * Don't clear since process_battery() needs the information too
+ */
+bool pw_power_battery_measurement_available() {
+    bool is_active = adc_timeout_stamp > 0;
+    bool is_finished = adc_done || (pw_time_get_ms() >= adc_timeout_stamp);
+    return is_active && is_finished;
+}
+
+
+/*
+ * Callback function called periodically by picowalker-core
+ * Runs in normal context
+ */
+pw_battery_status_t pw_power_get_battery_status() {
+    pw_battery_status_t bs = {.percent = 100, .flags = 0x00};
+
+    if(!pw_power_battery_measurement_available()) {
+        printf("[Warn ] Asking for battery measurement when one isn't available\n");
+        bs.flags |= PW_BATTERY_STATUS_FLAGS_FAULT;
+        return bs;
+    }
+    uint8_t buf[8];
+    uint16_t *buf16 = (uint16_t*)buf;
     // Check why we interrupted, if at all
     //print_flags_and_status(interrupt_flags, interrupt_status);
 
@@ -312,7 +338,7 @@ pw_battery_status_t pw_power_get_battery_status() {
     //buf[0] |= REG_CHARGER_CONTROL_0_WD_RST;
     //pw_pmic_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
 
-    // Read status registers while we wait for ADC conversion
+    // Read status registers
     pw_pmic_read_reg(REG_CHARGER_STATUS_0, buf, 3);
     uint8_t charge_status = (buf[1]>>3)&0x03;
     //printf("[Info] bq25628e charge status: %s\n", CHARGE_STATUS_STRINGS[charge_status]);
@@ -332,16 +358,16 @@ pw_battery_status_t pw_power_get_battery_status() {
     }
 
     // Wait for interrupt to say that ADC function is done
-    while(!adc_done && (pw_time_get_ms() < adc_timeout_stamp));
     if(!adc_done) {
         printf("[Warn ] Battery ADC measurement exceeded %d ms\n", ADC_TIMEOUT_MS);
         bs.flags |= PW_BATTERY_STATUS_FLAGS_TIMEOUT;
         adc_timeout_stamp = 0;
         return bs;
     }
-    uint32_t adc_conversion_time = pw_time_get_ms() - (adc_timeout_stamp - ADC_TIMEOUT_MS);
+    uint32_t adc_conversion_time = adc_finished_time - (adc_timeout_stamp - ADC_TIMEOUT_MS);
     adc_done = false;
     adc_timeout_stamp = 0;
+    adc_finished_time = 0;
 
     // Read ADC registers that we're interested in 
     buf[0] = buf[1] = 0;
