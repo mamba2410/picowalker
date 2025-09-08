@@ -418,9 +418,15 @@ pw_battery_status_t pw_power_get_battery_status() {
     float vsys_f = (float)raw_val * 5572.0 / (float)0x0af0;
     //printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
 
+    /*
     int len = snprintf(log_staging, 128,
             //"[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"Mode\": \"%s\", \"Timestamp\":%lu}\n",
             //vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"Sleep":"Normal", pw_time_get_rtc()
+            "{\"vbat\":%4.0f,\"status\":\"%s\",\"mode\":\"%s\",\"time\":%lu}\n",
+            vbat_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"S":"N", pw_time_get_rtc()
+            );
+            */
+    int len = snprintf(log_staging, 128,
             "{\"vbat\":%4.0f,\"status\":\"%s\",\"mode\":\"%s\",\"time\":%lu}\n",
             vbat_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"S":"N", pw_time_get_rtc()
             );
