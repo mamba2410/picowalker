@@ -17,7 +17,7 @@
 #define I2C_WRITE_MASK  (0x00)
 
 #define VBAT_ABS_MINIMUM_MV 3500.0f
-#define VBAT_ABS_MAXIMUM_MV 4250.0f
+#define VBAT_ABS_MAXIMUM_MV 4200.0f
 #define VBAT_SAFE_MINIMUM_MV 3600.0f
 
 static char log_staging[128] = "";
@@ -393,8 +393,10 @@ pw_battery_status_t pw_power_get_battery_status() {
     //printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
 
     int len = snprintf(log_staging, 128,
-            "[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"Mode\": \"%s\", \"Timestamp\":%lu}\n",
-            vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"Sleep":"Normal", pw_time_get_rtc()
+            //"[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"Mode\": \"%s\", \"Timestamp\":%lu}\n",
+            //vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"Sleep":"Normal", pw_time_get_rtc()
+            "{\"vbat\":%4.0f,\"status\":\"%s\",\"mode\":\"%s\",\"time\":%lu}\n",
+            vbat_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"S":"N", pw_time_get_rtc()
             );
     //printf("[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"ADC_conversion_ms\": %d}\n",
             //vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], adc_conversion_time
