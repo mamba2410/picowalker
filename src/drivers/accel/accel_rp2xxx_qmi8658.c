@@ -1,6 +1,9 @@
 #include "accel_rp2xxx_qmi8658.h"
 #include "math.h"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
 #include "hardware/gpio.h"
 #include "hardware/irq.h"
 #include "pico/time.h"
@@ -65,8 +68,11 @@ static bool step_processing_timer_callback(struct repeating_timer *timer)
     prev_magnitude = magnitude_filter;
     return true;
 }
+<<<<<<< HEAD
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
 
 /*
  * ============================================================================
@@ -75,6 +81,7 @@ static bool step_processing_timer_callback(struct repeating_timer *timer)
  */
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 /********************************************************************************
  * @brief           Accel Initialize with Hardware Pedometer + Software Fallback
 =======
@@ -82,11 +89,18 @@ static bool step_processing_timer_callback(struct repeating_timer *timer)
 /********************************************************************************
  * @brief           Accel Initialize
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+/********************************************************************************
+ * @brief           Accel Initialize with Hardware Pedometer + Software Fallback
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
  * @param N/A
 ********************************************************************************/
 void pw_accel_init()
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
     // Initialize hardware pedometer configuration (original settings)
     qmi8658_config.inputSelection = QMI8658_CONFIG_ACC_ENABLE;
     qmi8658_config.accRange = QMI8658_AccRange_4g;
@@ -127,6 +141,7 @@ void pw_accel_init()
     add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
     
     printf("[Debug] Pedometer initialized - Hardware + Software fallback, timer started\n");
+<<<<<<< HEAD
 }
 
 /********************************************************************************
@@ -139,16 +154,26 @@ void pw_accel_init()
 /********************************************************************************
  * @brief           Accel Sleep
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+}
+
+/********************************************************************************
+ * @brief           Accel Sleep - Reduce power consumption
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
  * @param N/A
 ********************************************************************************/
 void pw_accel_sleep()
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
     // Cancel step processing timer to save power
     cancel_repeating_timer(&step_timer);
     // Keep accelerometer enabled for hardware pedometer
     QMI8658_enable_sensors(QMI8658_CTRL7_ACC_ENABLE);
     printf("[Debug] Accelerometer sleeping - timer stopped, hardware pedometer active\n");
+<<<<<<< HEAD
 }
 
 /********************************************************************************
@@ -160,15 +185,25 @@ void pw_accel_sleep()
 /********************************************************************************
  * @brief           Accel Wake up
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+}
+
+/********************************************************************************
+ * @brief           Accel Wake up - Resume normal operation
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
  * @param N/A
 ********************************************************************************/
 void pw_accel_wake()
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
     // Re-enable accelerometer and restart step processing timer
     QMI8658_enable_sensors(QMI8658_CTRL7_ACC_ENABLE);
     add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
     printf("[Debug] Accelerometer wake up - timer restarted\n");
+<<<<<<< HEAD
 }
 
 /********************************************************************************
@@ -222,38 +257,63 @@ void pw_accel_add_steps(uint32_t steps)
     printf("[Debug] Added %u manual steps (total: %u)\n", steps, accumulated_steps);
 =======
     QMI8658_enableSensors(QMI8658_CTRL7_ACC_ENABLE);
+=======
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
 }
 
 /********************************************************************************
- * @brief           Accel Get New Steps
+ * @brief           Accel Get New Steps - Returns accumulated steps from timer
  * @param N/A
- * @return uint32_t
+ * @return uint32_t Number of new steps since last call
 ********************************************************************************/
 uint32_t pw_accel_get_new_steps()
 {
-    float accel[3];
-    QMI8658_read_acc_xyz(accel);
-
-    // Calculate magnitude
-    float magnitude = sqrtf(accel[0]*accel[0] + accel[1]*accel[1] + accel[2]*accel[2]);
-
-    // Simple peak detection
-    static float threshold = 1.2f;
-    static uint64_t min_step_interval = 300000;
-    uint64_t now = time_us_64();
-    float prev_magnitude = 0;
-    uint64_t last_step_time = 0;
+    static uint32_t steps_at_last_call = 0;
     
-    // Detect step: magnitude crosses threshold upward
-      if (magnitude > threshold && prev_magnitude <= threshold) {
-          if (now - last_step_time > min_step_interval) {
-              last_step_time = now;
-              prev_magnitude = magnitude;
-              return 1;
-          }
-      }
+    // Return new steps since last call (timer accumulates them in background)
+    uint32_t new_steps = accumulated_steps - steps_at_last_call;
+    steps_at_last_call = accumulated_steps;
+    
+    if (new_steps > 0) {
+        printf("[Debug] Returning %u new steps (total: %u)\n", new_steps, accumulated_steps);
+    }
+    
+    return new_steps;
+}
 
+<<<<<<< HEAD
       prev_magnitude = magnitude;
       return 0;
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+/********************************************************************************
+ * @brief           Reset Step Counter
+ * @param N/A
+********************************************************************************/
+void pw_accel_reset_steps()
+{    
+    accumulated_steps = 0;
+    previous_hardware_steps = 0;
+    
+    // Reset software fallback variables
+    prev_magnitude = 0.0f;
+    last_step_time = 0;
+    magnitude_filter = 0.0f;
+    
+    // Try to reset hardware counter
+    QMI8658_reset_step_count();
+    QMI8658_read_step_count(&previous_hardware_steps);
+    
+    printf("[Debug] Step counter reset - Hardware + Software\n");
+}
+
+/********************************************************************************
+ * @brief           Add manual steps (for canvas press simulation)
+ * @param steps     Number of steps to add
+********************************************************************************/
+void pw_accel_add_steps(uint32_t steps)
+{
+    accumulated_steps += steps;
+    printf("[Debug] Added %u manual steps (total: %u)\n", steps, accumulated_steps);
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
 }

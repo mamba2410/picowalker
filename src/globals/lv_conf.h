@@ -600,10 +600,14 @@
 
     /*1: Enable grow on press*/
 <<<<<<< HEAD
+<<<<<<< HEAD
     #define LV_THEME_DEFAULT_GROW 0
 =======
     #define LV_THEME_DEFAULT_GROW 1
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    #define LV_THEME_DEFAULT_GROW 0
+>>>>>>> 423fc1a (Draw Scale and Accel Functions)
 
     /*Default transition time in [ms]*/
     #define LV_THEME_DEFAULT_TRANSITION_TIME 80
