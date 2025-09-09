@@ -1,4 +1,9 @@
-build/*
+/build/*
+src/boards/picowalker-v0.01/build/*
+src/boards/picowalker-v0.02/build/*
+src/boards/picowalker-v0.03/build/*
+src/boards/rp2350touchlcd128/build/*
+src/boards/rp2040touchlcd128/build/*
 rom/*
 lib/*
 doxygen/
