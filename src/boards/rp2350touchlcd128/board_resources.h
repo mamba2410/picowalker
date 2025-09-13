@@ -5,10 +5,14 @@
 // Override IR pins to avoid conflicts with WS_Config.h
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 #define TOUCH           true    // Touch variant
 #define CANVAS_SCALE    2       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
 // Device Configuration
 //#define LCD_RST_PIN     13
+<<<<<<< HEAD
 
 /* IR UART Configuration */
 #define IR_SD_PIN       26    // TODO Figure what PINs later
@@ -28,6 +32,14 @@
 
 #define PW_SPEAKER_PIN 16
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+
+#define IR_SD_PIN       26    // TODO Figure what PINs later
+#define IR_PIO_RX       27    // TODO Figure what PINs later
+#define IR_PIO_TX       28    // TODO Figure what PINs later
+
+#define PW_SPEAKER_PIN  16
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 // Add other board-specific overrides here as needed
 

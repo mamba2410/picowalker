@@ -11,12 +11,17 @@
 
 #include <tusb.h>
 <<<<<<< HEAD
+<<<<<<< HEAD
 //#include "bsp/board_api.h"
 //#include "tusb_config.h"
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 =======
 >>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
+=======
+//#include "bsp/board_api.h"
+//#include "tusb_config.h"
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 #include "lvgl.h"
 //#include "screen_ws.h"
@@ -25,9 +30,13 @@
 #include "picowalker.h"
 #include "picowalker-defs.h"
 <<<<<<< HEAD
+<<<<<<< HEAD
 //#include "msc_disk.h"
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+//#include "msc_disk.h"
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 // LVGL
 static struct repeating_timer lvgl_timer;

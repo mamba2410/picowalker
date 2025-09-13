@@ -34,6 +34,7 @@
 #define DISK_ROOT_DIR_INDEX 3
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 extern uint8_t msc_disk[4][512]; // External declaration - actual definition is in msc_disk.c
 =======
 uint8_t msc_disk[4][512] = {
@@ -175,6 +176,9 @@ uint8_t msc_disk[4][512] = {
 	},
 };
 >>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
+=======
+extern uint8_t msc_disk[4][512]; // External declaration - actual definition is in msc_disk.c
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 
 #endif /* MSC_DISK_H */

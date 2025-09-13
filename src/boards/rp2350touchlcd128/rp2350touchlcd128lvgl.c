@@ -1,5 +1,8 @@
 #include "rp2350touchlcd128lvgl.h"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 #include <stdio.h>
 
 // LVGL
@@ -21,6 +24,7 @@ static lv_color_t *buffer1;
 static lv_obj_t *canvas;
 static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
 static lv_obj_t *brightness_label;  // Global reference to brightness label
+<<<<<<< HEAD
 =======
 
 // LVGL
@@ -45,6 +49,8 @@ static lv_color_t *buffer1;
 static lv_obj_t *canvas;
 static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
 >>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 static lv_indev_drv_t driver_touch;
 static lv_indev_drv_t driver_accel;
@@ -186,13 +192,19 @@ static void brightness_slider_event_callback(lv_event_t * event)
       int32_t value = lv_slider_get_value(slider);
       WS_SET_PWM(value);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
       
       // Update the brightness label to show current value
       static char brightness_text[32];
       snprintf(brightness_text, sizeof(brightness_text), "Brightness: %d%%", (int)value);
       lv_label_set_text(brightness_label, brightness_text);
+<<<<<<< HEAD
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 }
 
 /********************************************************************************
@@ -521,9 +533,12 @@ int main()
 =======
     
     // Label for Brightness Slider
-    lv_obj_t *label = lv_label_create(brightness_slider);
-    lv_label_set_text(label, "Brightness");
-    lv_obj_center(label);
+    brightness_label = lv_label_create(brightness_slider);
+    // Set initial label text with current slider value
+    static char initial_brightness_text[32];
+    snprintf(initial_brightness_text, sizeof(initial_brightness_text), "Brightness: %d%%", (int)lv_slider_get_value(brightness_slider));
+    lv_label_set_text(brightness_label, initial_brightness_text);
+    lv_obj_center(brightness_label);
     lv_group_add_obj(group, brightness_slider);
 >>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 

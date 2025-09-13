@@ -9,12 +9,18 @@ static bool eeprom_initialized = false;
 static uint8_t sector_buffer[FLASH_SECTOR_SIZE];
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 // RAM-based EEPROM cache
 static uint8_t eeprom_ram_cache[DRIVER_EEPROM_SIZE];
 static bool eeprom_cache_dirty = false;  // Track if RAM cache differs from flash
 
+<<<<<<< HEAD
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 /*
  * ============================================================================
@@ -32,6 +38,7 @@ void pw_eeprom_init()
     if (eeprom_initialized) return;
     
 <<<<<<< HEAD
+<<<<<<< HEAD
     printf("[EEPROM] Initializing RAM-cached EEPROM emulation...\n");
     printf("[EEPROM] Using flash offset: 0x%08X, size: %d bytes\n", 
            DRIVER_EEPROM_FLASH_OFFSET, DRIVER_EEPROM_SIZE);
@@ -44,13 +51,23 @@ void pw_eeprom_init()
     memcpy(first_bytes, eeprom_ram_cache, 16);
 =======
     printf("[EEPROM] Initializing flash-based EEPROM emulation...\n");
+=======
+    printf("[EEPROM] Initializing RAM-cached EEPROM emulation...\n");
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
     printf("[EEPROM] Using flash offset: 0x%08X, size: %d bytes\n", 
            DRIVER_EEPROM_FLASH_OFFSET, DRIVER_EEPROM_SIZE);
     
+    // Load entire EEPROM from flash into RAM cache
+    memcpy(eeprom_ram_cache, (uint8_t*)(XIP_BASE + DRIVER_EEPROM_FLASH_OFFSET), DRIVER_EEPROM_SIZE);
+    
     // Check if the EEPROM area looks valid (simple check for all 0xFF = erased)
     uint8_t first_bytes[16];
+<<<<<<< HEAD
     memcpy(first_bytes, (uint8_t*)(XIP_BASE + DRIVER_EEPROM_FLASH_OFFSET), 16);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    memcpy(first_bytes, eeprom_ram_cache, 16);
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
     
     bool all_erased = true;
     for (int i = 0; i < 16; i++) {
@@ -62,6 +79,7 @@ void pw_eeprom_init()
     
     if (all_erased) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         printf("[EEPROM] Flash area appears erased, RAM cache initialized with empty data\n");
     } else {
         printf("[EEPROM] Flash area contains data, loaded into RAM cache\n");
@@ -70,11 +88,18 @@ void pw_eeprom_init()
     eeprom_cache_dirty = false;  // Cache matches flash initially
 =======
         printf("[EEPROM] Flash area appears erased, will initialize on first write\n");
+=======
+        printf("[EEPROM] Flash area appears erased, RAM cache initialized with empty data\n");
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
     } else {
-        printf("[EEPROM] Flash area contains data, using existing content\n");
+        printf("[EEPROM] Flash area contains data, loaded into RAM cache\n");
     }
     
+<<<<<<< HEAD
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    eeprom_cache_dirty = false;  // Cache matches flash initially
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
     eeprom_initialized = true;
 }
 
@@ -88,6 +113,9 @@ void pw_eeprom_init()
 int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len) 
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
     if (addr + len > DRIVER_EEPROM_SIZE) {
         printf("[EEPROM] Read beyond EEPROM bounds: addr=0x%04X, len=%d\n", addr, len);
         return -1;
@@ -99,10 +127,13 @@ int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len)
     
     // Read from RAM cache instead of flash
     memcpy(buf, &eeprom_ram_cache[addr], len);
+<<<<<<< HEAD
 =======
     // Read from flash at EEPROM_FLASH_OFFSET + addr
     memcpy(buf, (uint8_t*)(XIP_BASE + DRIVER_EEPROM_FLASH_OFFSET + addr), len);
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
     return 0;
 }
 
@@ -124,6 +155,7 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len)
         pw_eeprom_init();
     }
     
+<<<<<<< HEAD
 <<<<<<< HEAD
     // Write to RAM cache instead of flash
     memcpy(&eeprom_ram_cache[addr], buf, len);
@@ -164,6 +196,16 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len)
         printf("[EEPROM] Updated sector at 0x%08X\n", sector_offset);
     }
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+    // Write to RAM cache instead of flash
+    memcpy(&eeprom_ram_cache[addr], buf, len);
+    
+    // Mark cache as dirty (different from flash)
+    eeprom_cache_dirty = true;
+    
+    printf("[EEPROM] Written %d bytes to RAM cache at 0x%04X (dirty=%d)\n", 
+           len, addr, eeprom_cache_dirty);
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
     
     return 0;
 }
@@ -209,6 +251,9 @@ void pw_eeprom_wake()
 {
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 }
 
 /********************************************************************************
@@ -343,6 +388,9 @@ int pw_eeprom_read_flash_direct(eeprom_addr_t addr, uint8_t *buf, size_t len)
 size_t pw_eeprom_get_size()
 {
     return DRIVER_EEPROM_SIZE;
+<<<<<<< HEAD
 =======
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 }

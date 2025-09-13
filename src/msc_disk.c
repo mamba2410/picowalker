@@ -26,10 +26,15 @@
 #include "bsp/board_api.h"
 #include "tusb.h"
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include "class/msc/msc.h"
 #include "pico/time.h"
 =======
 >>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
+=======
+#include "class/msc/msc.h"
+#include "pico/time.h"
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 
 #include "picowalker-defs.h"
@@ -37,6 +42,9 @@
 #include "msc_disk.h"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 // EEPROM now uses RAM cache - deferred writes no longer needed
 
 // MSC disk data - moved from header to prevent multiple definitions
@@ -180,8 +188,11 @@ uint8_t msc_disk[4][512] = {
 	},
 };
 
+<<<<<<< HEAD
 =======
 >>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
+=======
+>>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 // whether host does safe-eject
 static bool ejected = false;
 
