@@ -6,6 +6,8 @@
 #include "hardware/pll.h"
 
 #include <tusb.h>
+//#include "bsp/board_api.h"
+//#include "tusb_config.h"
 
 #include "lvgl.h"
 //#include "screen_ws.h"
@@ -13,6 +15,7 @@
 // Picowalker
 #include "picowalker.h"
 #include "picowalker-defs.h"
+//#include "msc_disk.h"
 
 // LVGL
 static struct repeating_timer lvgl_timer;

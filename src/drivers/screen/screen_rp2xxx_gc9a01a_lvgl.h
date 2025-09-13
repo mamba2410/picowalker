@@ -18,26 +18,30 @@
 // Picowalker
 #include "picowalker-defs.h"
 
+#ifndef TOUCH
+#define TOUCH true
+#endif
+
 #define DISP_HOR_RES 240
 #define DISP_VER_RES 240   
 
-// For 1x scaling (96x64):
-// #define PW_SCALE_NUMERATOR   1
-// #define PW_SCALE_DENOMINATOR 1
+// 1x = 96x64, 1.5x = 144x96, 2x = 192x128
+#ifndef CANVAS_SCALE
+#define CANVAS_SCALE 2
+#endif
 
-// For 1.5x scaling (144x96):  
-#define PW_SCALE_NUMERATOR   3
-#define PW_SCALE_DENOMINATOR 2
+#if CANVAS_SCALE < 2
+#define LR_BUTTON_Y_OFFSET  70
+#define MD_BUTTON_Y_OFFSET  80
+#define CANVAS_Y_OFFSET    -10
+#else
+#define LR_BUTTON_Y_OFFSET  85
+#define MD_BUTTON_Y_OFFSET 100
+#define CANVAS_Y_OFFSET      0
+#endif
 
-// For 2x scaling (192x128):
-// #define PW_SCALE_NUMERATOR   2
-// #define PW_SCALE_DENOMINATOR 1
-
-#define CANVAS_WIDTH  ((SCREEN_WIDTH * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR)   // 96 * 3 / 2 = 144
-#define CANVAS_HEIGHT ((SCREEN_HEIGHT * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR) // 64 * 3 / 2 = 96
-
-//#define CANVAS_WIDTH  144  // Original 96, 1.5 x 96 = 144, 2 x 96 = 192
-//#define CANVAS_HEIGHT 96   // Original 64, 1.5 x 64 = 96,  2 x 64 = 128
+#define CANVAS_WIDTH  (int)(SCREEN_WIDTH * CANVAS_SCALE)
+#define CANVAS_HEIGHT (int)(SCREEN_HEIGHT * CANVAS_SCALE)
 
 // Global variables
 extern bool is_sleeping;
@@ -51,5 +55,8 @@ static bool repeating_lvgl_timer_callback(struct repeating_timer *timer);
 
 // Battery functions
 void pw_screen_update_battery();
+
+// Image scaling functions
+lv_color_t get_color(screen_colour_t color);
 
 #endif /* PW_DRIVER_SCREEN_RP2XXX_GC9A01A_LVGL_H */

@@ -192,17 +192,24 @@ cmake --build build/
 RP2040TouchLCD128 LVGL
 ```sh
 cd src/boards/rp2040touchlcd128
-rm -rf build
-cmake -B build -DPICO_BOARD=pico -DUSE_LVGL=ON
-cmake --build build
+rm -rf ../../../build/rp2040touchlcd128
+cmake -B ../../../build/rp2040touchlcd128 -DPICO_BOARD=pico -DUSE_LVGL=ON
+cmake --build ../../../build/rp2040touchlcd128
 ```
+
+RP2350LCD128 LVGL
+```sh
+cd src/boards/rp2350lcd128
+rm -rf ../../../build/rp2350lcd128
+cmake -B ../../../build/rp2350lcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build ../../../build/rp2350lcd128
 
 RP2350TouchLCD128 LVGL
 ```sh
 cd src/boards/rp2350touchlcd128
-rm -rf build
-cmake -B build -DPICO_BOARD=pico2 -DUSE_LVGL=ON
-cmake --build build
+rm -rf ../../../build/rp2350touchlcd128
+cmake -B ../../../build/rp2350touchlcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build ../../../build/rp2350touchlcd128
 ```
 
 If that all went well, you should have a file called `build/picowalker.uf2`.

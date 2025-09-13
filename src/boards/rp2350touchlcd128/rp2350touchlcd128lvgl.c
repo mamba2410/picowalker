@@ -1,4 +1,5 @@
 #include "rp2350touchlcd128lvgl.h"
+#include <stdio.h>
 
 // LVGL
 static lv_disp_drv_t driver_display;
@@ -18,6 +19,7 @@ static lv_color_t *buffer1;
 #define CANVAS_HEIGHT 96   // Original 64, 1.5 x 64 = 96,  2 x 64 = 128
 static lv_obj_t *canvas;
 static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
+static lv_obj_t *brightness_label;  // Global reference to brightness label
 
 static lv_indev_drv_t driver_touch;
 static lv_indev_drv_t driver_accel;
@@ -158,6 +160,11 @@ static void brightness_slider_event_callback(lv_event_t * event)
       lv_obj_t *slider = lv_event_get_target(event);
       int32_t value = lv_slider_get_value(slider);
       WS_SET_PWM(value);
+      
+      // Update the brightness label to show current value
+      static char brightness_text[32];
+      snprintf(brightness_text, sizeof(brightness_text), "Brightness: %d%%", (int)value);
+      lv_label_set_text(brightness_label, brightness_text);
 }
 
 /********************************************************************************
@@ -353,9 +360,12 @@ int main()
     lv_obj_add_event_cb(brightness_slider, brightness_slider_event_callback, LV_EVENT_VALUE_CHANGED, NULL);
     
     // Label for Brightness Slider
-    lv_obj_t *label = lv_label_create(brightness_slider);
-    lv_label_set_text(label, "Brightness");
-    lv_obj_center(label);
+    brightness_label = lv_label_create(brightness_slider);
+    // Set initial label text with current slider value
+    static char initial_brightness_text[32];
+    snprintf(initial_brightness_text, sizeof(initial_brightness_text), "Brightness: %d%%", (int)lv_slider_get_value(brightness_slider));
+    lv_label_set_text(brightness_label, initial_brightness_text);
+    lv_obj_center(brightness_label);
     lv_group_add_obj(group, brightness_slider);
 
 

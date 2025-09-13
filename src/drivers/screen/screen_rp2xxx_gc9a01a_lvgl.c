@@ -4,6 +4,8 @@
 
 #include <time.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 // LVGL Settings
 static lv_disp_drv_t driver_display;
@@ -27,6 +29,9 @@ static lv_indev_state_t touch_state;
 static lv_group_t *tile_group;
 static lv_obj_t *canvas;
 static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
+
+static lv_obj_t *brightness_slider;
+static lv_obj_t *brightness_label;
 
 static lv_obj_t *battery_bar;
 static lv_obj_t *battery_label;
@@ -151,16 +156,20 @@ static void brightness_slider_event_callback(lv_event_t * event)
       lv_obj_t *slider = lv_event_get_target(event);
       int32_t value = lv_slider_get_value(slider);
       WS_SET_PWM(value);
+      
+      static char brightness_text[32];
+      snprintf(brightness_text, sizeof(brightness_text), "Brightness: %d%%", (int)value);
+      lv_label_set_text(brightness_label, brightness_text);
 }
 
 /********************************************************************************
  * @brief           EEPROM Wipe Button Callback
- * @param event     LVGL event from button press
+ * @param event     LVGL event from button LONG press
 ********************************************************************************/
 static void eeprom_wipe_button_callback(lv_event_t * event)
 {
-    if (event->code == LV_EVENT_CLICKED) {
-        printf("[EEPROM] Wiping EEPROM via button press...\n");
+    if (event->code == LV_EVENT_LONG_PRESSED) {
+        printf("[EEPROM] Wiping EEPROM via button LONG press...\n");
         
         // Wipe entire EEPROM to erased state (0xFF)
         pw_eeprom_set_area(0, 0xFF, 64 * 1024);
@@ -169,9 +178,28 @@ static void eeprom_wipe_button_callback(lv_event_t * event)
         
         // Reset steps counter as well since EEPROM is wiped
         pw_accel_reset_steps();
+    }
+}
+
+/********************************************************************************
+ * @brief           EEPROM Save Button Callback
+ * @param event     LVGL event from button press
+********************************************************************************/
+static void eeprom_save_button_callback(lv_event_t * event)
+{
+    if (event->code == LV_EVENT_PRESSED) {
+        printf("[EEPROM] Saving EEPROM via button press...\n");
         
-        // Update battery display to reflect any changes
-        //repeating_battery_timer_callback(NULL);
+        // Check if there are changes to save
+        if (pw_eeprom_is_cache_dirty()) {
+            if (pw_eeprom_flush_to_flash() == 0) {
+                printf("[EEPROM] EEPROM saved successfully!\n");
+            } else {
+                printf("[EEPROM] Failed to save EEPROM!\n");
+            }
+        } else {
+            printf("[EEPROM] No changes to save\n");
+        }
     }
 }
 
@@ -191,9 +219,12 @@ static bool repeating_battery_timer_callback(struct repeating_timer *timer)
     lv_bar_set_value(battery_bar, battery_status.percent, LV_ANIM_ON);
     
     // Update battery label with percentage
+    // static char battery_text[32];
+    // snprintf(battery_text, sizeof(battery_text), "Battery: %d%%", battery_status.percent);
+    // lv_label_set_text(battery_label, battery_text);
     if (battery_label) {
-        static char battery_text[8];
-        snprintf(battery_text, sizeof(battery_text), "%d%%", battery_status.percent);
+        static char battery_text[32];
+        snprintf(battery_text, sizeof(battery_text), "Battery: %d%%", battery_status.percent);
         lv_label_set_text(battery_label, battery_text);
     }
     
@@ -268,6 +299,7 @@ void pw_screen_init()
     driver_display.ver_res = DISP_VER_RES;
     lv_disp_t *display = lv_disp_drv_register(&driver_display);
 
+#if TOUCH
     // Initialize Touch Screen - Button
     CST816S_init(CST816S_Point_Mode);
 
@@ -277,7 +309,7 @@ void pw_screen_init()
     driver_touch.read_cb = touch_read_callback;            
     lv_indev_t * touch_screen = lv_indev_drv_register(&driver_touch);
     WS_IRQ_SET(TOUCH_INT_PIN, GPIO_IRQ_EDGE_RISE, &touch_callback);
-
+#endif
     // Initialize DMA Direct Memory Access
     dma_channel_set_irq0_enabled(dma_tx, true);
     irq_set_exclusive_handler(DMA_IRQ_0, direct_memory_access_handler);
@@ -310,7 +342,7 @@ void pw_screen_init()
     lv_style_set_bg_color(&button_style_base, lv_color_white());
     lv_style_set_border_width(&button_style_base, 2);
     lv_style_set_border_opa(&button_style_base, LV_OPA_40);
-    lv_style_set_border_color(&button_style_base, lv_palette_main(LV_PALETTE_GREY));
+    lv_style_set_border_color(&button_style_base, lv_color_white());//lv_palette_main(LV_PALETTE_GREY));
     lv_style_set_outline_opa(&button_style_base, LV_OPA_COVER);
     lv_style_set_outline_color(&button_style_base, lv_color_white());
 
@@ -322,28 +354,31 @@ void pw_screen_init()
     lv_style_set_bg_opa(&button_style_press, LV_OPA_50);
 
     // Left Button
-    lv_obj_t *button_left = lv_btn_create(tile_picowalker);     
-    lv_obj_set_size(button_left, 30, 30);                
-    lv_obj_align(button_left, LV_ALIGN_CENTER, -60, 70);
+    lv_obj_t *button_left = lv_btn_create(tile_picowalker);  
+    lv_obj_align(button_left, LV_ALIGN_CENTER, -60, LR_BUTTON_Y_OFFSET);
+    lv_obj_set_size(button_left, 30, 30);
     lv_group_add_obj(tile_group, button_left);
+    lv_obj_set_ext_click_area(button_left, 10);
     lv_obj_add_style(button_left,&button_style_base, 0);
     lv_obj_add_style(button_left,&button_style_press, LV_STATE_PRESSED);
     lv_obj_add_event_cb(button_left, button_left_callback, LV_EVENT_CLICKED, NULL);
 
     // Middle Button
-    lv_obj_t *button_middle = lv_btn_create(tile_picowalker);     
-    lv_obj_set_size(button_middle, 37, 37);                
-    lv_obj_align(button_middle, LV_ALIGN_CENTER, 0, 80);
+    lv_obj_t *button_middle = lv_btn_create(tile_picowalker);
+    lv_obj_align(button_middle, LV_ALIGN_CENTER, 0, MD_BUTTON_Y_OFFSET);
+    lv_obj_set_size(button_middle, 37, 37);
     lv_group_add_obj(tile_group, button_middle);
+    lv_obj_set_ext_click_area(button_middle, 10);
     lv_obj_add_style(button_middle,&button_style_base, 0);
     lv_obj_add_style(button_middle,&button_style_press, LV_STATE_PRESSED);
     lv_obj_add_event_cb(button_middle, button_middle_callback, LV_EVENT_CLICKED, NULL);
 
     // Right Button
-    lv_obj_t *button_right = lv_btn_create(tile_picowalker);     
-    lv_obj_set_size(button_right, 30, 30);                
-    lv_obj_align(button_right, LV_ALIGN_CENTER, 60, 70);
+    lv_obj_t *button_right = lv_btn_create(tile_picowalker);
+    lv_obj_align(button_right, LV_ALIGN_CENTER, 60, LR_BUTTON_Y_OFFSET);
+    lv_obj_set_size(button_right, 30, 30);
     lv_group_add_obj(tile_group, button_right);
+    lv_obj_set_ext_click_area(button_right, 10);
     lv_obj_add_style(button_right,&button_style_base, 0);
     lv_obj_add_style(button_right,&button_style_press, LV_STATE_PRESSED);
     lv_obj_add_event_cb(button_right, button_right_callback, LV_EVENT_CLICKED, NULL);
@@ -351,16 +386,16 @@ void pw_screen_init()
     // Picowalker Canvas (clickable for step simulation)
     canvas = lv_canvas_create(tile_picowalker);
     lv_canvas_set_buffer(canvas, canvas_buffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+    lv_obj_align(canvas, LV_ALIGN_CENTER, 0, CANVAS_Y_OFFSET);
     lv_obj_set_size(canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
-    lv_obj_align(canvas, LV_ALIGN_CENTER, 0, -10);
-    lv_obj_add_flag(canvas, LV_OBJ_FLAG_CLICKABLE);  // Make canvas clickable
-    lv_obj_add_event_cb(canvas, canvas_press_callback, LV_EVENT_PRESSED, NULL);  // Add press callback
+    lv_obj_add_flag(canvas, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(canvas, canvas_press_callback, LV_EVENT_PRESSED, NULL);
     lv_canvas_fill_bg(canvas, lv_color_make(195, 205, 185), LV_OPA_COVER);
     
     // Rounded overlay to create rounded corners effect
     lv_obj_t *canvas_overlay = lv_obj_create(tile_picowalker);
     lv_obj_set_size(canvas_overlay, CANVAS_WIDTH + 10, CANVAS_HEIGHT + 10);
-    lv_obj_align(canvas_overlay, LV_ALIGN_CENTER, 0, -10);
+    lv_obj_align(canvas_overlay, LV_ALIGN_CENTER, 0, CANVAS_Y_OFFSET);
     lv_obj_set_style_radius(canvas_overlay, 10, 0);
     lv_obj_set_style_border_width(canvas_overlay, 5, 0);
     lv_obj_set_style_border_color(canvas_overlay, lv_color_black(), 0);
@@ -368,10 +403,15 @@ void pw_screen_init()
     lv_obj_clear_flag(canvas_overlay, LV_OBJ_FLAG_CLICKABLE);
 
     // System Menu Tile
-    lv_obj_t *tile_menu = lv_tileview_add_tile(tile_view, 0, 1, LV_DIR_TOP);
+    lv_obj_t *tile_menu = lv_tileview_add_tile(tile_view, 0, 1, LV_DIR_TOP|LV_DIR_BOTTOM);
+    lv_obj_t *tile_menu_label = lv_label_create(tile_menu);
+    lv_label_set_text(tile_menu_label, "System Menu");
+    lv_obj_align(tile_menu_label, LV_ALIGN_CENTER, 0, -50);
+    lv_obj_set_style_text_color(tile_menu_label, lv_color_black(), 0);
 
     //  Slider Style
     static lv_style_t slider_style_base;
+    lv_style_init(&slider_style_base);
     lv_style_set_bg_color(&slider_style_base, lv_palette_main(LV_PALETTE_ORANGE));
     lv_style_set_border_color(&slider_style_base, lv_palette_darken(LV_PALETTE_ORANGE, 3));
 
@@ -390,8 +430,8 @@ void pw_screen_init()
     lv_style_set_shadow_spread(&slider_style_indictator_press, 3);
 
     // Brightness Slider
-    lv_obj_t *brightness_slider = lv_slider_create(tile_menu);
-    lv_obj_set_size(brightness_slider, 150, 10);
+    brightness_slider = lv_slider_create(tile_menu);
+    lv_obj_set_size(brightness_slider, 120, 10);
     lv_obj_align(brightness_slider, LV_ALIGN_CENTER, 0, 0);
     lv_slider_set_range(brightness_slider, 0, 100);
     lv_slider_set_value(brightness_slider, 10, LV_ANIM_OFF);    // TODO review a saved state in eeprom.
@@ -402,9 +442,12 @@ void pw_screen_init()
     lv_obj_add_event_cb(brightness_slider, brightness_slider_event_callback, LV_EVENT_VALUE_CHANGED, NULL);
     
     // Label for Brightness Slider
-    lv_obj_t *label = lv_label_create(brightness_slider);
-    lv_label_set_text(label, "Brightness");
-    lv_obj_center(label);
+    brightness_label = lv_label_create(tile_menu); 
+    static char initial_brightness_text[32];
+    snprintf(initial_brightness_text, sizeof(initial_brightness_text), "Brightness: %d%%", (int)lv_slider_get_value(brightness_slider));
+    lv_label_set_text(brightness_label, initial_brightness_text);
+    lv_obj_align(brightness_label, LV_ALIGN_CENTER, 0, 20);
+    lv_obj_set_style_text_color(brightness_label, lv_color_black(), 0);
     lv_group_add_obj(tile_group, brightness_slider);
 
     // Battery Bar Style
@@ -433,28 +476,52 @@ void pw_screen_init()
     
     // Battery Label
     battery_label = lv_label_create(tile_menu);
-    lv_label_set_text(battery_label, "0%");
+    lv_label_set_text(battery_label, "Battery: 0%");
     lv_obj_align(battery_label, LV_ALIGN_CENTER, 0, 60);
     lv_obj_set_style_text_font(battery_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(battery_label, lv_color_black(), 0);
     
     // Start battery update timer (update every 30 seconds)
     add_repeating_timer_ms(30000, repeating_battery_timer_callback, NULL, &battery_timer);
     
     // Initial battery reading
     repeating_battery_timer_callback(NULL);
+
+    // EEPROM Menu Tile
+    lv_obj_t *tile_eeprom = lv_tileview_add_tile(tile_view, 0, 2, LV_DIR_TOP);
+    lv_obj_t *tile_eeprom_label = lv_label_create(tile_eeprom);
+    lv_label_set_text(tile_eeprom_label, "EEPROM Menu");
+    lv_obj_align(tile_eeprom_label, LV_ALIGN_CENTER, 0, -50);
+    lv_obj_set_style_text_color(tile_eeprom_label, lv_color_black(), 0);
+
+    // EEPROM Save Button
+    lv_obj_t *eeprom_save_button = lv_btn_create(tile_eeprom);
+    lv_obj_set_size(eeprom_save_button, 120, 30);
+    lv_obj_align(eeprom_save_button, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_add_event_cb(eeprom_save_button, eeprom_save_button_callback, LV_EVENT_PRESSED, NULL);
     
+    // EEPROM Save Button Label
+    lv_obj_t *eeprom_save_label = lv_label_create(eeprom_save_button);
+    lv_label_set_text(eeprom_save_label, "Save EEPROM");
+    lv_obj_center(eeprom_save_label);
+    lv_obj_set_style_text_font(eeprom_save_label, &lv_font_montserrat_14, 0);
+    lv_group_add_obj(tile_group, eeprom_save_button);
+
     // EEPROM Wipe Button
-    lv_obj_t *eeprom_wipe_button = lv_btn_create(tile_menu);
-    lv_obj_set_size(eeprom_wipe_button, 100, 30);
-    lv_obj_align(eeprom_wipe_button, LV_ALIGN_CENTER, 0, -40);
-    lv_obj_add_event_cb(eeprom_wipe_button, eeprom_wipe_button_callback, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *eeprom_wipe_button = lv_btn_create(tile_eeprom);
+    lv_obj_set_size(eeprom_wipe_button, 120, 30);
+    lv_obj_align(eeprom_wipe_button, LV_ALIGN_CENTER, 0, 60);
+    lv_obj_add_event_cb(eeprom_wipe_button, eeprom_wipe_button_callback, LV_EVENT_LONG_PRESSED, NULL);
+    
+    // Set button background color to red
+    lv_obj_set_style_bg_color(eeprom_wipe_button, lv_palette_main(LV_PALETTE_RED), 0);
+    lv_obj_set_style_bg_color(eeprom_wipe_button, lv_palette_darken(LV_PALETTE_RED, 2), LV_STATE_PRESSED);
     
     // EEPROM Wipe Button Label
     lv_obj_t *eeprom_wipe_label = lv_label_create(eeprom_wipe_button);
     lv_label_set_text(eeprom_wipe_label, "Wipe EEPROM");
     lv_obj_center(eeprom_wipe_label);
     lv_obj_set_style_text_font(eeprom_wipe_label, &lv_font_montserrat_14, 0);
-    
     lv_group_add_obj(tile_group, eeprom_wipe_button);
 
 }
@@ -482,22 +549,6 @@ lv_color_t get_color(screen_colour_t color)
 }
 
 /********************************************************************************
- * @brief           Get pixel color from packed image data
- * @param image     Image structure
- * @param col       Column position in image
- * @param row       Row position in image
- * @return screen_colour_t
-********************************************************************************/
-screen_colour_t get_pixel_from_image(pw_img_t *image, int col, int row)
-{
-    // Each byte contains 4 pixels (2 bits each)
-    size_t pixel_index = row * image->width + col;
-    size_t byte_index = pixel_index / 4;
-    size_t bit_offset = (pixel_index % 4) * 2;
-    return (image->data[byte_index] >> bit_offset) & 0x03;
-}
-
-/********************************************************************************
  * @brief           Draws scaled area to canvas
  * @param x         Screen position X
  * @param y         Screen position Y  
@@ -508,56 +559,19 @@ screen_colour_t get_pixel_from_image(pw_img_t *image, int col, int row)
 void draw_to_scale(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height, lv_color_t color)
 {
     // Width and height of area to draw
-    // for (screen_pos_t row = 0; row < height; row++) 
-    // {
-    //     for (screen_pos_t col = 0; col < width; col++) 
-    //     {
-    //         // Draw scaled pixel using fractional scaling
-    //         int start_x = ((x + col) * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR;
-    //         int start_y = ((y + row) * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR;
-    //         int end_x = ((x + col + 1) * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR;
-    //         int end_y = ((y + row + 1) * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR;
-            
-    //         // Fill the scaled pixel area
-    //         for (int sy = start_y; sy < end_y && sy < CANVAS_HEIGHT; sy++) {
-    //             for (int sx = start_x; sx < end_x && sx < CANVAS_WIDTH; sx++) {
-    //                 lv_canvas_set_px(canvas, sx, sy, color);
-    //             }
-    //         }
-    //     }
-    // }
-
-    // Use fixed-point arithmetic for better scaling precision
-    const int FIXED_POINT_SHIFT = 8;  // 8-bit fractional part
-    const int scale_x_fp = (PW_SCALE_NUMERATOR << FIXED_POINT_SHIFT) / PW_SCALE_DENOMINATOR;
-    const int scale_y_fp = (PW_SCALE_NUMERATOR << FIXED_POINT_SHIFT) / PW_SCALE_DENOMINATOR;
-    
-    // Calculate the starting position in fixed-point
-    int start_x_fp = (x * scale_x_fp);
-    int start_y_fp = (y * scale_y_fp);
-    
-    // Draw each row using error diffusion for even distribution
     for (screen_pos_t row = 0; row < height; row++) 
     {
-        int current_y_fp = start_y_fp + (row * scale_y_fp);
-        int current_y_start = current_y_fp >> FIXED_POINT_SHIFT;
-        int next_y_fp = start_y_fp + ((row + 1) * scale_y_fp);
-        int current_y_end = next_y_fp >> FIXED_POINT_SHIFT;
-        
         for (screen_pos_t col = 0; col < width; col++) 
         {
-            int current_x_fp = start_x_fp + (col * scale_x_fp);
-            int current_x_start = current_x_fp >> FIXED_POINT_SHIFT;
-            int next_x_fp = start_x_fp + ((col + 1) * scale_x_fp);
-            int current_x_end = next_x_fp >> FIXED_POINT_SHIFT;
-            
-            // Ensure we draw at least 1 pixel per input pixel
-            if (current_x_end <= current_x_start) current_x_end = current_x_start + 1;
-            if (current_y_end <= current_y_start) current_y_end = current_y_start + 1;
+            // Draw scaled pixel using fractional scaling
+            int start_x = (x + col) * CANVAS_SCALE;
+            int start_y = (y + row) * CANVAS_SCALE;
+            int end_x = (x + col + 1) * CANVAS_SCALE;
+            int end_y = (y + row + 1) * CANVAS_SCALE;
             
             // Fill the scaled pixel area
-            for (int sy = current_y_start; sy < current_y_end && sy < CANVAS_HEIGHT; sy++) {
-                for (int sx = current_x_start; sx < current_x_end && sx < CANVAS_WIDTH; sx++) {
+            for (int sy = start_y; sy < end_y && sy < CANVAS_HEIGHT; sy++) {
+                for (int sx = start_x; sx < end_x && sx < CANVAS_WIDTH; sx++) {
                     lv_canvas_set_px(canvas, sx, sy, color);
                 }
             }
@@ -576,39 +590,37 @@ void pw_screen_draw_img(pw_img_t *image, screen_pos_t x, screen_pos_t y)
     if (!canvas || !image || !image->data) return;
 
     // Calculate image size (2 bytes per 8 pixels)
-    size_t img_size = image->width * image->height * 2 / 8;
-    
+    image->size = image->width * image->height * 2 / 8;
+
     // Process image data in chunks of 2 bytes (8 pixels each)
-    for (size_t i = 0; i < img_size; i += 2) {
-        uint8_t bpu = image->data[i + 0];  // Upper bits
-        uint8_t bpl = image->data[i + 1];  // Lower bits
-        
+    for (size_t i = 0; i < image->size; i += 2)
+    {
+        uint8_t bpp_upper = image->data[i + 0];
+        uint8_t bpp_lower = image->data[i + 1];
+
         // Process 8 pixels from this byte pair
-        for (size_t j = 0; j < 8; j++) {
-            // Extract 2-bit pixel value
-            screen_colour_t pixel_value = ((bpu >> j) & 1) << 1;
-            pixel_value |= ((bpl >> j) & 1);
-            
+        for (size_t j = 0; j < 8; j++)
+        {
+            // Extract 2-bit pixel value (same as working code)
+            uint8_t pixel_value = ((bpp_upper >> j) & 1) << 1;
+            pixel_value |= ((bpp_lower >> j) & 1);
+
             // Calculate pixel coordinates
             size_t x_normal = (i / 2) % image->width;
             size_t y_normal = 8 * (i / (2 * image->width)) + j;
             
             // Skip if pixel is outside image bounds
-            if (x_normal >= image->width || y_normal >= image->height) continue;
-            
-            // Convert to LVGL color
+            //if (x_normal >= image->width || y_normal >= image->height) continue;
+
             lv_color_t lv_color = get_color(pixel_value);
-            
-            // Draw scaled pixel using fractional scaling
-            int start_x = ((x + x_normal) * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR;
-            int start_y = ((y + y_normal) * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR;
-            int end_x = ((x + x_normal + 1) * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR;
-            int end_y = ((y + y_normal + 1) * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR;
-            
-            // Fill the scaled pixel area
-            for (int sy = start_y; sy < end_y && sy < CANVAS_HEIGHT; sy++) {
-                for (int sx = start_x; sx < end_x && sx < CANVAS_WIDTH; sx++) {
-                    lv_canvas_set_px(canvas, sx, sy, lv_color);
+
+            for (size_t py = 0; py < CANVAS_SCALE; py++)
+            {
+                for (size_t px = 0; px < CANVAS_SCALE; px++)
+                {
+                    int canvas_x = (x + x_normal) * CANVAS_SCALE + px; 
+                    int canvas_y = (y + y_normal) * CANVAS_SCALE + py;
+                    lv_canvas_set_px(canvas, canvas_x, canvas_y, lv_color);
                 }
             }
         }
