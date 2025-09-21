@@ -1,6 +1,17 @@
 #include "screen_rp2xxx_gc9a01a_lvgl.h"
 #include "battery_rp2xxx_simple.h"
 #include "accel_rp2xxx_qmi8658.h"
+#include "picowalker-defs.h"
+
+#ifdef __has_include
+#if __has_include("board_resources.h")
+#include "board_resources.h"
+#endif
+#endif
+
+#ifndef PW_SPEAKER_PIN
+#define PW_SPEAKER_PIN 16
+#endif
 
 #include <time.h>
 #include <stdlib.h>
@@ -40,6 +51,37 @@ static lv_obj_t *tile_view;
 static struct repeating_timer lvgl_timer;
 static struct repeating_timer battery_timer;
 bool is_sleeping = false;
+
+/********************************************************************************
+ * @brief           Play simple beep sound using piezo buzzer
+ * @param duration  Duration in milliseconds
+ ********************************************************************************/
+static void play_beep(uint32_t duration)
+{
+    // Turn on piezo at 4kHz (resonant frequency) with 50% duty cycle
+    // With wrap=1000, 50% duty cycle = 500
+    pwm_set_gpio_level(PW_SPEAKER_PIN, 500);
+    sleep_ms(duration);
+    
+    // Turn off
+    pwm_set_gpio_level(PW_SPEAKER_PIN, 0);
+}
+
+/********************************************************************************
+ * @brief           Play click sound for button presses
+ ********************************************************************************/
+static void play_click_sound()
+{
+    play_beep(50); // Short 50ms beep
+}
+
+/********************************************************************************
+ * @brief           Play confirmation sound for actions
+ ********************************************************************************/
+static void play_confirm_sound()
+{
+    play_beep(100); // Longer 100ms beep
+}
 
 /********************************************************************************
  * @brief           LVGL Repeating Timer Callback used to pass a tick / time
@@ -114,6 +156,7 @@ static void touch_read_callback(lv_indev_drv_t *driver, lv_indev_data_t *data)
 ********************************************************************************/
 static void button_left_callback(lv_event_t *event)
 {
+    play_click_sound();
     pw_button_callback(BUTTON_L);
 }
 
@@ -123,6 +166,7 @@ static void button_left_callback(lv_event_t *event)
 ********************************************************************************/
 static void button_middle_callback(lv_event_t *event)
 {
+    play_click_sound();
     pw_button_callback(BUTTON_M);
 }
 
@@ -132,6 +176,7 @@ static void button_middle_callback(lv_event_t *event)
 ********************************************************************************/
 static void button_right_callback(lv_event_t *event)
 {
+    play_click_sound();
     pw_button_callback(BUTTON_R);
 }
 
@@ -188,6 +233,7 @@ static void eeprom_wipe_button_callback(lv_event_t * event)
 static void eeprom_save_button_callback(lv_event_t * event)
 {
     if (event->code == LV_EVENT_PRESSED) {
+        play_confirm_sound();
         printf("[EEPROM] Saving EEPROM via button press...\n");
         
         // Check if there are changes to save
@@ -281,6 +327,17 @@ void pw_screen_update_battery()
 ********************************************************************************/
 void pw_screen_init() 
 {
+    // Initialize audio/buzzer for 4kHz piezo optimal frequency
+    gpio_init(PW_SPEAKER_PIN);
+    gpio_set_function(PW_SPEAKER_PIN, GPIO_FUNC_PWM);
+    uint slice_num = pwm_gpio_to_slice_num(PW_SPEAKER_PIN);
+    
+    // Configure for 4kHz frequency: 125MHz / (31.25 * 1000) = 4kHz
+    pwm_set_wrap(slice_num, 1000);           // Higher resolution
+    pwm_set_chan_level(slice_num, PWM_CHAN_A, 0);  // Start silent
+    pwm_set_clkdiv(slice_num, 31.25f);       // 4kHz frequency for piezo resonance
+    pwm_set_enabled(slice_num, true);
+
     // Initialize WaveShare 1.28" LCD - Screen
     WS_SET_PWM(10);
     GC9A01A_Init(HORIZONTAL);
@@ -298,7 +355,7 @@ void pw_screen_init()
     driver_display.hor_res = DISP_HOR_RES;
     driver_display.ver_res = DISP_VER_RES;
     lv_disp_t *display = lv_disp_drv_register(&driver_display);
-
+    // lv_disp_set_rotation(display, LV_DISP_ROT_90); // TODO
 #if TOUCH
     // Initialize Touch Screen - Button
     CST816S_init(CST816S_Point_Mode);
@@ -359,8 +416,8 @@ void pw_screen_init()
     lv_obj_set_size(button_left, 30, 30);
     lv_group_add_obj(tile_group, button_left);
     lv_obj_set_ext_click_area(button_left, 10);
-    lv_obj_add_style(button_left,&button_style_base, 0);
-    lv_obj_add_style(button_left,&button_style_press, LV_STATE_PRESSED);
+    lv_obj_add_style(button_left, &button_style_base, 0);
+    lv_obj_add_style(button_left, &button_style_press, LV_STATE_PRESSED);
     lv_obj_add_event_cb(button_left, button_left_callback, LV_EVENT_CLICKED, NULL);
 
     // Middle Button
@@ -369,8 +426,8 @@ void pw_screen_init()
     lv_obj_set_size(button_middle, 37, 37);
     lv_group_add_obj(tile_group, button_middle);
     lv_obj_set_ext_click_area(button_middle, 10);
-    lv_obj_add_style(button_middle,&button_style_base, 0);
-    lv_obj_add_style(button_middle,&button_style_press, LV_STATE_PRESSED);
+    lv_obj_add_style(button_middle, &button_style_base, 0);
+    lv_obj_add_style(button_middle, &button_style_press, LV_STATE_PRESSED);
     lv_obj_add_event_cb(button_middle, button_middle_callback, LV_EVENT_CLICKED, NULL);
 
     // Right Button
@@ -379,8 +436,8 @@ void pw_screen_init()
     lv_obj_set_size(button_right, 30, 30);
     lv_group_add_obj(tile_group, button_right);
     lv_obj_set_ext_click_area(button_right, 10);
-    lv_obj_add_style(button_right,&button_style_base, 0);
-    lv_obj_add_style(button_right,&button_style_press, LV_STATE_PRESSED);
+    lv_obj_add_style(button_right, &button_style_base, 0);
+    lv_obj_add_style(button_right, &button_style_press, LV_STATE_PRESSED);
     lv_obj_add_event_cb(button_right, button_right_callback, LV_EVENT_CLICKED, NULL);
 
     // Picowalker Canvas (clickable for step simulation)
