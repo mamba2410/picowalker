@@ -1,13 +1,11 @@
 #include "picowalker_rp2xxx_inbuilt.h"
 
-/*
-.section .data.flashrom, "ax", %progbits
-.type flashrom, %object
-.size flashrom, FLASHROM_SIZE
-
-.global flashrom
-flashrom: .incbin "../rom/pwflash.rom"
-*/
+//.section .data.flashrom, "ax", %progbits
+//.type flashrom, %object
+//.size flashrom, FLASHROM_SIZE
+//
+//.global flashrom
+//flashrom: .incbin "../rom/pwflash.rom"
 
 /*
 // Moved to drivers/eeprom_pico_ram.*

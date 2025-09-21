@@ -1,6 +1,0 @@
-#ifndef PW_DRIVER_BUTTONS_RP2XXX_SIMPLE_H
-#define PW_DRIVER_BUTTONS_RP2XXX_SIMPLE_H
-
-#include "picowalker-defs.h"
-
-#endif /* PW_DRIVER_BUTTONS_RP2XXX_SIMPLE_H */

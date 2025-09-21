@@ -116,12 +116,6 @@ This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 If you are compiling for boards with `rp2040` you use `toolchain-pico.cmake`.
 `rp2350` boards use `toolchain-pico2.cmake`.
 
-<<<<<<< HEAD
-=======
-If you are compiling for boards with `rp2040` you use `toolchain-pico.cmake`.
-`rp2350` boards use `toolchain-pico2.cmake`.
-
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 So now, lets run for Pico2 / RP2350
 
 ```sh
@@ -170,13 +164,6 @@ cd picowalker
 Now we'll need to copy over our library to be included in the `picowalker`
 project.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-#### Picowalker-core
-=======
-#### Pokewalker-core
->>>>>>> 996b184 (LVGL Introduction and Testing)
-=======
 #### Picowalker-core
 >>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 ```sh
@@ -184,26 +171,11 @@ mkdir lib
 cp ../picowalker-core/build/libpicowalker-core.a lib/
 ```
 
-#### LVGL Library
-Include LVGL library target LVGL v8.4
-```sh
-rm -rf lib/lvgl
-git clone --branch release/v8.4 https://github.com/lvgl/lvgl lib/lvgl
+Now we choose which board to compile. I'll choose `picowalker-v0.3`.
+
 ```
-
-#### WaveShare Drivers
-```sh
-git clone https://github.com/DaveuRrr/pico_waveshare_drivers lib/pico_waveshare_drivers
-```
-
-#### Board Specific Build
-And now we get to build a with `cmake`
-
-Picowalker v0.X
-```sh
-cp src/boards/picowalker-v0.3
-rm -rf build
-cmake -B build -DPICO_BOARD=pico2 .
+cd boards/picowalker-v0.3
+cmake -B build/ -DPICO_BOARD=pico2 .
 cmake --build build/
 ```
 
@@ -234,32 +206,6 @@ Now we choose which board to compile. I'll choose `picowalker-v0.3`.
 cd boards/picowalker-v0.3
 cmake -B build/ -DPICO_BOARD=pico2 .
 cmake --build build/
-```
-
-<<<<<<< HEAD
-=======
-RP2040TouchLCD128 LVGL
-```sh
-cd src/boards/rp2040touchlcd128
-rm -rf ../../../build/rp2040touchlcd128
-cmake -B ../../../build/rp2040touchlcd128 -DPICO_BOARD=pico -DUSE_LVGL=ON
-cmake --build ../../../build/rp2040touchlcd128
-```
-
-RP2350LCD128 LVGL
-```sh
-cd src/boards/rp2350lcd128
-rm -rf ../../../build/rp2350lcd128
-cmake -B ../../../build/rp2350lcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
-cmake --build ../../../build/rp2350lcd128
-
->>>>>>> e34b27e (Scaling Adjustments and NonTouch)
-RP2350TouchLCD128 LVGL
-```sh
-cd src/boards/rp2350touchlcd128
-rm -rf ../../../build/rp2350touchlcd128
-cmake -B ../../../build/rp2350touchlcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
-cmake --build ../../../build/rp2350touchlcd128
 ```
 
 If that all went well, you should have a file called `build/picowalker.uf2`.

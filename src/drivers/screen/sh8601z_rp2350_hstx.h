@@ -1,5 +1,5 @@
-#ifndef PW_SCREEN_PICO2_DWO_PIO_H
-#define PW_SCREEN_PICO2_DWO_PIO_H
+#ifndef PW_SCREEN_PICO2_DWO_HSTX_H
+#define PW_SCREEN_PICO2_DWO_HSTX_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -26,27 +26,18 @@
  *
  * pico2 has 512kiB ram so we can fit the whole 322kiB (16bpp) or even 483kiB
  * (24bpp) buffers in here with a good amount of room to spare.
+ * Might be able to do some shenanegans with the HSTX to always transmit
+ * each byte `SCREEN_SCALE` times to save on buffer space.
  */
 #define AMOLED_BUFFER_SIZE (192*1024)
 //#define AMOLED_BUFFER_SIZE (AMOLED_ACTIVE_WIDTH*AMOLED_ACTIVE_HEIGHT*AMOLED_BYTES_PER_PIXEL)
 
 
-/*
-// Normal
 const uint16_t colour_map[4] = {
     0xe75b, // white
     0xbe16, // light grey
     0x7c0e, // dark grey
     0x5289, // black
-};
-*/
-
-// Reversed nibbles
-const uint16_t colour_map[4] = {
-    0x7ead, // white
-    0xd786, // light grey
-    0xe307, // dark grey
-    0xa419, // black
 };
 
 enum screen_cmd {
@@ -95,5 +86,17 @@ typedef struct screen_area_s {
     int width;
     int height;
 } screen_area_t;
+
+
+#define PIN_HSTX_START  12
+#define PIN_HSTX_SCK    13 // GP13, phys 17
+#define PIN_HSTX_SD0    15 // GP14, phys 20
+#define PIN_HSTX_SD1    14 // GP14, phys 19
+#define PIN_HSTX_SD2    17 // GP17, phys 22
+#define PIN_HSTX_SD3    16 // GP16, phys 21
+#define PIN_HSTX_CSB    18 // GP18, phys 24
+
+#define PIN_SCREEN_RST  12 // GP12, phys 16
+//#define PIN_SCREEN_PWREN    0xff // Manual
 
 #endif /* PW_SCREEN_PICO2_DWO_HSTX_H */

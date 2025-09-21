@@ -5,28 +5,19 @@
 #include <stdio.h>
 
 #include "hardware/gpio.h"
-#include "hardware/pio.h"
 #include "hardware/resets.h"
 #include "hardware/clocks.h"
-#include "pico/stdlib.h"
+#include "hardware/structs/clocks.h"
+#include "hardware/structs/hstx_ctrl.h"
+#include "hardware/structs/hstx_fifo.h"
+#include <pico/stdlib.h>
 
-#include "board_resources.h"
 #include "../../picowalker-defs.h"
-#include "sh8601z_rp2xxx_qspi_pio.h"
-
-#include "qspi.pio.h"
+#include "sh8601_rp2350_hstx.h"
 
 static amoled_t amoled = {0};
 
 static uint8_t amoled_buffer[AMOLED_BUFFER_SIZE] = {0};
-
-static struct {
-    PIO pio;
-    uint sm;
-    uint qspi_4wire_offset;
-    uint qspi_1wire_offset;
-    bool is_4wire; // true for 4 wire
-} pio_config;
 
 /*
  * DWO screen QSPI interface:
@@ -110,97 +101,126 @@ screen_area_t transform_pw_to_amoled(screen_area_t pw_area, amoled_t a) {
     screen_area_t amoled_area = {0};
     //amoled_area.x = (SCREEN_HEIGHT - pw_area.height - pw_area.y)*SCREEN_SCALE + a.offset_x;
     amoled_area.x = pw_area.y * SCREEN_SCALE + a.offset_x;
-    amoled_area.y = (SCREEN_WIDTH - pw_area.x - pw_area.width)*SCREEN_SCALE + a.offset_y;
+    amoled_area.y = (SCREEN_WIDTH + 1 - pw_area.x - pw_area.width)*SCREEN_SCALE + a.offset_y;
     amoled_area.width = pw_area.height * SCREEN_SCALE;
     amoled_area.height = pw_area.width * SCREEN_SCALE;
     return amoled_area;
 }
 
 
-void pio_configure_1wire() {
-    pio_qspi_1wire_tx_init(
-        pio_config.pio, pio_config.sm, pio_config.qspi_1wire_offset,
-        8,
-        //37.5f,
-        1.0f,
-        SCREEN_SCK_PIN,
-        SCREEN_SD0_PIN
-    );
-    gpio_deinit(SCREEN_SD1_PIN);
-    gpio_deinit(SCREEN_SD2_PIN);
-    gpio_deinit(SCREEN_SD3_PIN);
-    pio_config.is_4wire = false;
+void hstx_configure_1wire() {
+    hstx_ctrl_hw->csr = 0; // Disable and reset HSTX CSR
+
+    /*
+     * Set up clock and SD0 for 1 wire MSB transmission
+     * Disable pins SD1..3
+     */
+    hstx_ctrl_hw->bit[PIN_HSTX_SCK - PIN_HSTX_START] = HSTX_CTRL_BIT0_CLK_BITS;
+    hstx_ctrl_hw->bit[PIN_HSTX_SD0 - PIN_HSTX_START] =
+        (7<<HSTX_CTRL_BIT0_SEL_P_LSB) |
+        (7<<HSTX_CTRL_BIT0_SEL_N_LSB);
+    hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] =
+        (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | (31<<HSTX_CTRL_BIT0_SEL_P_LSB) ;
+    hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] =
+        (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | (31<<HSTX_CTRL_BIT0_SEL_P_LSB) ;
+    hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] =
+        (31<<HSTX_CTRL_BIT0_SEL_P_LSB) | (31<<HSTX_CTRL_BIT0_SEL_P_LSB) ;
+
+    hstx_ctrl_hw->csr =
+        HSTX_CTRL_CSR_EN_BITS |             // Enable HSTX
+        (31<<HSTX_CTRL_CSR_SHIFT_LSB) |     // Left-shift 1 bits
+        (8 <<HSTX_CTRL_CSR_N_SHIFTS_LSB) |  // Perform 8 left-shifts before exhausting
+        (1 <<HSTX_CTRL_CSR_CLKDIV_LSB);     // Clock every shift
+
 }
 
-void pio_configure_4wire() {
 
-    // Clock the machine at clk_sys/clkdiv but also account for clock taking
-    // 4 cycles, so SPI clock rate is clk_sys/(4*clkdiv)
-    pio_qspi_4wire_tx_init(
-        pio_config.pio, pio_config.sm, pio_config.qspi_4wire_offset,
-        8, // 8 bit words
-        //37.5f,
-        1.0f,
-        SCREEN_SCK_PIN,
-        SCREEN_PIO_SD_START_PIN
-    );
-    pio_config.is_4wire = true;
+void hstx_configure_4wire() {
+    hstx_ctrl_hw->csr = 0; // Disable and reset HSTX CSR
+
+    /*
+     * Set up clock and SD0..3 for 4 wire MSB transmission
+     * SD3 gets MSB in nibble
+     */
+    hstx_ctrl_hw->bit[PIN_HSTX_SCK - PIN_HSTX_START] = HSTX_CTRL_BIT0_CLK_BITS;
+
+    hstx_ctrl_hw->bit[PIN_HSTX_SD0 - PIN_HSTX_START] =
+        (4<<HSTX_CTRL_BIT0_SEL_P_LSB) |
+        (4<<HSTX_CTRL_BIT0_SEL_N_LSB);
+    hstx_ctrl_hw->bit[PIN_HSTX_SD1 - PIN_HSTX_START] =
+        (5<<HSTX_CTRL_BIT0_SEL_P_LSB) |
+        (5<<HSTX_CTRL_BIT0_SEL_N_LSB);
+    hstx_ctrl_hw->bit[PIN_HSTX_SD2 - PIN_HSTX_START] =
+        (6<<HSTX_CTRL_BIT0_SEL_P_LSB) |
+        (6<<HSTX_CTRL_BIT0_SEL_N_LSB);
+    hstx_ctrl_hw->bit[PIN_HSTX_SD3 - PIN_HSTX_START] =
+        (7<<HSTX_CTRL_BIT0_SEL_P_LSB) |
+        (7<<HSTX_CTRL_BIT0_SEL_N_LSB);
+
+    /*
+     * Set up HSTX shift register
+     * For now, just send one byte at a time
+     */
+    hstx_ctrl_hw->csr =
+        HSTX_CTRL_CSR_EN_BITS |             // Enable HSTX
+        (28<<HSTX_CTRL_CSR_SHIFT_LSB) |     // Left-shift 4 bits
+        (2 <<HSTX_CTRL_CSR_N_SHIFTS_LSB) |  // Perform 2 left-shifts before exhausting
+        (1 <<HSTX_CTRL_CSR_CLKDIV_LSB);     // Clock every shift
+
 }
 
-void __time_critical_func(pio_put_word)(uint8_t word) {
 
-    // Doesn't work?
-    //pio_sm_put_blocking(pio_config.pio, pio_config.sm, word);
+static inline void hstx_put_word(uint32_t data) {
+    // wait for fifo not full
+    while(hstx_fifo_hw->stat & HSTX_FIFO_STAT_FULL_BITS);
 
-    io_rw_8 *txfifo = (io_rw_8*)&pio_config.pio->txf[pio_config.sm];
-    while(pio_sm_is_tx_fifo_full(pio_config.pio, pio_config.sm));
-    *txfifo = word;
+    // place single word in fifo
+    hstx_fifo_hw->fifo = data;
 }
 
-void __time_critical_func(amoled_send_1wire)(uint8_t cmd, size_t len, uint8_t data[len]) {
+
+void amoled_send_1wire(uint8_t cmd, size_t len, uint8_t data[len]) {
 
     // can pack inst + addr into single 32-bit
-    pio_configure_1wire();
-    gpio_put(SCREEN_CSB_PIN, 0);
-    pio_put_word(0x02);    // 1 wire write
-    pio_put_word(0x00);
-    pio_put_word(cmd&0xff);
-    pio_put_word(0x00);
+    hstx_configure_1wire();
+    gpio_put(PIN_HSTX_CSB, 0);
+    hstx_put_word(0x02);    // 1 wire write
+    hstx_put_word(0x00);
+    hstx_put_word(cmd&0xff);
+    hstx_put_word(0x00);
 
     // send args
     for(size_t i = 0; i < len; i++) {
-        pio_put_word(data[i]);
+        hstx_put_word(data[i]);
     }
-
-    while(!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
-    sleep_us(10);
-
-    gpio_put(SCREEN_CSB_PIN, 1);
+    while(!(hstx_fifo_hw->stat & HSTX_FIFO_STAT_EMPTY_BITS));
+    for(size_t i = 0; i < 128; i++);
+    gpio_put(PIN_HSTX_CSB, 1);
+    hstx_put_word(0xff);
 }
 
 
-void __time_critical_func(amoled_send_4wire)(uint8_t cmd, size_t len, uint8_t data[len]) {
+void amoled_send_4wire(uint8_t cmd, size_t len, uint8_t data[len]) {
 
     // can pack inst + addr into single 32-bit
-    pio_configure_1wire();
-    gpio_put(SCREEN_CSB_PIN, 0);
-    pio_put_word(0x32);    // 4 wire write
-    pio_put_word(0x00);
-    pio_put_word(cmd&0xff);
-    pio_put_word(0x00);
+    hstx_configure_1wire();
+    gpio_put(PIN_HSTX_CSB, 0);
+    hstx_put_word(0x32);    // 4 wire write
+    hstx_put_word(0x00);
+    hstx_put_word(cmd&0xff);
+    hstx_put_word(0x00);
 
-    while(!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
-    sleep_us(10);
+    while(!(hstx_fifo_hw->stat & HSTX_FIFO_STAT_EMPTY_BITS));
+    for(size_t i = 0; i < 128; i++);
 
-    pio_configure_4wire();
+    hstx_configure_4wire();
     for(size_t i = 0; i < len; i++) {
-        pio_put_word(data[i]);
+        hstx_put_word(data[i]);
     }
-
-    while(!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
-    sleep_us(10);
-
-    gpio_put(SCREEN_CSB_PIN, 1);
+    while(!(hstx_fifo_hw->stat & HSTX_FIFO_STAT_EMPTY_BITS));
+    for(size_t i = 0; i < 128; i++);
+    gpio_put(PIN_HSTX_CSB, 1);
+    hstx_put_word(0xff);
 }
 
 
@@ -279,9 +299,9 @@ void amoled_reset() {
     /*
      * Screen initialise sequence
      */
-    gpio_put(SCREEN_RST_PIN, 0);
+    gpio_put(PIN_SCREEN_RST, 0);
     sleep_ms(3);
-    gpio_put(SCREEN_RST_PIN, 1);
+    gpio_put(PIN_SCREEN_RST, 1);
     sleep_ms(50);
 
     params[0] = 0x00;
@@ -356,22 +376,39 @@ void pw_screen_init() {
     /*
      * Set up manual CSB
      */
-    gpio_init(SCREEN_CSB_PIN);
-    gpio_init(SCREEN_PWREN_PIN);
-    gpio_init(SCREEN_RST_PIN);
-    gpio_set_dir(SCREEN_CSB_PIN, GPIO_OUT);
-    gpio_set_dir(SCREEN_PWREN_PIN, GPIO_OUT);
-    gpio_set_dir(SCREEN_RST_PIN, GPIO_OUT);
-    gpio_put(SCREEN_CSB_PIN, 1);
-    gpio_put(SCREEN_PWREN_PIN, 1);
-    gpio_put(SCREEN_RST_PIN, 0);
+    gpio_init(PIN_HSTX_CSB);
+    gpio_init(PIN_SCREEN_RST);
+    gpio_set_dir(PIN_HSTX_CSB, GPIO_OUT);
+    gpio_set_dir(PIN_SCREEN_RST, GPIO_OUT);
+    gpio_put(PIN_HSTX_CSB, 1);
+    gpio_put(PIN_SCREEN_RST, 0);
 
-    pio_config.pio = SCREEN_PIO_HW;
-    pio_config.sm = SCREEN_PIO_SM;
-    pio_config.qspi_4wire_offset = pio_add_program(pio_config.pio, &qspi_4wire_tx_cpha0_program);
-    pio_config.qspi_1wire_offset = pio_add_program(pio_config.pio, &qspi_1wire_tx_cpha0_program);
+    gpio_set_function(PIN_HSTX_SCK, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD0, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD1, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD2, 0/*GPIO_FUNC_HSTX*/);
+    gpio_set_function(PIN_HSTX_SD3, 0/*GPIO_FUNC_HSTX*/);
 
-    // Each SPI clock is 4 PIO cycles
+    /*
+     * Use the sys_clk and a divider of 2 to get 24MHz HSTX clock
+     * Screen only seems to play nice at 24 and scale of 3?
+     * TODO: in future use GPIN0 clock but this works fine enough
+     */
+    reset_block(RESETS_RESET_HSTX_BITS);
+    hw_write_masked(
+        &clocks_hw->clk[clk_hstx].ctrl,
+        CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB << CLOCKS_CLK_HSTX_CTRL_AUXSRC_LSB,
+        CLOCKS_CLK_HSTX_CTRL_AUXSRC_BITS
+    );
+    hw_write_masked(
+        &clocks_hw->clk[clk_hstx].div,
+        0x01 << CLOCKS_CLK_HSTX_DIV_INT_LSB,
+        CLOCKS_CLK_HSTX_DIV_INT_BITS
+    );
+    unreset_block_wait(RESETS_RESET_HSTX_BITS);
+
+    uint f_clk_hstx = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_HSTX);
+    printf("[Info] Running HSTX at %lukHz\n", f_clk_hstx);
 
     amoled_reset();
 }
