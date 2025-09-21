@@ -134,24 +134,6 @@ pw_dhms_t pw_time_get_dhms() {
     return dhms;
 }
 
-uint32_t pw_time_get_rtc() {
-    uint64_t ms = powman_timer_get_ms();
-    printf("[Debug] Powman timer has 0x%08x ms\n", (uint32_t)ms);
-    return (uint32_t)(ms/1000);
-}
-
-pw_dhms_t pw_time_get_dhms() {
-    uint64_t ms = powman_timer_get_ms();
-    uint64_t units = ms/1000;
-    pw_dhms_t dhms;
-    dhms.seconds = units%60;
-    units /= 60;
-    dhms.minutes = units%60;
-    units /= 60;
-    dhms.hours = units%24;
-    dhms.days = units/24;
-    return dhms;
-}
 
 uint32_t pw_time_get_us() {
     absolute_time_t now = get_absolute_time();

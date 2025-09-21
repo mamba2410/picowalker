@@ -2,26 +2,12 @@
 #include "hardware/timer.h"
 #include "hardware/irq.h"
 #include "hardware/structs/timer.h"
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 #include "hardware/clocks.h"
 #include "hardware/pll.h"
 
 #include <tusb.h>
-<<<<<<< HEAD
-<<<<<<< HEAD
 //#include "bsp/board_api.h"
 //#include "tusb_config.h"
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
-=======
-//#include "bsp/board_api.h"
-//#include "tusb_config.h"
->>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 #include "lvgl.h"
 //#include "screen_ws.h"
@@ -29,39 +15,18 @@
 // Picowalker
 //#include "picowalker.h"
 #include "picowalker-defs.h"
-<<<<<<< HEAD
-<<<<<<< HEAD
 //#include "msc_disk.h"
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-//#include "msc_disk.h"
->>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 // LVGL
 static struct repeating_timer lvgl_timer;
 
 extern void (*current_loop)(void);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 bool power_sleep_enabled;
 
 /********************************************************************************
  * @brief       Repeating Tick Increment
  * @param timer LVGL Struct Repeating Timer
-=======
-/********************************************************************************
-function:	
-parameter:
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-bool power_sleep_enabled;
-
-/********************************************************************************
- * @brief       Repeating Tick Increment
- * @param timer LVGL Struct Repeating Timer
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 ********************************************************************************/
 static bool repeating_lvgl_timer_callback(struct repeating_timer *timer)
 {
@@ -70,10 +35,6 @@ static bool repeating_lvgl_timer_callback(struct repeating_timer *timer)
 }
 
 /********************************************************************************
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
  * @brief       Mount Callback
  * @param N/A
 ********************************************************************************/
@@ -165,32 +126,13 @@ void tud_cdc_rx_cb(uint8_t itf) {
 /********************************************************************************
  * @brief	      Main Function
  * @param N/A
-<<<<<<< HEAD
 ********************************************************************************/
 int main() 
 {
-=======
-function:	
-parameter:
-********************************************************************************/
-int main() 
-{
-    // Initialize USB for debugging
-    //tusb_init();
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-********************************************************************************/
-int main() 
-{
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
 
     lv_init();
     add_repeating_timer_ms(5,   repeating_lvgl_timer_callback,       NULL, &lvgl_timer);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     tusb_rhport_init_t dev_init = {
         .role = TUSB_ROLE_DEVICE,
         .speed = TUSB_SPEED_AUTO
@@ -199,32 +141,14 @@ int main()
     board_init();
     tusb_init(BOARD_TUD_RHPORT, &dev_init); // TODO Expanded Define...needs review
 
-<<<<<<< HEAD
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     walker_setup();
 
     while(true)
     {
-<<<<<<< HEAD
-<<<<<<< HEAD
         tud_task();
         lv_task_handler();
         current_loop();
         cdc_task();
-=======
-=======
-        tud_task();
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
-        lv_task_handler();
-        current_loop();
-<<<<<<< HEAD
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-        cdc_task();
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
     }
 
     return 0;

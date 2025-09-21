@@ -18,15 +18,10 @@
 // Picowalker
 #include "picowalker-defs.h"
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 #ifndef TOUCH
 #define TOUCH true
 #endif
 
-<<<<<<< HEAD
 #define DISP_HOR_RES 240
 #define DISP_VER_RES 240   
 
@@ -47,42 +42,6 @@
 
 #define CANVAS_WIDTH  (int)(SCREEN_WIDTH * CANVAS_SCALE)
 #define CANVAS_HEIGHT (int)(SCREEN_HEIGHT * CANVAS_SCALE)
-=======
-=======
->>>>>>> 8136600 (Scaling Adjustments and NonTouch)
-#define DISP_HOR_RES 240
-#define DISP_VER_RES 240   
-
-// 1x = 96x64, 1.5x = 144x96, 2x = 192x128
-#ifndef CANVAS_SCALE
-#define CANVAS_SCALE 2
-#endif
-
-#if CANVAS_SCALE < 2
-#define LR_BUTTON_Y_OFFSET  70
-#define MD_BUTTON_Y_OFFSET  80
-#define CANVAS_Y_OFFSET    -10
-#else
-#define LR_BUTTON_Y_OFFSET  85
-#define MD_BUTTON_Y_OFFSET 100
-#define CANVAS_Y_OFFSET      0
-#endif
-
-<<<<<<< HEAD
-// For 2x scaling (192x128):
-// #define PW_SCALE_NUMERATOR   2
-// #define PW_SCALE_DENOMINATOR 1
-
-#define CANVAS_WIDTH  ((SCREEN_WIDTH * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR)   // 96 * 3 / 2 = 144
-#define CANVAS_HEIGHT ((SCREEN_HEIGHT * PW_SCALE_NUMERATOR) / PW_SCALE_DENOMINATOR) // 64 * 3 / 2 = 96
-
-//#define CANVAS_WIDTH  144  // Original 96, 1.5 x 96 = 144, 2 x 96 = 192
-//#define CANVAS_HEIGHT 96   // Original 64, 1.5 x 64 = 96,  2 x 64 = 128
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-#define CANVAS_WIDTH  (int)(SCREEN_WIDTH * CANVAS_SCALE)
-#define CANVAS_HEIGHT (int)(SCREEN_HEIGHT * CANVAS_SCALE)
->>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 
 // Global variables
 extern bool is_sleeping;
@@ -94,22 +53,10 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
 static void direct_memory_access_handler(void);
 static bool repeating_lvgl_timer_callback(struct repeating_timer *timer);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 // Battery functions
 void pw_screen_update_battery();
 
 // Image scaling functions
 lv_color_t get_color(screen_colour_t color);
 
-<<<<<<< HEAD
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-// Battery functions
-void pw_screen_update_battery();
-
->>>>>>> 0d881bd (Code Cleanup and RP2040 Oddities)
-=======
->>>>>>> 8136600 (Scaling Adjustments and NonTouch)
 #endif /* PW_DRIVER_SCREEN_RP2XXX_GC9A01A_LVGL_H */

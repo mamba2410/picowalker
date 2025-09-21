@@ -5,14 +5,7 @@
 #include <stdio.h>
 
 #include "hardware/uart.h"
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-<<<<<<< HEAD
 #include <hardware/dma.h>
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-#include <hardware/dma.h>
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
 #include <hardware/gpio.h>
 #include <hardware/pio.h>
 #include <hardware/irq.h>
@@ -24,11 +17,6 @@
 
 #define USE_DMA
 
-<<<<<<< HEAD
-#define USE_DMA
-
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
 /*
  * PIO code adapted from dmitry.gr
  */
@@ -45,22 +33,11 @@
 #define NUM_SMS_WE_NEED					1
 #define NUM_DMAS_WE_NEED				0
 
-<<<<<<< HEAD
-#define IR_DMA_IRQ_NUM 0
-
 //#define CIRC_BUF_SZ						64
 #define CIRC_BUF_LEN    (128+8+1)
 
 #define FLAT_BUF_LEN    (128+8+1)
 
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-=======
-//#define CIRC_BUF_SZ						64
-#define CIRC_BUF_LEN    (128+8+1)
-
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
 // Callback function analogous to `RepalmUartRxF`
 // the first void* is the `mIrRxD` context, likely unused
 typedef void (*rx_callback_t)(void*, uint16_t*, size_t);
@@ -72,8 +49,6 @@ struct pw_ir_circ_buf_s {
 };
 static volatile struct pw_ir_circ_buf_s g_ir_pio_circ_buf;
 
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-<<<<<<< HEAD
 static volatile uint16_t g_ir_pio_flat_buf[FLAT_BUF_LEN];
 
 struct pw_ir_pio_state_s {
@@ -82,21 +57,6 @@ struct pw_ir_pio_state_s {
     uint8_t pio_start_pc;
     pio_hw_t *pio_hw;
     uint dma_chan;
-=======
-=======
-static volatile uint16_t g_ir_pio_flat_buf[FLAT_BUF_LEN];
-
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
-struct pw_ir_pio_state_s {
-    // PIO and DMA admin
-    uint8_t pio_sm;
-    uint8_t pio_start_pc;
-    pio_hw_t *pio_hw;
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-    uint dma_chan;
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
     
     // Serial things
     // probably gonna be hardcoded
@@ -209,19 +169,10 @@ static void pw_ir_pio_reset_state() {
 	g_ir_pio_state.pio_hw->inte0 = 0;
 	//NVIC_ClearPendingIRQ(PIO1_0_IRQn);
     irq_clear(PIO1_IRQ_0);
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-<<<<<<< HEAD
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
 
     // clear DMA
     dma_irqn_set_channel_enabled(IR_DMA_IRQ_NUM, g_ir_pio_state.dma_chan, false);
     //dma_channel_unclaim(g_ir_pio_state.dma_chan);
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
 }
 
 /*
@@ -263,16 +214,8 @@ static void pw_ir_pio_setup_tx() {
 	g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].instr = I_JMP(0, 0, JMP_ALWAYS, start_pc);
 	g_ir_pio_state.pio_hw->ctrl |= ((1 << PIO_CTRL_SM_ENABLE_LSB) << g_ir_pio_state.pio_sm);
 	
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-<<<<<<< HEAD
     
     /*
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-    
-    /*
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
 	//irq on TX not full, but not enabled since it is empty now and we have no data
 	g_ir_pio_state.pio_hw->inte0 = 0;
 	//NVIC_ClearPendingIRQ(PIO1_0_IRQn);
@@ -281,10 +224,6 @@ static void pw_ir_pio_setup_tx() {
     pio_interrupt_clear(g_ir_pio_state.pio_hw, g_ir_pio_state.pio_sm);
     irq_set_enabled(PIO1_IRQ_0, true);
 	g_ir_pio_state.pio_hw->inte0 = PIO_IRQ0_INTE_SM0_TXNFULL_BITS << g_ir_pio_state.pio_sm;
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-<<<<<<< HEAD
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
     */
 
     // Disable IRQ
@@ -305,11 +244,6 @@ static void pw_ir_pio_setup_tx() {
         FLAT_BUF_LEN,
         false // Don't start yet
     );
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
 
     g_ir_pio_state.state_tx = true;
 }
@@ -503,10 +437,6 @@ static uint32_t __attribute__((noinline)) pw_ir_pio_serial_tx_blocking(const uin
 
 
 /*
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-<<<<<<< HEAD
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
  *
  */
 static uint32_t __attribute__((noinline)) pw_ir_pio_serial_tx_dma(const uint8_t *data, size_t len) {
@@ -532,11 +462,6 @@ static uint32_t __attribute__((noinline)) pw_ir_pio_serial_tx_dma(const uint8_t 
 
 
 /*
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
  * Returns `true` if there is a TX ongoing
  * Equivalent of `palmcardIrPrvIsTxOngoing()`
  */
@@ -760,17 +685,8 @@ int pw_ir_write(uint8_t *buf, size_t len) {
      * (unset PIO TX mode)
      */
     pw_ir_pio_setup_tx();
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-<<<<<<< HEAD
     //pw_ir_pio_serial_tx_blocking(buf, len);
     pw_ir_pio_serial_tx_dma(buf, len);
-=======
-    pw_ir_pio_serial_tx_blocking(buf, len);
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-    //pw_ir_pio_serial_tx_blocking(buf, len);
-    pw_ir_pio_serial_tx_dma(buf, len);
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
     pw_ir_pio_reset_state();
 
     /*
@@ -805,17 +721,8 @@ void pw_ir_init() {
     // Set `g_ir_pio_state` for callbacks, baud rate, etc.
 
     g_ir_pio_state = (struct pw_ir_pio_state_s){
-<<<<<<< HEAD:src/drivers/ir/ir_pico_pio.c
-        .pio_sm = 0,
-<<<<<<< HEAD
-        .dma_chan = 0,
-=======
-        .pio_first_dma_channel = 0,
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
         .pio_sm = IR_PIO_SM,
         .dma_chan = IR_DMA_CHAN,
->>>>>>> 5cad753 (rebase survival):src/drivers/ir/rp2xxx_pio.c
         .pio_start_pc = 0,
         .pio_hw = IR_PIO_HW,
 

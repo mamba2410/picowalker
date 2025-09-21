@@ -90,13 +90,4 @@ static inline pio_qspi_1wire_tx_init(PIO pio, uint sm, uint prog_offs, uint n_bi
 
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 %}
-=======
-%}
-
->>>>>>> 9715337 (refactor: move driver code into separate directories)
-=======
-%}
->>>>>>> 8cd97d1 (Directory Clean up)

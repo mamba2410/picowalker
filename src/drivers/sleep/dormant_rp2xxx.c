@@ -2,14 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-<<<<<<< HEAD:src/drivers/power/power_pico.c
-<<<<<<< HEAD
 #include "hardware/clocks.h"
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-#include "hardware/clocks.h"
->>>>>>> 5cad753 (rebase survival):src/drivers/sleep/dormant_rp2xxx.c
 #include "hardware/timer.h"
 #include "hardware/xosc.h"
 #include "pico/sleep.h"
@@ -25,14 +18,7 @@
 static volatile bool power_should_sleep;
 volatile bool power_sleep_enabled = true;
 pw_wake_reason_t wake_reason;
-<<<<<<< HEAD:src/drivers/power/power_pico.c
-<<<<<<< HEAD
 extern lposc_value;
-=======
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-extern lposc_value;
->>>>>>> 5cad753 (rebase survival):src/drivers/sleep/dormant_rp2xxx.c
 
 void user_idle_callback(void) {
     // Clear interrupt
@@ -68,21 +54,10 @@ void pw_power_init() {
 
 void pw_power_enter_sleep() {
 
-<<<<<<< HEAD:src/drivers/power/power_pico.c
-<<<<<<< HEAD
-=======
-    // Turn off the peripherals
-    //printf("[Info] Sleeping peripherals\n");
-
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/sleep/dormant_rp2xxx.c
     // Going to sleep, we don't want to respond to button presses
     // TODO: move this to core
     acknowledge_button_presses = false;
 
-<<<<<<< HEAD:src/drivers/power/power_pico.c
-<<<<<<< HEAD
     wake_reason = 0;
 
     // Start the POWMAN timer from LPOSC which we aren't turning off
@@ -96,46 +71,11 @@ void pw_power_enter_sleep() {
 
     // Actually do the sleep
     printf("[Info ] Sleeping MCU at 0x%08x s\n", (uint32_t)ts.tv_sec);
-=======
-    // Sleep the screen first so it doesn't do anything weird
-    //pw_screen_sleep();
-
-    // Sleep the IR in case we were in the comms context
-    //pw_ir_sleep();
-
-    //pw_eeprom_sleep();
-    //pw_flash_sleep();
-    //pw_accel_sleep(); // Don't sleep accel, it stops counting steps
-
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/sleep/dormant_rp2xxx.c
-    wake_reason = 0;
-
-    // Start the POWMAN timer from LPOSC which we aren't turning off
-    struct timespec ts;
-    aon_timer_get_time(&ts);
-    //printf("[Debug] Sleep saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
-
-    powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
-    //powman_timer_set_ms(powman_ms);
-    aon_timer_set_time(&ts);
-
-    // Actually do the sleep
-<<<<<<< HEAD:src/drivers/power/power_pico.c
-    printf("[Info] Sleeping MCU\n");
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-    printf("[Info ] Sleeping MCU at 0x%08x s\n", (uint32_t)ts.tv_sec);
->>>>>>> 5cad753 (rebase survival):src/drivers/sleep/dormant_rp2xxx.c
 
     // === Start of danger zone ===
 
     // Set XOSC as dormant clock source
     // Also reconfigures UART to run from XOSC
-<<<<<<< HEAD:src/drivers/power/power_pico.c
-<<<<<<< HEAD
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/sleep/dormant_rp2xxx.c
     sleep_run_from_lposc();
     //sleep_run_from_xosc();
 
@@ -143,19 +83,11 @@ void pw_power_enter_sleep() {
     clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
     clocks_hw->sleep_en1 = 0;
     scb_hw->scr |= ARM_CPU_PREFIXED(SCR_SLEEPDEEP_BITS);
-<<<<<<< HEAD:src/drivers/power/power_pico.c
-=======
-    sleep_run_from_xosc();
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/sleep/dormant_rp2xxx.c
 
     gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     gpio_set_dormant_irq_enabled(BAT_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     gpio_set_dormant_irq_enabled(BUTTON_MIDDLE_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
     //sleep_goto_dormant_until_pin(PIN_BUTTON_MIDDLE, true, false);
-<<<<<<< HEAD:src/drivers/power/power_pico.c
-<<<<<<< HEAD
     // We should also be allowed to wake from AON timer
     rosc_set_dormant();
     //xosc_dormant();
@@ -178,51 +110,12 @@ void pw_power_enter_sleep() {
     //powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
     //powman_timer_set_1khz_tick_source_xosc();
     aon_timer_set_time(&ts);
-=======
-    xosc_dormant();
-
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
-    // We should also be allowed to wake from AON timer
-    rosc_set_dormant();
-    //xosc_dormant();
-
-    sleep_power_up();
-    printf("[Info ] MCU is awake, wake reason: 0x%02x\n", wake_reason);
-
-    // === End of danger zone ===
-
-    // Run POWMAN timer from XOSC since its more accurate
-    //powman_ms = powman_timer_get_ms();
-    //printf("[Debug] Waking powman timer with 0x%08x%08x ms\n", (uint32_t)(powman_ms>>32), (uint32_t)powman_ms);
-    //powman_sec = powman_ms/1000;
-    //printf("[Debug] Equivalent to 0x%08x s\n", powman_sec);
-    //powman_timer_set_1khz_tick_source_xosc();
-    //powman_timer_set_ms(powman_ms);
-
-    aon_timer_get_time(&ts);
-    //printf("[Debug] Wake saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
-    //powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
-    //powman_timer_set_1khz_tick_source_xosc();
-    aon_timer_set_time(&ts);
->>>>>>> 5cad753 (rebase survival):src/drivers/sleep/dormant_rp2xxx.c
 
     // TODO: Check what caused the wakeup, if it was AON timer then go back to sleep
 
     // TODO: Wait one second and sample pin again?
     // Can do that with another sleep timer clocked from AON
 
-<<<<<<< HEAD:src/drivers/power/power_pico.c
-<<<<<<< HEAD
-=======
-    sleep_power_up();
-    printf("[Info] MCU is awake\n");
-
-    // === End of danger zone ===
-
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-=======
->>>>>>> 5cad753 (rebase survival):src/drivers/sleep/dormant_rp2xxx.c
     //pw_accel_wake();
     //pw_flash_wake();
     //pw_eeprom_wake();
