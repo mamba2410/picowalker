@@ -1,4 +1,4 @@
-#include "gc9a01a_rp2xxx_lvgl.h"
+#include "st7789v2_rp2xxx_lvgl.h"
 #include "adc_rp2xxx.h"
 #include "qmi8658_rp2xxx.h"
 #include "picowalker-defs.h"
@@ -10,7 +10,7 @@
 #endif
 
 #ifndef PW_SPEAKER_PIN
-#define PW_SPEAKER_PIN 16
+#define PW_SPEAKER_PIN 2
 #endif
 
 #include <time.h>
@@ -28,8 +28,9 @@ static lv_color_t *buffer0;
 static lv_color_t *buffer1;
 #else
 #define LVGL_BUFFER_DIVISOR 2
-static lv_color_t buffer0[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
-static lv_color_t buffer1[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
+// Allocate for maximum resolution (320x240 landscape)
+static lv_color_t buffer0[ST7789V2_HEIGHT * ST7789V2_WIDTH/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer1[ST7789V2_HEIGHT * ST7789V2_WIDTH/LVGL_BUFFER_DIVISOR];
 #endif
 
 static lv_indev_drv_t driver_touch;
@@ -111,13 +112,13 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
         pixel_data[i] = (pixel << 8) | (pixel >> 8);
     }
 
-    GC9A01A_Set_Windows(area->x1, area->y1, area->x2 , area->y2);
-    dma_channel_configure(GC9A01A_DMA_TX,
-                          &GC9A01A_DMA_CONFIG,
+    ST7789V2_Set_Windows(area->x1, area->y1, area->x2 , area->y2);
+    dma_channel_configure(ST7789V2_DMA_TX,
+                          &ST7789V2_DMA_CONFIG,
                           &spi_get_hw(SCREEN_SPI_PORT)->dr, 
                           color,
-                          //((area->x2 + 1 - area-> x1)*(area->y2 + 1 - area -> y1))*2,
-                          pixel_count * 2,
+                          ((area->x2 + 1 - area-> x1)*(area->y2 + 1 - area -> y1))*2,
+                          //pixel_count * 2,
                           true);
 }
 
@@ -186,8 +187,8 @@ static void button_right_callback(lv_event_t *event)
 ********************************************************************************/
 static void direct_memory_access_handler(void)
 {
-    if (dma_channel_get_irq0_status(GC9A01A_DMA_TX)) {
-        dma_channel_acknowledge_irq0(GC9A01A_DMA_TX);
+    if (dma_channel_get_irq0_status(ST7789V2_DMA_TX)) {
+        dma_channel_acknowledge_irq0(ST7789V2_DMA_TX);
         lv_disp_flush_ready(&driver_display); // Indicate you are ready with the flushing
     }
 }
@@ -196,11 +197,11 @@ static void direct_memory_access_handler(void)
  * @brief           Changes brightness of the screen
  * @param event     LVGL event from indev input
 ********************************************************************************/
-static void brightness_slider_event_callback(lv_event_t * event)
+static void brightness_slider_event_callback(lv_event_t *event)
 {
       lv_obj_t *slider = lv_event_get_target(event);
       int32_t value = lv_slider_get_value(slider);
-      GC9A01A_SET_PWM(value);
+      ST7789V2_SET_PWM(value);
       
       static char brightness_text[32];
       snprintf(brightness_text, sizeof(brightness_text), "Brightness: %d%%", (int)value);
@@ -336,9 +337,10 @@ void pw_screen_init()
     pwm_set_enabled(slice_num, true);
 
     // Initialize WaveShare 1.28" LCD - Screen
-    GC9A01A_Init(HORIZONTAL);
-    GC9A01A_SET_PWM(10);
-    GC9A01A_Clear(BLACK);
+    
+    ST7789V2_Init(HORIZONTAL_FLIPPED);
+    ST7789V2_SET_PWM(10);
+    ST7789V2_Clear(BLACK);
 
 #ifdef PICO_RP2040
     buffer0 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
@@ -365,7 +367,7 @@ void pw_screen_init()
     gpio_set_irq_enabled_with_callback(TOUCH_INT_PIN, GPIO_IRQ_EDGE_RISE, true, &touch_callback);
 #endif
     // Initialize DMA Direct Memory Access
-    dma_channel_set_irq0_enabled(GC9A01A_DMA_TX, true);
+    dma_channel_set_irq0_enabled(ST7789V2_DMA_TX, true);
     irq_set_exclusive_handler(DMA_IRQ_0, direct_memory_access_handler);
     irq_set_enabled(DMA_IRQ_0, true);
 
@@ -775,7 +777,7 @@ void pw_screen_sleep()
 {
     gpio_put(SCREEN_DC_PIN, 1);
     spi_write_blocking(SCREEN_SPI_PORT, 0x10, 1);
-    GC9A01A_SET_PWM(0);
+    ST7789V2_SET_PWM(0);
 
     // Stop LVGL processing and battery updates
     cancel_repeating_timer(&lvgl_timer);
@@ -791,9 +793,9 @@ void pw_screen_wake()
 {
     gpio_put(SCREEN_DC_PIN, 0);
     spi_write_blocking(SCREEN_SPI_PORT, 0x11, 1);
-    GC9A01A_SET_PWM(0);
+    ST7789V2_SET_PWM(0);
     sleep_ms(120);
-    GC9A01A_SET_PWM(10);
+    ST7789V2_SET_PWM(10);
 
     // Restart LVGL processing and battery updates
     add_repeating_timer_ms(5, repeating_lvgl_timer_callback, NULL, &lvgl_timer);

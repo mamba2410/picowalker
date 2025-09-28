@@ -11,8 +11,10 @@ pw_wake_reason_t wake_reason;
 ********************************************************************************/
 void pw_power_init()
 {
-    // Initialize Device
-    WS_Module_Init();
+    // ADC Config
+    adc_init();
+    adc_gpio_init(BAT_ADC_PIN);
+    adc_select_input(BAT_CHANNEL);
 }
 
 /********************************************************************************

@@ -12,12 +12,13 @@
 #include "hardware/clocks.h"
 
 /********************************************************************************
- * Board Specific pin overrides for RP2350 Touch LCD 1.28"
+ * Board Specific pin overrides for RP2350 Touch LCD 1.69"
 ********************************************************************************/
-#define PLL_SYS_KHZ (270 * 1000)
+#define PLL_SYS_KHZ (200 * 1000)
 
 #define SCREEN_SPI_PORT     (spi1)
 #define SENSOR_I2C_PORT     (i2c1)
+#define RTC_I2C_PORT        (i2c1)
 
 #define SENSOR_SDA_PIN      (6)
 #define SENSOR_SCL_PIN      (7)
@@ -33,11 +34,18 @@
 #define TOUCH_INT_PIN       (21)
 #define TOUCH_RST_PIN       (22)
 
-#define DOF_INT1            (23)
-#define DOF_INT2            (24)
+#define IMU_INT1            (23)
+#define IMU_INT2            (24)
 
+#define BAT_PWR_PIN         (15)
 #define BAT_ADC_PIN         (29)
 #define BAT_CHANNEL         (3)
+
+#define PWR_KEY_PIN         (14)
+
+#define BEEP_PIN            (2)
+
+#define RTC_INT_PIN         (18)
 
 /********************************************************************************
  * Other Available Pins
@@ -56,14 +64,14 @@
 // Configure for piezo buzzer optimal frequency (4kHz base)
 // System clock = 125MHz, target 4kHz: 125MHz / 4kHz = 31250
 // Use wrap=1000, clkdiv=31.25 to get 4kHz base frequency
-#define AUDIO_SPEAKER_PIN  16
+#define AUDIO_SPEAKER_PIN  2
 #define AUDIO_ALARM_NUM 1
 
 /********************************************************************************
  * Board Specific Functions
 ********************************************************************************/
 #define TOUCH           true    // Touch variant
-#define CANVAS_SCALE    2       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
+#define CANVAS_SCALE    3       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
 // Device Configuration
 //#define SCREEN_RST_PIN     13
 

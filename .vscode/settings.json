@@ -2,19 +2,8 @@
     "files.associations": {
         "*.bt": "cpp",
         "*.py": "python",
-<<<<<<< HEAD
-<<<<<<< HEAD
         "*.S": "pio",
         "*.h": "c",
         "*.c": "c"
-=======
-        "rp2350touchlcd128.h": "c",
-        "dev_config.h": "c"
->>>>>>> 996b184 (LVGL Introduction and Testing)
-=======
-        "*.S": "pio",
-        "*.h": "c",
-        "*.c": "c"
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
     }
 }

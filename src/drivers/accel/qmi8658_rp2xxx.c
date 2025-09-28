@@ -31,7 +31,7 @@ static bool step_processing_timer_callback(struct repeating_timer *timer)
     
     // Try hardware pedometer first
     unsigned int current_hardware_steps = 0;
-    QMI8658_read_step_count(&current_hardware_steps);
+    QMI8658_Read_Step_Count(&current_hardware_steps);
     
     if (current_hardware_steps > previous_hardware_steps) {
         // Hardware pedometer is working
@@ -45,7 +45,7 @@ static bool step_processing_timer_callback(struct repeating_timer *timer)
     
     // Fallback to software detection if hardware isn't working
     float accel[3];
-    QMI8658_read_acc_xyz(accel);
+    QMI8658_Read_Acc_XYZ(accel);
     
     float magnitude = sqrtf(accel[0] * accel[0] + accel[1] * accel[1] + accel[2] * accel[2]);
     magnitude_filter = (filter_alpha * magnitude) + ((1.0f - filter_alpha) * magnitude_filter);
@@ -111,7 +111,7 @@ void pw_accel_init()
     magnitude_filter = 0.0f;
     
     // Get initial hardware step count
-    QMI8658_read_step_count(&previous_hardware_steps);
+    QMI8658_Read_Step_Count(&previous_hardware_steps);
     
     // Start timer for continuous step processing (100ms interval)
     add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
@@ -128,7 +128,7 @@ void pw_accel_sleep()
     // Cancel step processing timer to save power
     cancel_repeating_timer(&step_timer);
     // Keep accelerometer enabled for hardware pedometer
-    QMI8658_enable_sensors(QMI8658_CTRL7_ACC_ENABLE);
+    QMI8658_Enable_Sensors(QMI8658_CTRL7_ACC_ENABLE);
     printf("[Debug] Accelerometer sleeping - timer stopped, hardware pedometer active\n");
 }
 
@@ -139,7 +139,7 @@ void pw_accel_sleep()
 void pw_accel_wake()
 {
     // Re-enable accelerometer and restart step processing timer
-    QMI8658_enable_sensors(QMI8658_CTRL7_ACC_ENABLE);
+    QMI8658_Enable_Sensors(QMI8658_CTRL7_ACC_ENABLE);
     add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
     printf("[Debug] Accelerometer wake up - timer restarted\n");
 }
@@ -179,8 +179,8 @@ void pw_accel_reset_steps()
     magnitude_filter = 0.0f;
     
     // Try to reset hardware counter
-    QMI8658_reset_step_count();
-    QMI8658_read_step_count(&previous_hardware_steps);
+    QMI8658_Reset_Step_Count();
+    QMI8658_Read_Step_Count(&previous_hardware_steps);
     
     printf("[Debug] Step counter reset - Hardware + Software\n");
 }

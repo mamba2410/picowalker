@@ -4,8 +4,6 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-<<<<<<< HEAD
-<<<<<<< HEAD
                 "${env:PICO_SDK_PATH}/**"
             ],
             "defines": [
@@ -16,26 +14,6 @@
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "gcc-arm"
-=======
-                "${env:PICO_SDK_PATH}/**",
-                "${env:PICO_EXTRA_PATH}/**"
-=======
-                "${env:PICO_SDK_PATH}/**"
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
-            ],
-            "defines": [
-                "PICO_BOARD=pico2",
-                "PICO_RP2350=1"
-            ],
-            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
-<<<<<<< HEAD
-            "intelliSenseMode": "linux-gcc-x64"
->>>>>>> 996b184 (LVGL Introduction and Testing)
-=======
-            "intelliSenseMode": "gcc-arm"
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
         }
     ],
     "version": 4

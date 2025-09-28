@@ -10,9 +10,6 @@
 //#include "drivers/eeprom/m95512_rp2xxx_spi.h"
 #include "picowalker-defs.h"
 
-<<<<<<< HEAD
-void pw_time_init_rtc() {}
-=======
 #include "board_resources.h"
 
 static bool spi_is_inited = false;
@@ -38,7 +35,6 @@ void board_i2c_init() {
     // hardware pullups
     i2c_is_inited = true;
 }
->>>>>>> a2b06f1 (refactor: board inits buses)
 
 int main() {
     bi_decl(bi_program_description("picowalker"));
@@ -68,8 +64,7 @@ int main() {
 
     printf("[Info] ==== Hello, picowalker! ====\n");
 
-    /*
-    //Program the EEPROM over debug uart
+    /* Program the EEPROM over debug uart
     // Send a full rom file using `cat`
     // Beware: no validation is done
     pw_eeprom_init();
@@ -116,4 +111,3 @@ int main() {
     // unreachable
     while(1);
 }
-
