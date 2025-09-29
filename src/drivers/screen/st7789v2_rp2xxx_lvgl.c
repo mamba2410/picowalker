@@ -29,8 +29,8 @@ static lv_color_t *buffer1;
 #else
 #define LVGL_BUFFER_DIVISOR 2
 // Allocate for maximum resolution (320x240 landscape)
-static lv_color_t buffer0[ST7789V2_HEIGHT * ST7789V2_WIDTH/LVGL_BUFFER_DIVISOR];
-static lv_color_t buffer1[ST7789V2_HEIGHT * ST7789V2_WIDTH/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer0[320 * 240/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer1[320 * 240/LVGL_BUFFER_DIVISOR];
 #endif
 
 static lv_indev_drv_t driver_touch;
@@ -336,9 +336,8 @@ void pw_screen_init()
     pwm_set_clkdiv(slice_num, 31.25f);       // 4kHz frequency for piezo resonance
     pwm_set_enabled(slice_num, true);
 
-    // Initialize WaveShare 1.28" LCD - Screen
-    
-    ST7789V2_Init(HORIZONTAL_FLIPPED);
+    // Initialize WaveShare 1.69" LCD - Screen
+    ST7789V2_Init(SCREEN_ROTATION);
     ST7789V2_SET_PWM(10);
     ST7789V2_Clear(BLACK);
 

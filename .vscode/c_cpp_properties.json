@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${env:PICO_SDK_PATH}/**"
+                "${env:PICO_SDK_PATH}/**",
+                "${env:PICO_EXTRA_PATH}/**"
             ],
             "defines": [
                 "PICO_BOARD=pico2",

@@ -28,8 +28,8 @@ static lv_color_t *buffer0;
 static lv_color_t *buffer1;
 #else
 #define LVGL_BUFFER_DIVISOR 2
-static lv_color_t buffer0[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
-static lv_color_t buffer1[DISP_HOR_RES * DISP_VER_RES/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer0[320 * 240/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer1[320 * 240/LVGL_BUFFER_DIVISOR];
 #endif
 
 static lv_indev_drv_t driver_touch;
@@ -116,8 +116,8 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
                           &GC9A01A_DMA_CONFIG,
                           &spi_get_hw(SCREEN_SPI_PORT)->dr, 
                           color,
-                          //((area->x2 + 1 - area-> x1)*(area->y2 + 1 - area -> y1))*2,
-                          pixel_count * 2,
+                          ((area->x2 + 1 - area-> x1)*(area->y2 + 1 - area -> y1))*2,
+                          //pixel_count * 2,
                           true);
 }
 
@@ -336,13 +336,13 @@ void pw_screen_init()
     pwm_set_enabled(slice_num, true);
 
     // Initialize WaveShare 1.28" LCD - Screen
-    GC9A01A_Init(HORIZONTAL);
+    GC9A01A_Init(SCREEN_ROTATION);
     GC9A01A_SET_PWM(10);
     GC9A01A_Clear(BLACK);
 
 #ifdef PICO_RP2040
-    buffer0 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
-    buffer1 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
+    buffer0 = malloc((240 * 240 / 2) * sizeof(lv_color_t));
+    buffer1 = malloc((240 * 240 / 2) * sizeof(lv_color_t));
 #endif
     // Initialize LVGL Display
     lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR); 

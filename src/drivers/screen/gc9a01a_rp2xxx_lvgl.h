@@ -22,8 +22,10 @@
 #define TOUCH true
 #endif
 
-#define DISP_HOR_RES 240
-#define DISP_VER_RES 240   
+// Use dynamic resolution from GC9A01A attributes (set by orientation)
+extern GC9A01A_ATTRIBUTES GC9A01A;
+#define DISP_HOR_RES GC9A01A.WIDTH   // Dynamic width based on orientation
+#define DISP_VER_RES GC9A01A.HEIGHT  // Dynamic height based on orientation
 
 // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
 #ifndef CANVAS_SCALE

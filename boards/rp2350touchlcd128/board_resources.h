@@ -63,6 +63,7 @@
  * Board Specific Functions
 ********************************************************************************/
 #define TOUCH           true    // Touch variant
+#define SCREEN_ROTATION 0       // 0 = 0d, 1 = 90d, 2 = 180d, 3 = 270d
 #define CANVAS_SCALE    2       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
 // Device Configuration
 //#define SCREEN_RST_PIN     13
