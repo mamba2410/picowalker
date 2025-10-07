@@ -26,5 +26,8 @@ typedef struct pw_flash_log_s {
 
 extern pw_flash_log_t flash_log;
 
+size_t get_apparent_log_size();
+void log_read_from_address(size_t addr, uint8_t *out, size_t len);
+
 
 #endif /* PW_ONBOARD_LOG_H */

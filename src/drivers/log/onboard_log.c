@@ -14,6 +14,33 @@
 pw_flash_log_t flash_log = {};
 
 
+size_t get_flash_used() {
+    return (flash_log.flash_write_head - flash_log.flash_read_head + LOG_LIMIT_BYTES) % LOG_LIMIT_BYTES;
+}
+
+
+size_t get_apparent_log_size() {
+    return get_flash_used() + flash_log.ram_write_head;
+}
+
+
+void log_read_from_address(size_t addr, uint8_t *out, size_t read_len) {
+    // Note: we assume that (addr + read_len) is all valid to access.
+
+    size_t flash_used = get_flash_used();
+
+    // Check if we should read from flash, ram or fill with zeros
+    if(addr < flash_used) {
+        size_t read_addr = (addr + flash_log.flash_read_head) % LOG_LIMIT_BYTES;
+        memcpy(out, XIP_BASE + LOG_FLASH_OFFSET + read_addr, read_len);
+    } else if(addr < flash_used + flash_log.ram_write_head) {
+        size_t buffer_offset = addr - flash_used;
+        memcpy(out, flash_log.buffer + buffer_offset, read_len);
+    } else {
+        memset(out, 0, read_len);
+    }
+}
+
 /**
  * Taken from <https://github.com/raspberrypi/pico-examples/blob/master/flash/program/flash_program.c#L37>
  */
@@ -52,6 +79,11 @@ static void pw_commit_page() {
     if(flash_log.flash_write_head > LOG_LIMIT_BYTES) {
         printf("[Warn ] Flash log overflowed, wrapping back to zero\n");
         flash_log.flash_write_head = 0;
+    }
+
+    // Ensure that read head is never equal to write head
+    if(flash_log.flash_write_head == flash_log.flash_read_head) {
+        flash_log.flash_read_head = (flash_log.flash_write_head + LOG_PAGE_SIZE) % LOG_LIMIT_BYTES;
     }
     
     // RAM page written to flash, so now we reset

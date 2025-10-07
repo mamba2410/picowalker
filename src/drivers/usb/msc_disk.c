@@ -137,7 +137,8 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
     uint8_t const* addr = msc_disk[DISK_ROOT_DIR_INDEX] + offset;
     memcpy(buffer, addr, bufsize);
     uint32_t *log_size = (uint32_t*)&buffer[LOG_TXT_ENTRY_OFFSET+32-4];
-    *log_size = flash_log.flash_write_head + flash_log.ram_write_head;
+    //*log_size = flash_log.flash_write_head + flash_log.ram_write_head;
+    *log_size = get_apparent_log_size();
     return (int32_t)bufsize;
   }
 
@@ -153,29 +154,8 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
 
       // This does have buffer overflow but oh well
       uint32_t read_start_bytes = (lba-LOG_TXT_FIRST_LBA)*DISK_SECTOR_SIZE + offset;
-      uint32_t flash_bytes_written = flash_log.flash_write_head;
+      log_read_from_address(read_start_bytes, buffer, bufsize);
 
-      uint8_t *data = 0;
-      if( read_start_bytes < flash_bytes_written) {
-        // This part is in flash, get it
-        data = LOG_READ_ADDRESS + read_start_bytes;
-        //printf("[Log  ] Reading log file offset %u (flash committed %u bytes) ", read_start_bytes, flash_bytes_written);
-        //printf("from flash\n");
-      } else if(read_start_bytes < flash_bytes_written + flash_log.ram_write_head) {
-        // Not written to flash yet, still in RAM
-        // RAM read starts at (read_start_bytes - flash_bytes_written) into RAM.
-        data = &flash_log.buffer[read_start_bytes - flash_bytes_written];
-        //printf("[Log  ] Reading log file offset %u (flash committed %u bytes) ", read_start_bytes, flash_bytes_written);
-        //printf("from ram\n");
-      } else {
-        // Not even been generated, send zeros
-        memset(buffer, 0, bufsize);
-      }
-
-      if(data != 0) {
-        memcpy(buffer, data, bufsize);
-      }
-      //if(lba == 325) *(uint8_t*)(&buffer[bufsize-1]) = 0;
       return (int32_t)bufsize;
   }
 
