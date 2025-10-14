@@ -23,13 +23,17 @@ static lv_disp_drv_t driver_display;
 static lv_disp_draw_buf_t display_buffer;
 
 #ifdef PICO_RP2040
-#define LVGL_BUFFER_DIVISOR 2
+// RP2040: Use smaller buffers due to limited RAM (264KB total)
+// Divisor 10 = 5.76KB per buffer (11.52KB total)
+#define LVGL_BUFFER_DIVISOR 10
 static lv_color_t *buffer0;
 static lv_color_t *buffer1;
+static lv_color_t *canvas_buffer;
 #else
 #define LVGL_BUFFER_DIVISOR 2
-static lv_color_t buffer0[320 * 240/LVGL_BUFFER_DIVISOR];
-static lv_color_t buffer1[320 * 240/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer0[240 * 240 / LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer1[240 * 240 / LVGL_BUFFER_DIVISOR];
+static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
 #endif
 
 static lv_indev_drv_t driver_touch;
@@ -39,7 +43,6 @@ static lv_indev_state_t touch_state;
 
 static lv_group_t *tile_group;
 static lv_obj_t *canvas;
-static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
 
 static lv_obj_t *brightness_slider;
 static lv_obj_t *brightness_label;
@@ -106,7 +109,8 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
     uint16_t *pixel_data = (uint16_t*)color;
     uint32_t pixel_count = (area->x2 + 1 - area->x1) * (area->y2 + 1 - area->y1);
     
-    for(uint32_t i = 0; i < pixel_count; i++) {
+    for(uint32_t i = 0; i < pixel_count; i++) 
+    {
         uint16_t pixel = pixel_data[i];
         pixel_data[i] = (pixel << 8) | (pixel >> 8);
     }
@@ -130,7 +134,7 @@ static void touch_callback(uint gpio, uint32_t events)
 {
     if (gpio == TOUCH_INT_PIN)
     {
-        CST816S_Get_Point();
+        CST816S_Get_Point(SCREEN_ROTATION, GC9A01A_WIDTH, GC9A01A_HEIGHT);
         touch_x = Touch_CTS816.x_point;
         touch_y = Touch_CTS816.y_point;
         touch_state = LV_INDEV_STATE_PRESSED;
@@ -186,7 +190,8 @@ static void button_right_callback(lv_event_t *event)
 ********************************************************************************/
 static void direct_memory_access_handler(void)
 {
-    if (dma_channel_get_irq0_status(GC9A01A_DMA_TX)) {
+    if (dma_channel_get_irq0_status(GC9A01A_DMA_TX)) 
+    {
         dma_channel_acknowledge_irq0(GC9A01A_DMA_TX);
         lv_disp_flush_ready(&driver_display); // Indicate you are ready with the flushing
     }
@@ -200,7 +205,7 @@ static void brightness_slider_event_callback(lv_event_t * event)
 {
       lv_obj_t *slider = lv_event_get_target(event);
       int32_t value = lv_slider_get_value(slider);
-      GC9A01A_SET_PWM(value);
+      GC9A01A_Set_PWM(value);
       
       static char brightness_text[32];
       snprintf(brightness_text, sizeof(brightness_text), "Brightness: %d%%", (int)value);
@@ -211,18 +216,19 @@ static void brightness_slider_event_callback(lv_event_t * event)
  * @brief           EEPROM Wipe Button Callback
  * @param event     LVGL event from button LONG press
 ********************************************************************************/
-static void eeprom_wipe_button_callback(lv_event_t * event)
+static void eeprom_reset_button_callback(lv_event_t * event)
 {
-    if (event->code == LV_EVENT_LONG_PRESSED) {
+    if (event->code == LV_EVENT_LONG_PRESSED) 
+    {
         printf("[EEPROM] Wiping EEPROM via button LONG press...\n");
         
         // Wipe entire EEPROM to erased state (0xFF)
-        pw_eeprom_set_area(0, 0xFF, 64 * 1024);
-        
-        printf("[EEPROM] EEPROM wiped successfully!\n");
-        
+        // pw_eeprom_set_area(0, 0xFF, 64 * 1024);
+        // printf("[EEPROM] EEPROM wiped successfully!\n");
         // Reset steps counter as well since EEPROM is wiped
-        pw_accel_reset_steps();
+        // pw_accel_reset_steps();
+        pw_eeprom_reset(true, true);
+        printf("[EEPROM] EEPROM reset successfully!\n");
     }
 }
 
@@ -232,20 +238,18 @@ static void eeprom_wipe_button_callback(lv_event_t * event)
 ********************************************************************************/
 static void eeprom_save_button_callback(lv_event_t * event)
 {
-    if (event->code == LV_EVENT_PRESSED) {
+    if (event->code == LV_EVENT_PRESSED) 
+    {
         play_confirm_sound();
         printf("[EEPROM] Saving EEPROM via button press...\n");
         
         // Check if there are changes to save
-        if (pw_eeprom_is_cache_dirty()) {
-            if (pw_eeprom_flush_to_flash() == 0) {
-                printf("[EEPROM] EEPROM saved successfully!\n");
-            } else {
-                printf("[EEPROM] Failed to save EEPROM!\n");
-            }
-        } else {
-            printf("[EEPROM] No changes to save\n");
-        }
+        if (pw_eeprom_is_cache_dirty()) 
+        {
+            if (pw_eeprom_flush_to_flash() == 0) printf("[EEPROM] EEPROM saved successfully!\n");
+            else printf("[EEPROM] Failed to save EEPROM!\n");
+        } 
+        else printf("[EEPROM] No changes to save\n");
     }
 }
 
@@ -265,7 +269,8 @@ static bool repeating_battery_timer_callback(struct repeating_timer *timer)
     lv_bar_set_value(battery_bar, battery_status.percent, LV_ANIM_ON);
     
     // Update battery label with percentage
-    if (battery_label) {
+    if (battery_label) 
+    {
         static char battery_text[32];
         snprintf(battery_text, sizeof(battery_text), "Battery: %d%%", battery_status.percent);
         lv_label_set_text(battery_label, battery_text);
@@ -282,7 +287,8 @@ static void tileview_event_callback(lv_event_t * event)
 {
     lv_obj_t *tileview = lv_event_get_target(event);
     
-    if (event->code == LV_EVENT_SCROLL_END) {
+    if (event->code == LV_EVENT_SCROLL_END) 
+    {
         // Force immediate battery update when tile changes
         repeating_battery_timer_callback(NULL);
         printf("[Debug] Tile changed - battery updated\n");
@@ -295,9 +301,10 @@ static void tileview_event_callback(lv_event_t * event)
 ********************************************************************************/
 static void canvas_press_callback(lv_event_t * event)
 {
-    if (event->code == LV_EVENT_PRESSED) {
+    if (event->code == LV_EVENT_PRESSED)
+    {
         // Add a step when canvas is pressed (simulates walking)
-        pw_accel_add_steps(1);
+        pw_accel_add_steps(10);
         printf("[Debug] Canvas pressed - step added!\n");
     }
 }
@@ -337,12 +344,14 @@ void pw_screen_init()
 
     // Initialize WaveShare 1.28" LCD - Screen
     GC9A01A_Init(SCREEN_ROTATION);
-    GC9A01A_SET_PWM(10);
+    GC9A01A_Set_PWM(10);
     GC9A01A_Clear(BLACK);
 
 #ifdef PICO_RP2040
-    buffer0 = malloc((240 * 240 / 2) * sizeof(lv_color_t));
-    buffer1 = malloc((240 * 240 / 2) * sizeof(lv_color_t));
+    buffer0 = malloc((DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR) * sizeof(lv_color_t));
+    buffer1 = malloc((DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR) * sizeof(lv_color_t));
+    canvas_buffer = malloc((CANVAS_WIDTH * CANVAS_HEIGHT) * sizeof(lv_color_t));
+    printf("[Info] All buffers allocated successfully\n");
 #endif
     // Initialize LVGL Display
     lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR); 
@@ -562,21 +571,21 @@ void pw_screen_init()
     lv_group_add_obj(tile_group, eeprom_save_button);
 
     // EEPROM Wipe Button
-    lv_obj_t *eeprom_wipe_button = lv_btn_create(tile_eeprom);
-    lv_obj_set_size(eeprom_wipe_button, 120, 30);
-    lv_obj_align(eeprom_wipe_button, LV_ALIGN_CENTER, 0, 60);
-    lv_obj_add_event_cb(eeprom_wipe_button, eeprom_wipe_button_callback, LV_EVENT_LONG_PRESSED, NULL);
+    lv_obj_t *eeprom_reset_button = lv_btn_create(tile_eeprom);
+    lv_obj_set_size(eeprom_reset_button, 120, 30);
+    lv_obj_align(eeprom_reset_button, LV_ALIGN_CENTER, 0, 60);
+    lv_obj_add_event_cb(eeprom_reset_button, eeprom_reset_button_callback, LV_EVENT_LONG_PRESSED, NULL);
     
     // Set button background color to red
-    lv_obj_set_style_bg_color(eeprom_wipe_button, lv_palette_main(LV_PALETTE_RED), 0);
-    lv_obj_set_style_bg_color(eeprom_wipe_button, lv_palette_darken(LV_PALETTE_RED, 2), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(eeprom_reset_button, lv_palette_main(LV_PALETTE_RED), 0);
+    lv_obj_set_style_bg_color(eeprom_reset_button, lv_palette_darken(LV_PALETTE_RED, 2), LV_STATE_PRESSED);
     
     // EEPROM Wipe Button Label
-    lv_obj_t *eeprom_wipe_label = lv_label_create(eeprom_wipe_button);
-    lv_label_set_text(eeprom_wipe_label, "Wipe EEPROM");
-    lv_obj_center(eeprom_wipe_label);
-    lv_obj_set_style_text_font(eeprom_wipe_label, &lv_font_montserrat_14, 0);
-    lv_group_add_obj(tile_group, eeprom_wipe_button);
+    lv_obj_t *eeprom_reset_label = lv_label_create(eeprom_reset_button);
+    lv_label_set_text(eeprom_reset_label, "Reset EEPROM");
+    lv_obj_center(eeprom_reset_label);
+    lv_obj_set_style_text_font(eeprom_reset_label, &lv_font_montserrat_14, 0);
+    lv_group_add_obj(tile_group, eeprom_reset_button);
 
 }
 
@@ -624,8 +633,10 @@ void draw_to_scale(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_po
             int end_y = (y + row + 1) * CANVAS_SCALE;
             
             // Fill the scaled pixel area
-            for (int sy = start_y; sy < end_y && sy < CANVAS_HEIGHT; sy++) {
-                for (int sx = start_x; sx < end_x && sx < CANVAS_WIDTH; sx++) {
+            for (int sy = start_y; sy < end_y && sy < CANVAS_HEIGHT; sy++) 
+            {
+                for (int sx = start_x; sx < end_x && sx < CANVAS_WIDTH; sx++) 
+                {
                     lv_canvas_set_px(canvas, sx, sy, color);
                 }
             }
@@ -773,9 +784,8 @@ void pw_screen_fill_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, scr
 ********************************************************************************/
 void pw_screen_sleep()
 {
-    gpio_put(SCREEN_DC_PIN, 1);
-    spi_write_blocking(SCREEN_SPI_PORT, 0x10, 1);
-    GC9A01A_SET_PWM(0);
+    GC9A01A_Set_PWM(0);
+    GC9A01A_Sleep();
 
     // Stop LVGL processing and battery updates
     cancel_repeating_timer(&lvgl_timer);
@@ -789,11 +799,10 @@ void pw_screen_sleep()
 ********************************************************************************/
 void pw_screen_wake()
 {
-    gpio_put(SCREEN_DC_PIN, 0);
-    spi_write_blocking(SCREEN_SPI_PORT, 0x11, 1);
-    GC9A01A_SET_PWM(0);
+    GC9A01A_Awake();
+    GC9A01A_Set_PWM(0);
     sleep_ms(120);
-    GC9A01A_SET_PWM(10);
+    GC9A01A_Set_PWM(10);
 
     // Restart LVGL processing and battery updates
     add_repeating_timer_ms(5, repeating_lvgl_timer_callback, NULL, &lvgl_timer);

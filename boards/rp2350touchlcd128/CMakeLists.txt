@@ -28,30 +28,25 @@ if (USE_LVGL)
   # LVGL Configuration
   set(LV_CONF_PATH ${MAIN_SRC_DIR}/assets/lv_conf.h CACHE STRING "" FORCE)
 
-  # Pico config for Waveshare RP2350TouchLCD128
+  # Pico config for Waveshare RP2350-Touch-LCD-1.28
+  add_compile_definitions(PICO_FLASH_SIZE_BYTES=16777216)  # 16MB = 16 * 1024 * 1024
   add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128)
   add_compile_definitions(PICO_FLASH_SPI_CLKDIV=8)
   add_compile_definitions(LV_CONF_INCLUDE_SIMPLE)
-  
-  # Force include board resources before other headers
-  #add_compile_options(-include ${MAIN_SRC_DIR}/src/boards/rp2350touchlcd128/board_resources.h)
 
-  # Compilation subdirectory for Waveshare RP2350TouchLCD128
-
-  #add_subdirectory(../../lib/pico_waveshare_drivers/WaveShare WaveShare)
+  # Compilation subdirectory for Waveshare RP2350-Touch-LCD-1.28
   add_subdirectory(../../lib/pico_waveshare_drivers/GC9A01A GC9A01A)
   add_subdirectory(../../lib/pico_waveshare_drivers/CST816S CST816S)
   add_subdirectory(../../lib/pico_waveshare_drivers/QMI8658 QMI8658)
   add_subdirectory(../../lib/lvgl lvgl)
 
-  # Header file directory for Waveshare RP2350TouchLCD128
+  # Header file directory for Waveshare RP2350-Touch-LCD-1.28
   include_directories(${CMAKE_CURRENT_LIST_DIR}) # board_resources.h
   
   # Make board_resources.h available to all libraries
   target_include_directories(GC9A01A PRIVATE ${CMAKE_CURRENT_LIST_DIR})
   target_include_directories(CST816S PRIVATE ${CMAKE_CURRENT_LIST_DIR})
   target_include_directories(QMI8658 PRIVATE ${CMAKE_CURRENT_LIST_DIR})
-  #include_directories(../../lib/pico_waveshare_drivers/WaveShare)
   include_directories(../../lib/pico_waveshare_drivers/GC9A01A)
   include_directories(../../lib/pico_waveshare_drivers/CST816S)
   include_directories(../../lib/pico_waveshare_drivers/QMI8658)
@@ -70,11 +65,8 @@ if (USE_LVGL)
   include_directories(${MAIN_SRC_DIR}/drivers/time)
   include_directories(${MAIN_SRC_DIR}/drivers/usb)
   include_directories(${MAIN_SRC_DIR}/assets)
-  # include_directories(${MAIN_SRC_DIR})
 
   add_executable(picowalker_rp2350touchlcd128
-      # ${MAIN_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.c
-      # ${MAIN_DIR}/src/boards/rp2350touchlcd128/rp2350touchlcd128lvgl.h
       ${CMAKE_CURRENT_LIST_DIR}/main.c
       ${CMAKE_CURRENT_LIST_DIR}/board_resources.h
       ${MAIN_SRC_DIR}/drivers/accel/qmi8658_rp2xxx.c
@@ -87,8 +79,10 @@ if (USE_LVGL)
       ${MAIN_SRC_DIR}/drivers/input/buttons_rp2xxx_lvgl.c
       ${MAIN_SRC_DIR}/drivers/input/buttons_rp2xxx_lvgl.h
 
-      ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.c # TODO Review
-      ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.h # TODO Review
+      # ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.c # TODO Switch back if using PIO IR
+      # ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.h # TODO Switch back if using PIO IR
+      ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_usb_cdc.c
+      ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_usb_cdc.h
       ${MAIN_SRC_DIR}/drivers/log/onboard_log.c
       ${MAIN_SRC_DIR}/drivers/log/onboard_log.h
       ${MAIN_SRC_DIR}/drivers/screen/gc9a01a_rp2xxx_lvgl.c
@@ -113,7 +107,6 @@ if (USE_LVGL)
 
   # Link these libs together
   target_link_libraries(picowalker_rp2350touchlcd128
-      #WaveShare
       GC9A01A
       CST816S
       QMI8658
@@ -130,33 +123,12 @@ if (USE_LVGL)
       hardware_adc
       tinyusb_device
       tinyusb_board
-      ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/libpicowalker-core.a
+      ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/rp2350/libpicowalker-core.a
   )
 else()
   add_executable(picowalker_rp2350touchlcd128
       ${MAIN_DIR}/src/main.c
-      ${MAIN_DIR}/src/drivers/screen/screen_rp2xxx_gc9a01a.c
-      ${MAIN_DIR}/src/drivers/screen/screen_rp2xxx_gc9a01a.h
-      ${MAIN_DIR}/src/drivers/ir/ir_dummy.c
-      ${MAIN_DIR}/src/drivers/ir/ir_dummy.h
-      ${MAIN_DIR}/src/drivers/buttons/buttons_dummy.c
-      ${MAIN_DIR}/src/drivers/buttons/buttons_dummy.h
-      ${MAIN_DIR}/src/drivers/eeprom/eeprom_pico_ram.S
-      ${MAIN_DIR}/src/drivers/eeprom/eeprom_pico_ram.c
-      ${MAIN_DIR}/src/drivers/eeprom/eeprom_pico_ram.h
-      ${MAIN_DIR}/src/drivers/timer_pico.c
-      ${MAIN_DIR}/src/drivers/extras_pico.S
-      ${MAIN_DIR}/src/drivers/extras_pico.h
-      ${MAIN_DIR}/src/drivers/flash/flash_pico_internal.c
-      ${MAIN_DIR}/src/drivers/flash/flash_pico_internal.S
-      ${MAIN_DIR}/src/drivers/flash/flash_pico_internal.h
-      #${MAIN_DIR}/src/drivers/battery_pico_bq25628e.c
-      #${MAIN_DIR}/src/drivers/battery_pico_bq25628e.h
-      #${MAIN_DIR}/src/drivers/gpio_interrupts_pico.c
-      #${MAIN_DIR}/src/drivers/gpio_interrupts_pico.h
-      ${MAIN_DIR}/src/drivers/power/power_pico.c
-      ${MAIN_DIR}/src/drivers/power/power_pico.h
-      ${MAIN_DIR}/src/picowalker-defs.h
+      # ADD Drivers...
   )
   ## Link these libs together
   target_link_libraries(picowalker_rp2350touchlcd128
@@ -168,7 +140,7 @@ else()
     hardware_pio
     hardware_timer
     hardware_pwm
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/libpicowalker-core.a
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/rp2350/libpicowalker-core.a
   )
 endif()
 
@@ -179,13 +151,12 @@ target_include_directories(picowalker_rp2350touchlcd128 PUBLIC
 )
 
 ### Enable usb, uart etc for stdio
-#pico_enable_stdio_usb(picowalker_rp2350touchlcd128 1)
+pico_enable_stdio_usb(picowalker_rp2350touchlcd128 1)  # Now using USB CDC 0 for debug
 target_compile_definitions(picowalker_rp2350touchlcd128 PRIVATE
-    PICO_DEFAULT_UART=0
-    PICO_DEFAULT_UART_TX_PIN=28
-    PICO_DEFAULT_UART_RX_PIN=29
+    PICO_STDIO_USB_DEFAULT_CRLF=1
+    PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=1000
+    LIB_PICO_STDIO_USB=1
 )
-pico_enable_stdio_uart(picowalker_rp2350touchlcd128 1)
 
 ### Add outputs other than .elf file
 pico_add_extra_outputs(picowalker_rp2350touchlcd128)

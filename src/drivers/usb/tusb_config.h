@@ -91,7 +91,7 @@
 #endif
 
 //------------- CLASS -------------//
-#define CFG_TUD_CDC              1
+#define CFG_TUD_CDC              2  // Changed from 1 to 2: CDC0=stdio/debug, CDC1=IR
 #define CFG_TUD_MSC              1
 #define CFG_TUD_HID              0
 #define CFG_TUD_MIDI             0

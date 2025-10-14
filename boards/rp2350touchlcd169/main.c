@@ -5,17 +5,13 @@
 #include "hardware/clocks.h"
 #include "hardware/pll.h"
 
-#include <tusb.h>
-//#include "bsp/board_api.h"
-//#include "tusb_config.h"
+#include "bsp/board_api.h"
+#include "tusb.h"
 
 #include "lvgl.h"
-//#include "screen_ws.h"
 
 // Picowalker
-//#include "picowalker.h"
 #include "picowalker-defs.h"
-//#include "msc_disk.h"
 
 #include "board_resources.h"
 
@@ -77,7 +73,8 @@ static bool repeating_lvgl_timer_callback(struct repeating_timer *timer)
  * @brief       Mount Callback
  * @param N/A
 ********************************************************************************/
-void tud_mount_cb(void) {
+void tud_mount_cb(void) 
+{
     printf("[Info ] tusb mounted\n");
 
     // Halt sleep timer so we don't mess up tusb
@@ -89,7 +86,8 @@ void tud_mount_cb(void) {
  * @brief       UnMount Callback
  * @param N/A
 ********************************************************************************/
-void tud_umount_cb(void) {
+void tud_umount_cb(void) 
+{
     printf("[Info ] tusb unmounted\n");
 
     // Unmount and now we're safe to sleep
@@ -101,19 +99,26 @@ void tud_umount_cb(void) {
  * @brief                   Suspend Callback
  * @param remote_wakeup_en 
 ********************************************************************************/
-void tud_suspend_cb(bool remote_wakeup_en) { (void)remote_wakeup_en; }
+void tud_suspend_cb(bool remote_wakeup_en) 
+{ 
+  (void)remote_wakeup_en;
+}
 
 /********************************************************************************
  * @brief       Resume Callback
  * @param N/A
 ********************************************************************************/
-void tud_resume_cb(void) {}
+void tud_resume_cb(void) 
+{
+
+}
 
 /********************************************************************************
  * @brief       CDC Task
  * @param N/A
 ********************************************************************************/
-void cdc_task(void) {
+void cdc_task(void) 
+{
   // connected() check for DTR bit
   // Most but not all terminal client set this when making connection
   // if ( tud_cdc_connected() )
@@ -143,23 +148,21 @@ void cdc_task(void) {
  * @param dtr
  * @param rts
 ********************************************************************************/
-void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts) {
-  (void) itf;
-  (void) rts;
+void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts) 
+{
+    printf("[CDC%d] Line state: DTR=%d RTS=%d\n", itf, dtr, rts);
 
-  // TODO set some indicator
-  if (dtr) {
-    // Terminal connected
-  } else {
-    // Terminal disconnected
-  }
+    // TODO set some indicator
+    if (dtr)printf("[CDC%d] Terminal connected\n", itf);
+    else printf("[CDC%d] Terminal disconnected\n", itf);
 }
 
 /********************************************************************************
  * @brief       Invoked when CDC interface received data from host
  * @param itf
 ********************************************************************************/
-void tud_cdc_rx_cb(uint8_t itf) {
+void tud_cdc_rx_cb(uint8_t itf) 
+{
   (void) itf;
 }
 

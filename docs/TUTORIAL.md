@@ -119,16 +119,16 @@ If you are compiling for boards with `rp2040` you use `toolchain-pico.cmake`.
 So now, lets run for Pico2 / RP2350
 
 ```sh
-rm -rf build
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
-cmake --build build
+rm -rf build/rp2350
+cmake -B build/rp2350 -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
+cmake --build build/rp2350
 ```
 
-Pico / RP2040
+Pico / RP2040, if you have an older hardware build
 ```sh
-rm -rf build
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico.cmake .
-cmake --build build
+rm -rf build/rp2040
+cmake -B build/rp2040 -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico.cmake .
+cmake --build build/rp2040
 ```
 
 if you encounter errors here, it likely means that `cmake` can't find your
@@ -154,69 +154,29 @@ git clone https://github.com/mamba2410/picowalker
 cd picowalker
 ```
 
-Waveshare Branch
-```sh
-cd ~/repos
-git clone --single-branch --branch waveshare https://github.com/DaveuRrr/picowalker
-cd picowalker
-```
-
 Now we'll need to copy over our library to be included in the `picowalker`
 project.
 
-#### Picowalker-core
->>>>>>> 97250e6 (RP2350TouchLCD128 Working)
+Picowalker-core RP2350 Build
 ```sh
 mkdir lib
-cp ../picowalker-core/build/libpicowalker-core.a lib/
+cp ../picowalker-core/build/rp2350/libpicowalker-core.a lib/rp2350/
+```
+
+Picowalker-core RP2040 Build
+```sh
+mkdir lib
+cp ../picowalker-core/build/rp2040/libpicowalker-core.a lib/rp2040/
 ```
 
 Now we choose which board to compile. I'll choose `picowalker-v0.3`.
 
-```
+```sh
 cd boards/picowalker-v0.3
-cmake -B build/ -DPICO_BOARD=pico2 .
-cmake --build build/
+cmake -B ../../build/picowalker-v0.03 -DPICO_BOARD=pico2 .
+cmake --build ../../build/picowalker-v0.03
 ```
 
-RP2040TouchLCD128 LVGL
-```sh
-cd boards/rp2040touchlcd128
-rm -rf ../../build/rp2040touchlcd128
-cmake -B ../../build/rp2040touchlcd128 -DPICO_BOARD=pico -DUSE_LVGL=ON
-cmake --build ../../build/rp2040touchlcd128
-```
-
-RP2350LCD128 LVGL
-```sh
-cd boards/rp2350lcd128
-rm -rf ../../build/rp2350lcd128
-cmake -B ../../build/rp2350lcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
-cmake --build ../../build/rp2350lcd128
-```
-
-RP2350TouchLCD128 LVGL
-```sh
-cd boards/rp2350touchlcd128
-rm -rf ../../build/rp2350touchlcd128
-cmake -B ../../build/rp2350touchlcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
-cmake --build ../../build/rp2350touchlcd128
-```
-
-RP2350TouchLCD169 LVGL
-```sh
-cd boards/rp2350touchlcd169
-rm -rf ../../build/rp2350touchlcd169
-cmake -B ../../build/rp2350touchlcd169 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
-cmake --build ../../build/rp2350touchlcd169
-```
-
-cd boards/picowalker-v0.3
-cmake -B build/ -DPICO_BOARD=pico2 .
-cmake --build build/
-```
-
-If that all went well, you should have a file called `build/picowalker.uf2`.
 If that all went well, you should have a file called `build/picowalker.uf2`.
 This is the file you'll want to copy to your pico.
 
@@ -224,9 +184,76 @@ If that didn't work out for you, make sure that you have installed the
 pico SDK correctly.
 Check what errors cmake is giving you and google them if necessary.
 
-Now we have a build version of the software, lets get it running!
+## Compiling Other Boards
+If you are wanting to build any of the Waveshare Boards you will need to see if the boards are available in the main repository. If not then you will need the following branch below and start again after building the RP2040/RP2350 picowalker-core.
+
+Waveshare Branch
+```sh
+cd ~/repos
+git clone --single-branch --branch waveshare https://github.com/DaveuRrr/picowalker
+cd picowalker
+```
+> [!Note]
+> This is only if the Waveshare Fork/Branch hasn't been merged to main.
+
+Copy over the picowalker-core static library that you built from the previous step and install other dependencies
+
+### Dependencies
+Picowalker-core RP2350 Build
+```sh
+mkdir lib
+cp ../picowalker-core/build/rp2350/libpicowalker-core.a lib/rp2350/
+```
+
+Picowalker-core RP2040 Build
+```sh
+mkdir lib
+cp ../picowalker-core/build/rp2040/libpicowalker-core.a lib/rp2040/
+```
+
+Next we need the waveshare drivers library
+```sh
+git clone https://github.com/DaveuRrr/pico_waveshare_drivers lib/pico_waveshare_drivers
+```
+Lastly, we need LVGL 8.4
+```sh
+git clone --branch release/v8.4 https://github.com/lvgl/lvgl lib/lvgl
+```
+### Compiling Boards
+Board: `RP2040TouchLCD128`
+```sh
+cd boards/rp2040touchlcd128
+rm -rf ../../build/rp2040touchlcd128
+cmake -B ../../build/rp2040touchlcd128 -DPICO_BOARD=pico -DUSE_LVGL=ON
+cmake --build ../../build/rp2040touchlcd128
+```
+
+Board: `RP2350LCD128`
+```sh
+cd boards/rp2350lcd128
+rm -rf ../../build/rp2350lcd128
+cmake -B ../../build/rp2350lcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build ../../build/rp2350lcd128
+```
+
+Board: `RP2350TouchLCD128`
+```sh
+cd boards/rp2350touchlcd128
+rm -rf ../../build/rp2350touchlcd128
+cmake -B ../../build/rp2350touchlcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build ../../build/rp2350touchlcd128
+```
+
+Board: `RP2350TouchLCD169`
+```sh
+cd boards/rp2350touchlcd169
+rm -rf ../../build/rp2350touchlcd169
+cmake -B ../../build/rp2350touchlcd169 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build ../../build/rp2350touchlcd169
+```
 
 ## Copying the software to the pico
+Now we have a build version of the software, lets get it running!
 
 ### Via USB
 

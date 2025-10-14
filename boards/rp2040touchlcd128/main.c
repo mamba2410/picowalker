@@ -153,7 +153,7 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
     printf("[CDC%d] Line state: DTR=%d RTS=%d\n", itf, dtr, rts);
 
     // TODO set some indicator
-    if (dtr)printf("[CDC%d] Terminal connected\n", itf);
+    if (dtr) printf("[CDC%d] Terminal connected\n", itf);
     else printf("[CDC%d] Terminal disconnected\n", itf);
 }
 
@@ -163,12 +163,15 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
 ********************************************************************************/
 void tud_cdc_rx_cb(uint8_t itf)
 {
-    uint32_t avail = tud_cdc_n_available(itf);
-    printf("[CDC%d] RX callback: %lu bytes available\n", itf, avail);
-
     // DON'T read the data here! Just log that it arrived.
     // The IR driver (pw_ir_read) will consume it via service_usb_cdc()
-    if (avail > 0 && itf == 1) printf("[CDC1] IR data ready for pw_ir_read()\n");
+    
+    // uint32_t avail = tud_cdc_n_available(itf);
+    // printf("[CDC%d] RX callback: %lu bytes available\n", itf, avail);
+    // if (avail > 0 && itf == 1) 
+    // {
+    //     printf("[CDC1] IR data ready for pw_ir_read()\n");
+    // }
 }
 
 /********************************************************************************

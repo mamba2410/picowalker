@@ -9,7 +9,7 @@ struct QMI8658_PedoConfig pedo_config;
 
 // Step counting variables
 uint32_t accumulated_steps = 0;  // Global for external access
-static uint32_t previous_hardware_steps = 0;
+static unsigned int previous_hardware_steps = 0;  // Match QMI8658 library API type
 static struct repeating_timer step_timer;
 
 // Software fallback variables
@@ -33,7 +33,8 @@ static bool step_processing_timer_callback(struct repeating_timer *timer)
     unsigned int current_hardware_steps = 0;
     QMI8658_Read_Step_Count(&current_hardware_steps);
     
-    if (current_hardware_steps > previous_hardware_steps) {
+    if (current_hardware_steps > previous_hardware_steps) 
+    {
         // Hardware pedometer is working
         uint32_t new_hardware_steps = current_hardware_steps - previous_hardware_steps;
         accumulated_steps += new_hardware_steps;
@@ -52,7 +53,8 @@ static bool step_processing_timer_callback(struct repeating_timer *timer)
     float magnitude_diff = magnitude_filter - prev_magnitude;
     
     if (magnitude_diff > step_threshold && 
-        (current_time - last_step_time) > min_step_interval_ms) {
+        (current_time - last_step_time) > min_step_interval_ms) 
+    {
         
         accumulated_steps++;
         last_step_time = current_time;
@@ -157,9 +159,7 @@ uint32_t pw_accel_get_new_steps()
     uint32_t new_steps = accumulated_steps - steps_at_last_call;
     steps_at_last_call = accumulated_steps;
     
-    if (new_steps > 0) {
-        printf("[Debug] Returning %u new steps (total: %u)\n", new_steps, accumulated_steps);
-    }
+    if (new_steps > 0) printf("[Debug] Returning %u new steps (total: %u)\n", new_steps, accumulated_steps);
     
     return new_steps;
 }

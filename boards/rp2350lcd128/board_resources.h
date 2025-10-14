@@ -1,5 +1,5 @@
-#ifndef BOARD_RESOURCES_H
-#define BOARD_RESOURCES_H
+#ifndef PW_BOARD_RESOURCES_H
+#define PW_BOARD_RESOURCES_H
 
 #include "stdio.h"
 #include "pico/stdlib.h"
@@ -26,6 +26,7 @@
 #define SCREEN_CS_PIN       (9)
 #define SCREEN_CLK_PIN      (10)
 #define SCREEN_MOSI_PIN     (11)
+#define SCREEN_MISO_PIN     (13)  // Not physically connected, but needs to be defined
 #define SCREEN_RST_PIN      (12)
 #define SCREEN_BL_PIN       (25)
 
@@ -64,10 +65,8 @@
 #define TOUCH           false    // Touch variant
 #define SCREEN_ROTATION 0       // 0 = 0d, 1 = 90d, 2 = 180d, 3 = 270d
 #define CANVAS_SCALE    2       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
-// Device Configuration
-//#define SCREEN_RST_PIN     13
 
 void board_spi_init();
 void board_i2c_init();
 
-#endif /* BOARD_RESOURCES_H */
+#endif /* PW_BOARD_RESOURCES_H */

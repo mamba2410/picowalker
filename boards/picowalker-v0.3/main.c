@@ -15,7 +15,8 @@
 static bool spi_is_inited = false;
 static bool i2c_is_inited = false;
 
-void board_spi_init() {
+void board_spi_init() 
+{
     if(spi_is_inited) return;
 
     spi_init(COMMON_SPI_HW, COMMON_SPI_SPEED_HZ);
@@ -27,7 +28,8 @@ void board_spi_init() {
     spi_is_inited = true;
 }
 
-void board_i2c_init() {
+void board_i2c_init() 
+{
     if(i2c_is_inited) return;
     i2c_init(COMMON_I2C_HW, COMMON_I2C_SPEED_HZ);
     gpio_set_function(COMMON_I2C_SDA_PIN, GPIO_FUNC_I2C);
@@ -36,7 +38,8 @@ void board_i2c_init() {
     i2c_is_inited = true;
 }
 
-int main() {
+int main() 
+{
     bi_decl(bi_program_description("picowalker"));
 
     // Downclock the system to save a bit of power and allow the HSTX

@@ -153,7 +153,7 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
     printf("[CDC%d] Line state: DTR=%d RTS=%d\n", itf, dtr, rts);
 
     // TODO set some indicator
-    if (dtr)printf("[CDC%d] Terminal connected\n", itf);
+    if (dtr) printf("[CDC%d] Terminal connected\n", itf);
     else printf("[CDC%d] Terminal disconnected\n", itf);
 }
 

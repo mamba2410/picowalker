@@ -118,7 +118,8 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
     uint16_t *pixel_data = (uint16_t*)color;
     uint32_t pixel_count = (area->x2 + 1 - area->x1) * (area->y2 + 1 - area->y1);
     
-    for(uint32_t i = 0; i < pixel_count; i++) {
+    for(uint32_t i = 0; i < pixel_count; i++) 
+    {
         uint16_t pixel = pixel_data[i];
         pixel_data[i] = (pixel << 8) | (pixel >> 8);
     }
@@ -176,7 +177,8 @@ parameter:
 ********************************************************************************/
 static void direct_memory_access_handler(void)
 {
-    if (dma_channel_get_irq0_status(dma_tx)) {
+    if (dma_channel_get_irq0_status(dma_tx)) 
+    {
         dma_channel_acknowledge_irq0(dma_tx);
         lv_disp_flush_ready(&driver_display);         /* Indicate you are ready with the flushing*/
     }
@@ -214,7 +216,8 @@ parameter:
 int main()
 {
     // Must initialize SPI and GPIO before display init
-    if (WS_Module_Init() != 0) {
+    if (WS_Module_Init() != 0) 
+    {
         printf("WS_Module_Init failed.\n");
         return -1;
     }

@@ -21,16 +21,28 @@
 // LVGL Settings
 static lv_disp_drv_t driver_display;
 static lv_disp_draw_buf_t display_buffer;
+static lv_disp_t default_display;
+static lv_draw_ctx_t draw_ctx;
 
 #ifdef PICO_RP2040
-#define LVGL_BUFFER_DIVISOR 2
+// RP2040: Use smaller buffers due to limited RAM (264KB total)
+// Divisor 10 = 5.76KB per buffer (11.52KB total)
+#define LVGL_BUFFER_DIVISOR 10
 static lv_color_t *buffer0;
 static lv_color_t *buffer1;
+static lv_color_t *canvas_buffer;
 #else
 #define LVGL_BUFFER_DIVISOR 2
-// Allocate for maximum resolution (320x240 landscape)
-static lv_color_t buffer0[320 * 240/LVGL_BUFFER_DIVISOR];
-static lv_color_t buffer1[320 * 240/LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer0[240 * 320 / LVGL_BUFFER_DIVISOR];
+static lv_color_t buffer1[240 * 320 / LVGL_BUFFER_DIVISOR];
+#if CANVAS_SCALE >= 3
+// For CANVAS_SCALE >= 3: Use full-size image buffer without zoom
+static lv_color_t image_buffer[CANVAS_WIDTH * CANVAS_HEIGHT]; // 288x192 = 110KB but no zoom blur
+static lv_obj_t *image_obj; // Image object to display the buffer
+static lv_img_dsc_t image_dsc; // Image descriptor
+#else
+static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
+#endif
 #endif
 
 static lv_indev_drv_t driver_touch;
@@ -40,7 +52,6 @@ static lv_indev_state_t touch_state;
 
 static lv_group_t *tile_group;
 static lv_obj_t *canvas;
-static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
 
 static lv_obj_t *brightness_slider;
 static lv_obj_t *brightness_label;
@@ -107,7 +118,8 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
     uint16_t *pixel_data = (uint16_t*)color;
     uint32_t pixel_count = (area->x2 + 1 - area->x1) * (area->y2 + 1 - area->y1);
     
-    for(uint32_t i = 0; i < pixel_count; i++) {
+    for(uint32_t i = 0; i < pixel_count; i++) 
+    {
         uint16_t pixel = pixel_data[i];
         pixel_data[i] = (pixel << 8) | (pixel >> 8);
     }
@@ -131,7 +143,7 @@ static void touch_callback(uint gpio, uint32_t events)
 {
     if (gpio == TOUCH_INT_PIN)
     {
-        CST816S_Get_Point();
+        CST816S_Get_Point(SCREEN_ROTATION, ST7789V2_WIDTH, ST7789V2_HEIGHT);
         touch_x = Touch_CTS816.x_point;
         touch_y = Touch_CTS816.y_point;
         touch_state = LV_INDEV_STATE_PRESSED;
@@ -187,7 +199,8 @@ static void button_right_callback(lv_event_t *event)
 ********************************************************************************/
 static void direct_memory_access_handler(void)
 {
-    if (dma_channel_get_irq0_status(ST7789V2_DMA_TX)) {
+    if (dma_channel_get_irq0_status(ST7789V2_DMA_TX)) 
+    {
         dma_channel_acknowledge_irq0(ST7789V2_DMA_TX);
         lv_disp_flush_ready(&driver_display); // Indicate you are ready with the flushing
     }
@@ -201,7 +214,7 @@ static void brightness_slider_event_callback(lv_event_t *event)
 {
       lv_obj_t *slider = lv_event_get_target(event);
       int32_t value = lv_slider_get_value(slider);
-      ST7789V2_SET_PWM(value);
+      ST7789V2_Set_PWM(value);
       
       static char brightness_text[32];
       snprintf(brightness_text, sizeof(brightness_text), "Brightness: %d%%", (int)value);
@@ -214,7 +227,8 @@ static void brightness_slider_event_callback(lv_event_t *event)
 ********************************************************************************/
 static void eeprom_wipe_button_callback(lv_event_t * event)
 {
-    if (event->code == LV_EVENT_LONG_PRESSED) {
+    if (event->code == LV_EVENT_LONG_PRESSED) 
+    {
         printf("[EEPROM] Wiping EEPROM via button LONG press...\n");
         
         // Wipe entire EEPROM to erased state (0xFF)
@@ -233,13 +247,16 @@ static void eeprom_wipe_button_callback(lv_event_t * event)
 ********************************************************************************/
 static void eeprom_save_button_callback(lv_event_t * event)
 {
-    if (event->code == LV_EVENT_PRESSED) {
+    if (event->code == LV_EVENT_PRESSED) 
+    {
         play_confirm_sound();
         printf("[EEPROM] Saving EEPROM via button press...\n");
         
         // Check if there are changes to save
-        if (pw_eeprom_is_cache_dirty()) {
-            if (pw_eeprom_flush_to_flash() == 0) {
+        if (pw_eeprom_is_cache_dirty()) 
+        {
+            if (pw_eeprom_flush_to_flash() == 0) 
+            {
                 printf("[EEPROM] EEPROM saved successfully!\n");
             } else {
                 printf("[EEPROM] Failed to save EEPROM!\n");
@@ -266,7 +283,8 @@ static bool repeating_battery_timer_callback(struct repeating_timer *timer)
     lv_bar_set_value(battery_bar, battery_status.percent, LV_ANIM_ON);
     
     // Update battery label with percentage
-    if (battery_label) {
+    if (battery_label) 
+    {
         static char battery_text[32];
         snprintf(battery_text, sizeof(battery_text), "Battery: %d%%", battery_status.percent);
         lv_label_set_text(battery_label, battery_text);
@@ -283,7 +301,8 @@ static void tileview_event_callback(lv_event_t * event)
 {
     lv_obj_t *tileview = lv_event_get_target(event);
     
-    if (event->code == LV_EVENT_SCROLL_END) {
+    if (event->code == LV_EVENT_SCROLL_END) 
+    {
         // Force immediate battery update when tile changes
         repeating_battery_timer_callback(NULL);
         printf("[Debug] Tile changed - battery updated\n");
@@ -296,11 +315,16 @@ static void tileview_event_callback(lv_event_t * event)
 ********************************************************************************/
 static void canvas_press_callback(lv_event_t * event)
 {
-    if (event->code == LV_EVENT_PRESSED) {
-        // Add a step when canvas is pressed (simulates walking)
-        pw_accel_add_steps(1);
-        printf("[Debug] Canvas pressed - step added!\n");
-    }
+    // if (event->code == LV_EVENT_PRESSED) 
+    // {
+    //     // Add a step when canvas is pressed (simulates walking)
+    //     pw_accel_add_steps(10);
+    //     printf("[Debug] Canvas pressed - step added!\n");
+    // }
+
+    play_click_sound();
+    pw_accel_add_steps(10);
+    printf("[Debug] Canvas pressed - step added!\n");
 }
 
 /********************************************************************************
@@ -338,12 +362,14 @@ void pw_screen_init()
 
     // Initialize WaveShare 1.69" LCD - Screen
     ST7789V2_Init(SCREEN_ROTATION);
-    ST7789V2_SET_PWM(10);
+    ST7789V2_Set_PWM(10);
     ST7789V2_Clear(BLACK);
 
 #ifdef PICO_RP2040
-    buffer0 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
-    buffer1 = malloc((DISP_HOR_RES * DISP_VER_RES / 2) * sizeof(lv_color_t));
+    buffer0 = malloc((DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR) * sizeof(lv_color_t));
+    buffer1 = malloc((DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR) * sizeof(lv_color_t));
+    canvas_buffer = malloc((CANVAS_WIDTH * CANVAS_HEIGHT) * sizeof(lv_color_t));
+    printf("[Info] All buffers allocated successfully\n");
 #endif
     // Initialize LVGL Display
     lv_disp_draw_buf_init(&display_buffer, buffer0, buffer1, DISP_HOR_RES * DISP_VER_RES / LVGL_BUFFER_DIVISOR); 
@@ -383,6 +409,11 @@ void pw_screen_init()
     lv_obj_add_event_cb(tile_view, tileview_event_callback, LV_EVENT_SCROLL_END, NULL);
     lv_obj_t *tile_picowalker = lv_tileview_add_tile(tile_view, 0, 0, LV_DIR_BOTTOM);
 
+    // Set tile background color to match canvas/image background
+    lv_obj_set_style_bg_color(tile_picowalker, lv_color_make(195, 205, 185), 0);
+    lv_obj_set_style_bg_opa(tile_picowalker, LV_OPA_COVER, 0);
+
+#if CANVAS_SCALE <= 2
     // Pokeball Image ... I want to add more
     LV_IMG_DECLARE(picowalker_background);
     lv_obj_t *background = lv_img_create(tile_picowalker);
@@ -407,13 +438,33 @@ void pw_screen_init()
     lv_style_set_outline_width(&button_style_press, 0);
     lv_style_set_outline_opa(&button_style_press, LV_OPA_TRANSP);
     lv_style_set_bg_opa(&button_style_press, LV_OPA_50);
+#else
+    // Invisible button style for CANVAS_SCALE >= 3
+    static lv_style_t button_style_invisible;
+    lv_style_init(&button_style_invisible);
+    lv_style_set_bg_opa(&button_style_invisible, LV_OPA_TRANSP);
+    lv_style_set_border_opa(&button_style_invisible, LV_OPA_TRANSP);
+    lv_style_set_outline_opa(&button_style_invisible, LV_OPA_TRANSP);
+    lv_style_set_shadow_opa(&button_style_invisible, LV_OPA_TRANSP);
 
+    // Debugging
+    // static lv_style_t button_style_invisible;
+    // lv_style_init(&button_style_invisible);
+    // lv_style_set_bg_opa(&button_style_invisible, LV_OPA_30); // Semi-transparent
+    // lv_style_set_bg_color(&button_style_invisible, lv_color_make(255, 0, 0)); // Red
+    // lv_style_set_border_width(&button_style_invisible, 2);
+    // lv_style_set_border_color(&button_style_invisible, lv_color_make(255, 255, 0)); // Yellow border
+    // lv_style_set_border_opa(&button_style_invisible, LV_OPA_COVER);
+
+#endif
+
+#if CANVAS_SCALE <= 2
     // Left Button
-    lv_obj_t *button_left = lv_btn_create(tile_picowalker);  
+    lv_obj_t *button_left = lv_btn_create(tile_picowalker);
     lv_obj_align(button_left, LV_ALIGN_CENTER, -60, LR_BUTTON_Y_OFFSET);
     lv_obj_set_size(button_left, 30, 30);
     lv_group_add_obj(tile_group, button_left);
-    lv_obj_set_ext_click_area(button_left, 10);
+    lv_obj_set_ext_click_area(button_left, 15);
     lv_obj_add_style(button_left, &button_style_base, 0);
     lv_obj_add_style(button_left, &button_style_press, LV_STATE_PRESSED);
     lv_obj_add_event_cb(button_left, button_left_callback, LV_EVENT_CLICKED, NULL);
@@ -423,7 +474,7 @@ void pw_screen_init()
     lv_obj_align(button_middle, LV_ALIGN_CENTER, 0, MD_BUTTON_Y_OFFSET);
     lv_obj_set_size(button_middle, 37, 37);
     lv_group_add_obj(tile_group, button_middle);
-    lv_obj_set_ext_click_area(button_middle, 10);
+    lv_obj_set_ext_click_area(button_middle, 15);
     lv_obj_add_style(button_middle, &button_style_base, 0);
     lv_obj_add_style(button_middle, &button_style_press, LV_STATE_PRESSED);
     lv_obj_add_event_cb(button_middle, button_middle_callback, LV_EVENT_CLICKED, NULL);
@@ -433,11 +484,46 @@ void pw_screen_init()
     lv_obj_align(button_right, LV_ALIGN_CENTER, 60, LR_BUTTON_Y_OFFSET);
     lv_obj_set_size(button_right, 30, 30);
     lv_group_add_obj(tile_group, button_right);
-    lv_obj_set_ext_click_area(button_right, 10);
+    lv_obj_set_ext_click_area(button_right, 15);
     lv_obj_add_style(button_right, &button_style_base, 0);
     lv_obj_add_style(button_right, &button_style_press, LV_STATE_PRESSED);
     lv_obj_add_event_cb(button_right, button_right_callback, LV_EVENT_CLICKED, NULL);
+#else
+    // CANVAS_SCALE >= 3: Invisible full-screen buttons taking 1/3 of screen each
+    // Top Button (for adding steps)
+    lv_obj_t *button_top = lv_btn_create(tile_picowalker);
+    lv_obj_set_size(button_top, DISP_HOR_RES, DISP_VER_RES / 3);
+    lv_obj_align(button_top, LV_ALIGN_TOP_MID, 0, 0);
+    lv_obj_add_style(button_top, &button_style_invisible, 0);
+    lv_obj_add_event_cb(button_top, canvas_press_callback, LV_EVENT_CLICKED, NULL);
+    lv_group_add_obj(tile_group, button_top);
 
+    // Left Button (bottom left third)
+    lv_obj_t *button_left = lv_btn_create(tile_picowalker);
+    lv_obj_set_size(button_left, DISP_HOR_RES / 3, DISP_VER_RES * 2 / 3);
+    lv_obj_align(button_left, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    lv_obj_add_style(button_left, &button_style_invisible, 0);
+    lv_obj_add_event_cb(button_left, button_left_callback, LV_EVENT_CLICKED, NULL);
+    lv_group_add_obj(tile_group, button_left);
+
+    // Middle Button (bottom middle third)
+    lv_obj_t *button_middle = lv_btn_create(tile_picowalker);
+    lv_obj_set_size(button_middle, DISP_HOR_RES / 3, DISP_VER_RES * 2 / 3);
+    lv_obj_align(button_middle, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_add_style(button_middle, &button_style_invisible, 0);
+    lv_obj_add_event_cb(button_middle, button_middle_callback, LV_EVENT_CLICKED, NULL);
+    lv_group_add_obj(tile_group, button_middle);
+
+    // Right Button (bottom right third)
+    lv_obj_t *button_right = lv_btn_create(tile_picowalker);
+    lv_obj_set_size(button_right, DISP_HOR_RES / 3, DISP_VER_RES * 2 / 3);
+    lv_obj_align(button_right, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+    lv_obj_add_style(button_right, &button_style_invisible, 0);
+    lv_obj_add_event_cb(button_right, button_right_callback, LV_EVENT_CLICKED, NULL);
+    lv_group_add_obj(tile_group, button_right);
+#endif
+
+#if CANVAS_SCALE <= 2
     // Picowalker Canvas (clickable for step simulation)
     canvas = lv_canvas_create(tile_picowalker);
     lv_canvas_set_buffer(canvas, canvas_buffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
@@ -446,7 +532,7 @@ void pw_screen_init()
     lv_obj_add_flag(canvas, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(canvas, canvas_press_callback, LV_EVENT_PRESSED, NULL);
     lv_canvas_fill_bg(canvas, lv_color_make(195, 205, 185), LV_OPA_COVER);
-    
+
     // Rounded overlay to create rounded corners effect
     lv_obj_t *canvas_overlay = lv_obj_create(tile_picowalker);
     lv_obj_set_size(canvas_overlay, CANVAS_WIDTH + 10, CANVAS_HEIGHT + 10);
@@ -456,6 +542,31 @@ void pw_screen_init()
     lv_obj_set_style_border_color(canvas_overlay, lv_color_black(), 0);
     lv_obj_set_style_bg_opa(canvas_overlay, LV_OPA_TRANSP, 0);
     lv_obj_clear_flag(canvas_overlay, LV_OBJ_FLAG_CLICKABLE);
+#else
+    // For CANVAS_SCALE >= 3: Create image object at full scaled resolution
+    // Initialize image descriptor with our full-size buffer
+    image_dsc.header.always_zero = 0;
+    image_dsc.header.w = CANVAS_WIDTH;
+    image_dsc.header.h = CANVAS_HEIGHT;
+    image_dsc.data_size = CANVAS_WIDTH * CANVAS_HEIGHT * sizeof(lv_color_t);
+    image_dsc.header.cf = LV_IMG_CF_TRUE_COLOR;
+    image_dsc.data = (uint8_t*)image_buffer;
+
+    // Clear image buffer to background color
+    lv_color_t bg_color = lv_color_make(195, 205, 185);
+    for (int i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
+        image_buffer[i] = bg_color;
+    }
+
+    // Create image object at full resolution (no zoom)
+    image_obj = lv_img_create(tile_picowalker);
+    lv_img_set_src(image_obj, &image_dsc);
+    lv_obj_set_size(image_obj, CANVAS_WIDTH, CANVAS_HEIGHT);
+    lv_obj_align(image_obj, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_style_img_recolor_opa(image_obj, LV_OPA_TRANSP, 0);
+
+    canvas = NULL; // No canvas in this mode
+#endif
 
     // System Menu Tile
     lv_obj_t *tile_menu = lv_tileview_add_tile(tile_view, 0, 1, LV_DIR_TOP|LV_DIR_BOTTOM);
@@ -613,25 +724,35 @@ lv_color_t get_color(screen_colour_t color)
 ********************************************************************************/
 void draw_to_scale(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height, lv_color_t color)
 {
-    // Width and height of area to draw
-    for (screen_pos_t row = 0; row < height; row++) 
+    for (screen_pos_t row = 0; row < height; row++)
     {
-        for (screen_pos_t col = 0; col < width; col++) 
+        for (screen_pos_t col = 0; col < width; col++)
         {
             // Draw scaled pixel using fractional scaling
             int start_x = (x + col) * CANVAS_SCALE;
             int start_y = (y + row) * CANVAS_SCALE;
             int end_x = (x + col + 1) * CANVAS_SCALE;
             int end_y = (y + row + 1) * CANVAS_SCALE;
-            
+
             // Fill the scaled pixel area
-            for (int sy = start_y; sy < end_y && sy < CANVAS_HEIGHT; sy++) {
-                for (int sx = start_x; sx < end_x && sx < CANVAS_WIDTH; sx++) {
+            for (int sy = start_y; sy < end_y && sy < CANVAS_HEIGHT; sy++)
+            {
+                for (int sx = start_x; sx < end_x && sx < CANVAS_WIDTH; sx++)
+                {
+#if CANVAS_SCALE <= 2
                     lv_canvas_set_px(canvas, sx, sy, color);
+#else
+                    image_buffer[sy * CANVAS_WIDTH + sx] = color;
+#endif
                 }
             }
         }
     }
+
+#if CANVAS_SCALE >= 3
+    // Invalidate image to trigger LVGL redraw with scaling
+    lv_obj_invalidate(image_obj);
+#endif
 }
 
 /********************************************************************************
@@ -642,7 +763,11 @@ void draw_to_scale(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_po
 ********************************************************************************/
 void pw_screen_draw_img(pw_img_t *image, screen_pos_t x, screen_pos_t y)
 {
+#if CANVAS_SCALE <= 2
     if (!canvas || !image || !image->data) return;
+#else
+    if (!image_obj || !image || !image->data) return;
+#endif
 
     // Calculate image size (2 bytes per 8 pixels)
     image->size = image->width * image->height * 2 / 8;
@@ -656,30 +781,39 @@ void pw_screen_draw_img(pw_img_t *image, screen_pos_t x, screen_pos_t y)
         // Process 8 pixels from this byte pair
         for (size_t j = 0; j < 8; j++)
         {
-            // Extract 2-bit pixel value (same as working code)
+            // Extract 2-bit pixel value
             uint8_t pixel_value = ((bpp_upper >> j) & 1) << 1;
             pixel_value |= ((bpp_lower >> j) & 1);
 
             // Calculate pixel coordinates
             size_t x_normal = (i / 2) % image->width;
             size_t y_normal = 8 * (i / (2 * image->width)) + j;
-            
-            // Skip if pixel is outside image bounds
-            //if (x_normal >= image->width || y_normal >= image->height) continue;
 
             lv_color_t lv_color = get_color(pixel_value);
 
+            // Draw scaled pixel (both modes use same loop structure)
             for (size_t py = 0; py < CANVAS_SCALE; py++)
             {
                 for (size_t px = 0; px < CANVAS_SCALE; px++)
                 {
-                    int canvas_x = (x + x_normal) * CANVAS_SCALE + px; 
-                    int canvas_y = (y + y_normal) * CANVAS_SCALE + py;
-                    lv_canvas_set_px(canvas, canvas_x, canvas_y, lv_color);
+                    int scaled_x = (x + x_normal) * CANVAS_SCALE + px;
+                    int scaled_y = (y + y_normal) * CANVAS_SCALE + py;
+#if CANVAS_SCALE <= 2
+                    lv_canvas_set_px(canvas, scaled_x, scaled_y, lv_color);
+#else
+                    if (scaled_x < CANVAS_WIDTH && scaled_y < CANVAS_HEIGHT) {
+                        image_buffer[scaled_y * CANVAS_WIDTH + scaled_x] = lv_color;
+                    }
+#endif
                 }
             }
         }
     }
+
+#if CANVAS_SCALE >= 3
+    // Invalidate image to trigger LVGL redraw with scaling
+    lv_obj_invalidate(image_obj);
+#endif
 }
 
 /********************************************************************************
@@ -691,8 +825,10 @@ void pw_screen_draw_img(pw_img_t *image, screen_pos_t x, screen_pos_t y)
 ********************************************************************************/
 void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height)
 {
+#if CANVAS_SCALE <= 2
     if (!canvas) return;
-    
+#endif
+
     // Clear area by setting pixels directly to background color with scaling
     lv_color_t bg_color = lv_color_make(195, 205, 185);
     draw_to_scale(x, y, width, height, bg_color);
@@ -707,7 +843,9 @@ void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, sc
 ********************************************************************************/
 void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_colour_t color)
 {
+#if CANVAS_SCALE <= 2
     if (!canvas) return;
+#endif
 
     lv_color_t lv_color = get_color(color);
     draw_to_scale(x, y, width, 1, lv_color);
@@ -723,7 +861,9 @@ void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t widt
 ********************************************************************************/
 void pw_screen_draw_text_box(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height, screen_colour_t color)
 {
+#if CANVAS_SCALE <= 2
     if (!canvas) return;
+#endif
     
     // Convert PW color to LVGL color
     lv_color_t lv_color = get_color(color);
@@ -748,8 +888,18 @@ void pw_screen_draw_text_box(screen_pos_t x, screen_pos_t y, screen_pos_t width,
 ********************************************************************************/
 void pw_screen_clear()
 {
+#if CANVAS_SCALE <= 2
     if (!canvas) return;
     lv_canvas_fill_bg(canvas, lv_color_make(195, 205, 185), LV_OPA_COVER);
+#else
+    // For CANVAS_SCALE >= 3, clear the full-size image buffer
+    if (!image_obj) return;
+    lv_color_t bg_color = lv_color_make(195, 205, 185);
+    for (int i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
+        image_buffer[i] = bg_color;
+    }
+    lv_obj_invalidate(image_obj);
+#endif
 }
 
 /********************************************************************************
@@ -762,7 +912,9 @@ void pw_screen_clear()
 ********************************************************************************/
 void pw_screen_fill_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, screen_pos_t height, screen_colour_t color)
 {
+#if CANVAS_SCALE <= 2
     if (!canvas) return;
+#endif
     
     lv_color_t lv_color = get_color(color);
     draw_to_scale(x, y, width, height, lv_color);
@@ -774,9 +926,8 @@ void pw_screen_fill_area(screen_pos_t x, screen_pos_t y, screen_pos_t width, scr
 ********************************************************************************/
 void pw_screen_sleep()
 {
-    gpio_put(SCREEN_DC_PIN, 1);
-    spi_write_blocking(SCREEN_SPI_PORT, 0x10, 1);
-    ST7789V2_SET_PWM(0);
+    ST7789V2_Set_PWM(0);
+    ST7789V2_Sleep();
 
     // Stop LVGL processing and battery updates
     cancel_repeating_timer(&lvgl_timer);
@@ -790,11 +941,10 @@ void pw_screen_sleep()
 ********************************************************************************/
 void pw_screen_wake()
 {
-    gpio_put(SCREEN_DC_PIN, 0);
-    spi_write_blocking(SCREEN_SPI_PORT, 0x11, 1);
-    ST7789V2_SET_PWM(0);
+    ST7789V2_Awake();
+    ST7789V2_Set_PWM(0);
     sleep_ms(120);
-    ST7789V2_SET_PWM(10);
+    ST7789V2_Set_PWM(10);
 
     // Restart LVGL processing and battery updates
     add_repeating_timer_ms(5, repeating_lvgl_timer_callback, NULL, &lvgl_timer);
