@@ -105,4 +105,3 @@ void pw_ir_clear_rx() {
 void pw_ir_deinit() {
     /* TODO: power saving (IR shutdown, stop uart1, etc.) */
 }
-

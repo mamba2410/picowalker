@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "*.bt": "cpp",
+        "*.py": "python",
+        "*.S": "pio",
+        "*.h": "c",
+        "*.c": "c"
+    }
+}

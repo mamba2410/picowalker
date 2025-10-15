@@ -87,4 +87,3 @@ void pw_log(char *msg, size_t len) {
 void pw_log_dump() {
     uart_write_blocking(uart0, (uint8_t*)LOG_READ_ADDRESS, LOG_PAGE_SIZE);
 }
-

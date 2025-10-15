@@ -14,4 +14,3 @@ void user_idle_callback();
 void set_user_idle_timer();
 
 #endif /* PW_POWER_PICO_H */
-

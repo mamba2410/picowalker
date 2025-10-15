@@ -767,4 +767,3 @@ void pw_ir_sleep() {
 void pw_ir_wake() {
     gpio_put(IR_SD_PIN, 0);
 }
-

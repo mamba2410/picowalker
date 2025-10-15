@@ -219,4 +219,3 @@ int8_t pw_accel_init() {
 
     return 0;
 }
-

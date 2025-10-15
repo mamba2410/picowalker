@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "hardware/powman.h"
 #include "pico/bootrom.h"
@@ -15,13 +16,16 @@
 #define UNIX_TIME_OFFSET 946684800ul
 #define TIMER_INTERVAL_SEC 60
 
-#define RTC_CLK_PIN 22
-
-#define USE_EXTERNAL_RTC true
+//#define RTC_CLK_PIN 20
+//#define RTC_CLK_PIN 22
+//#define USE_EXTERNAL_RTC true
+#define USE_EXTERNAL_RTC false
 
 static pw_dhms_t last_check = {0,};
 static struct timespec next_alarm = {0,};
 uint16_t lposc_value = 32768;
+
+extern pw_wake_reason_t wake_reason;
 
 /*
  * ============================================================================
@@ -170,4 +174,3 @@ void pw_timer_delay_ms(uint64_t ms) {
 void pw_ir_delay_ms(uint64_t ms) {
     pw_timer_delay_ms(ms);
 }
-

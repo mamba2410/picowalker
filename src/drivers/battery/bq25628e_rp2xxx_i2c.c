@@ -416,4 +416,3 @@ pw_battery_status_t pw_power_get_battery_status() {
 
     return bs;
 }
-

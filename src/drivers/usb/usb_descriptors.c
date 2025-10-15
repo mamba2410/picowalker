@@ -77,8 +77,10 @@ uint8_t const *tud_descriptor_device_cb(void) {
 //--------------------------------------------------------------------+
 
 enum {
-  ITF_NUM_CDC = 0,
-  ITF_NUM_CDC_DATA,
+  ITF_NUM_CDC_0 = 0,        // Debug/stdio CDC
+  ITF_NUM_CDC_0_DATA,
+  ITF_NUM_CDC_1,            // IR communication CDC
+  ITF_NUM_CDC_1_DATA,
   ITF_NUM_MSC,
   ITF_NUM_TOTAL
 };
@@ -123,18 +125,21 @@ enum {
 
 #endif
 
-#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_MSC_DESC_LEN)
+#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + (2 * TUD_CDC_DESC_LEN) + TUD_MSC_DESC_LEN)
 
 // full speed configuration
 uint8_t const desc_fs_configuration[] = {
     // Config number, interface count, string index, total length, attribute, power in mA
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
 
-    // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, 64),
+    // CDC 0: Debug/stdio
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_0, 4, 0x81, 8, 0x02, 0x82, 64),
 
-    // Interface number, string index, EP Out & EP In address, EP size
-    TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, 5, EPNUM_MSC_OUT, EPNUM_MSC_IN, 64),
+    // CDC 1: IR communication
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_1, 5, 0x83, 8, 0x04, 0x84, 64),
+
+    // MSC: Mass storage
+    TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, 6, 0x05, 0x85, 64),
 };
 
 #if TUD_OPT_HIGH_SPEED
@@ -145,11 +150,14 @@ uint8_t const desc_hs_configuration[] = {
     // Config number, interface count, string index, total length, attribute, power in mA
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
 
-    // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, 512),
+    // CDC 0: Debug/stdio
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_0, 4, 0x81, 8, 0x02, 0x82, 512),
 
-    // Interface number, string index, EP Out & EP In address, EP size
-    TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, 5, EPNUM_MSC_OUT, EPNUM_MSC_IN, 512),
+    // CDC 1: IR communication
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_1, 5, 0x83, 8, 0x04, 0x84, 512),
+
+    // MSC: Mass storage
+    TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, 6, 0x05, 0x85, 512),
 };
 
 // other speed configuration
@@ -227,11 +235,12 @@ enum {
 // array of pointer to string descriptors
 char const *string_desc_arr[] = {
     (const char[]) { 0x09, 0x04 }, // 0: is supported language is English (0x0409)
-    "TinyUSB",                     // 1: Manufacturer
-    "TinyUSB Device",              // 2: Product
+    "Picowalker",                  // 1: Manufacturer
+    "Picowalker Device",           // 2: Product
     NULL,                          // 3: Serials will use unique ID if possible
-    "TinyUSB CDC",                 // 4: CDC Interface
-    "TinyUSB MSC",                 // 5: MSC Interface
+    "Picowalker Debug",            // 4: CDC 0 Interface (stdio/debug)
+    "Picowalker IR",               // 5: CDC 1 Interface (IR communication)
+    "Picowalker Storage",          // 6: MSC Interface
 };
 
 static uint16_t _desc_str[32 + 1];

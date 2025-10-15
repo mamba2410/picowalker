@@ -32,8 +32,13 @@ First, lets install `git` and `cmake`.
 I'm running void linux so I'll use the xbps package manager, so make sure to
 modify the command for your own distro's one.
 
-```
+Void Linux
+```sh
 sudo xbps-install -S git cmake
+```
+Ubuntu / WSL
+```sh
+sudo apt install git cmake
 ```
 
 Great, next lets install a cross-compiler.
@@ -43,10 +48,14 @@ that looks like `arm-none-eabi`.
 On void linux, the package is called `cross-arm-none-eabi` but this will likely
 be different on other distros (on debian, it is called `gcc-arm-none-eabi`).
 
-For void linux, I will run
-
-```
+Void Linux
+```sh
 sudo xbps-install -S cross-arm-none-eabi
+```
+Ubuntu / WSL
+```sh
+sudo apt install gcc-arm-none-eabi
+sudo apt install build-essential
 ```
 
 Next, we'll need to install the raspberry pi pico C/C++ SDK.
@@ -60,7 +69,7 @@ That being said, I will write some rough instructions here:
 First, create a directory and clone the [pico-sdk](https://github.com/raspberrypi/pico-sdk)
 git repository into it.
 
-```
+```sh
 mkdir ~/repos
 cd ~/repos
 git clone https://github.com/raspberrypi/pico-sdk
@@ -73,7 +82,7 @@ find the pico SDK.
 We'll add it to our `.profile` file which automatically sets environment
 variables when we log in.
 
-```
+```sh
 echo "export PICO_SDK_PATH=$HOME/repos/pico-sdk" >> ~/.profile
 source ~/.profile
 ```
@@ -94,7 +103,7 @@ This is the platform-independant code to make the picowalker run.
 First, we need to clone it.
 Inside of our project directory:
 
-```
+```sh
 git clone https://github.com/mamba2410/picowalker-core
 cd picowalker-core
 ```
@@ -107,11 +116,19 @@ This is done with the `-DCMAKE_TOOLCHAIN_FILE` flag.
 If you are compiling for boards with `rp2040` you use `toolchain-pico.cmake`.
 `rp2350` boards use `toolchain-pico2.cmake`.
 
-So now, lets run
+So now, lets run for Pico2 / RP2350
 
-```bash
-cmake -B build/waveshare -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico.cmake .
-cmake --build build/waveshare
+```sh
+rm -rf build/rp2350
+cmake -B build/rp2350 -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico2.cmake .
+cmake --build build/rp2350
+```
+
+Pico / RP2040, if you have an older hardware build
+```sh
+rm -rf build/rp2040
+cmake -B build/rp2040 -DCMAKE_TOOLCHAIN_FILE=./toolchain-pico.cmake .
+cmake --build build/rp2040
 ```
 
 if you encounter errors here, it likely means that `cmake` can't find your
@@ -130,7 +147,9 @@ Now we can move on to compiling the picowalker drivers for our hardware.
 First, we'll need to clone the repo.
 Inside of our project directory:
 
-```
+Main Branch
+```sh
+cd ~/repos
 git clone https://github.com/mamba2410/picowalker
 cd picowalker
 ```
@@ -138,28 +157,103 @@ cd picowalker
 Now we'll need to copy over our library to be included in the `picowalker`
 project.
 
-```
+Picowalker-core RP2350 Build
+```sh
 mkdir lib
-cp ../picowalker-core/build/waveshare/libpicowalker-core.a lib/
+cp ../picowalker-core/build/rp2350/libpicowalker-core.a lib/rp2350/
+```
+
+Picowalker-core RP2040 Build
+```sh
+mkdir lib
+cp ../picowalker-core/build/rp2040/libpicowalker-core.a lib/rp2040/
 ```
 
 Now we choose which board to compile. I'll choose `picowalker-v0.3`.
 
-```
-cmake -B build/waveshare -DPICO_BOARD=pico .
-cmake --build build/waveshare
+```sh
+cd boards/picowalker-v0.3
+cmake -B build/ -DPICO_BOARD=pico2 .
+cmake --build build
 ```
 
-If that all went well, you should have a file called `build/waveshare/picowalker.uf2`.
+If that all went well, you should have a file called `build/picowalker.uf2`.
 This is the file you'll want to copy to your pico.
 
 If that didn't work out for you, make sure that you have installed the
 pico SDK correctly.
 Check what errors cmake is giving you and google them if necessary.
 
-Now we have a build version of the software, lets get it running!
+## Compiling Other Boards
+If you are wanting to build any of the Waveshare Boards you will need to see if the boards are available in the main repository. If not then you will need the following branch below and start again after building the RP2040/RP2350 picowalker-core.
+
+Waveshare Branch
+```sh
+cd ~/repos
+git clone --single-branch --branch waveshare https://github.com/DaveuRrr/picowalker
+cd picowalker
+```
+> [!Note]
+> This is only if the Waveshare Fork/Branch hasn't been merged to main.
+
+Copy over the picowalker-core static library that you built from the previous step and install other dependencies
+
+### Dependencies
+Picowalker-core RP2350 Build
+```sh
+mkdir lib
+cp ../picowalker-core/build/rp2350/libpicowalker-core.a lib/rp2350/
+```
+
+Picowalker-core RP2040 Build
+```sh
+mkdir lib
+cp ../picowalker-core/build/rp2040/libpicowalker-core.a lib/rp2040/
+```
+
+Next we need the waveshare drivers library
+```sh
+git clone https://github.com/DaveuRrr/pico_waveshare_drivers lib/pico_waveshare_drivers
+```
+Lastly, we need LVGL 8.4
+```sh
+git clone --branch release/v8.4 https://github.com/lvgl/lvgl lib/lvgl
+```
+### Compiling Boards
+Board: `RP2040TouchLCD128`
+```sh
+cd boards/rp2040touchlcd128
+rm -rf ../../build/rp2040touchlcd128
+cmake -B ../../build/rp2040touchlcd128 -DPICO_BOARD=pico -DUSE_LVGL=ON
+cmake --build ../../build/rp2040touchlcd128
+```
+
+Board: `RP2350LCD128`
+```sh
+cd boards/rp2350lcd128
+rm -rf ../../build/rp2350lcd128
+cmake -B ../../build/rp2350lcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build ../../build/rp2350lcd128
+```
+
+Board: `RP2350TouchLCD128`
+```sh
+cd boards/rp2350touchlcd128
+rm -rf ../../build/rp2350touchlcd128
+cmake -B ../../build/rp2350touchlcd128 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build ../../build/rp2350touchlcd128
+```
+
+Board: `RP2350TouchLCD169`
+```sh
+cd boards/rp2350touchlcd169
+rm -rf ../../build/rp2350touchlcd169
+cmake -B ../../build/rp2350touchlcd169 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build ../../build/rp2350touchlcd169
+```
 
 ## Copying the software to the pico
+Now we have a build version of the software, lets get it running!
 
 ### Via USB
 

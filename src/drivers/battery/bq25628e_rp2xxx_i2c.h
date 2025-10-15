@@ -295,4 +295,3 @@ void pw_battery_init();
 void pw_battery_int(uint gp, uint32_t events);
 
 #endif /* BATTERY_PICO_B25628E_H */
-

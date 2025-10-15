@@ -123,4 +123,3 @@ void pw_flash_wake() {
     // Read the device ID as well, to make sure we're awake
     w25q128_instruction_addr_single(REG_WAKE_READ_DEVICE_ID, 1, buf);
 }
-

@@ -94,6 +94,11 @@ void pw_eeprom_set_area(eeprom_addr_t addr, uint8_t v, size_t len);
 void pw_eeprom_sleep();
 void pw_eeprom_wake();
 
+/*
+ *  Functions defined by picowalker-core library
+ */
+void pw_eeprom_reset(bool clear_events, bool clear_steps);  // Reset EEPROM to initialized state
+
 
 /*
  *  ==================================================================================
@@ -141,7 +146,7 @@ enum {
  *  Functions defined by the driver
  */
 void pw_button_init();
-
+void pw_button_callback(uint8_t button);
 /*
  *  ==================================================================================
  *  IR
@@ -284,9 +289,9 @@ extern pw_volume_t pw_audio_volume;
 extern uint8_t PW_AUDIO_PERIODTAB[];
 
 void pw_audio_init();
+void pw_audio_play_sound(int sound_id);  // Play predefined sound from library
 void pw_audio_play_sound_data(const pw_sound_frame_t* sound_data, size_t sz);
 bool pw_audio_is_playing_sound();
 
 
 #endif /* PW_PICOWALKER_INCLUDE_H */
-

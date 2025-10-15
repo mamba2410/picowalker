@@ -73,6 +73,7 @@ target_link_libraries(picowalker
     hardware_spi
     hardware_i2c
     hardware_pio
+    hardware_gpio
     hardware_timer
     hardware_pwm
     hardware_dma

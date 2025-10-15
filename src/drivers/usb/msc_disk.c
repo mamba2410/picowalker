@@ -136,7 +136,7 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
   if(lba == ROOT_DIR_FIRST_LBA) {
     uint8_t const* addr = msc_disk[DISK_ROOT_DIR_INDEX] + offset;
     memcpy(buffer, addr, bufsize);
-    uint32_t *log_size = (uint32_t*)&buffer[LOG_TXT_ENTRY_OFFSET+32-4];
+    uint32_t *log_size = (uint32_t*)&((uint8_t*)buffer)[LOG_TXT_ENTRY_OFFSET+32-4];
     *log_size = flash_log.flash_write_head + flash_log.ram_write_head;
     return (int32_t)bufsize;
   }

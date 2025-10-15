@@ -37,18 +37,6 @@ Under development, this is just a starting point to help out.
 - Buttons - None, touch to be used eventually
 - No IR
 
-## Project state
-
-Working (as intended):
-
-Probably eeprom, flash and PMIC because they don't do a lot.
-
-Not working:
-
-- Screen
-- Accel
-- Buttons/touch
-
 ## Resources
 
 ### Pico
@@ -57,6 +45,12 @@ Not working:
 - [Getting Started with Pico C](https://www.raspberrypi.org/documentation/rp2040/getting-started/#getting-started-with-c)
 - [Pico Datasheet](https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf)
 - [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2350/rp2040-datasheet.pdf)
+
+## Issues and Contributing
+
+Please leave all issues in this repo, irrespective of what parts of the code they technically belong to.
+
+If you'd like to contribute, please see the [design doc](./docs/DESIGN.md) and the build guide below.
 
 ## Building and Testing
 
