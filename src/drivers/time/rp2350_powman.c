@@ -112,7 +112,7 @@ void pw_time_set_rtc(uint32_t sync_time) {
 
 uint32_t pw_time_get_rtc() {
     uint64_t ms = powman_timer_get_ms();
-    printf("[Debug] Powman timer has 0x%08x ms\n", (uint32_t)ms);
+    //printf("[Debug] Powman timer has 0x%08x ms\n", (uint32_t)ms);
     return (uint32_t)(ms/1000);
 }
 

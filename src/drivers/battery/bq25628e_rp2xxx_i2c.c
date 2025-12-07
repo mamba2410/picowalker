@@ -61,21 +61,27 @@ static char* FAULT_FLAG_STRINGS[] = { "TS", "", "", "TSHUT", "", "SYS_FAULT", "B
 static char* CHARGER_STATUS_0_STRINGS[] = {"WATCHDOG", "SAFETY_TMR", "VINDPM", "IINDPM", "VSYS", "TREG", "ADC_DONE"} ;
 static char* FAULT_STATUS_0_STRINGS[] = {"", "", "", "TSHUT", "", "SYS_FAULT", "BAT_FAULT", "VBUS_FAULT"};
 
-static uint8_t ADC_SHIFTS[] = { 1, 2, 2, 2, 1, 1, 0, 0 };
+static const uint8_t ADC_SHIFTS[] = { 1, 2, 2, 2, 1, 1, 0, 0 };
 
-static volatile uint8_t interrupt_flags[4];
-static volatile uint8_t interrupt_status[4];
-static volatile bool adc_done = false;
-static volatile uint32_t adc_timeout_stamp = 0;
-static volatile uint32_t adc_finished_time = 0;
+typedef struct bq25628e_info_s {
+    uint8_t interrupt_flags[4];
+    uint8_t interrupt_mask[4];
+    uint8_t interrupt_status[4];
+    uint32_t adc_timeout_stamp;
+    uint32_t adc_finished_time;
+    bool adc_done;
+    bool fault;
+} bq25628e_info_t;
 
-static void pw_pmic_read_reg(uint8_t reg, uint8_t *buf, size_t len) {
+static volatile bq25628e_info_t pmic_info = {};
+
+static void bq25628e_read_reg(uint8_t reg, uint8_t *buf, size_t len) {
     if(buf == NULL) { return; }
     i2c_write_blocking(BAT_I2C_HW, BAT_I2C_ADDR, &reg, 1, true);
     i2c_read_blocking(BAT_I2C_HW, BAT_I2C_ADDR, buf, len, false);
 }
 
-static void pw_pmic_write_reg(uint8_t reg, uint8_t *buf, size_t len) {
+static void bq25628e_write_reg(uint8_t reg, uint8_t *buf, size_t len) {
     if(buf == NULL) return;
 
     uint8_t buf2[8];
@@ -93,25 +99,25 @@ static void pw_pmic_write_reg(uint8_t reg, uint8_t *buf, size_t len) {
  * REG_CHARGER_CONTROL_3.BATFET_CTRL_WVBUS for power chip to cut power to MCU on adapter power. Might be useful?
  */
 
-void print_flags_and_status(uint8_t flags[3], uint8_t status[3]) {
+static void print_flags_and_status(uint8_t flags[3], uint8_t status[3]) {
 
-        printf("[Info] ============\n");
-        printf("[Info] Interrupt flags: CHARGER_FLAGS_0: 0x%02x; CHARGER_FLAGS_1: 0x%02x; FAULT_FLAGS_0: 0x%02x\n", flags[0], flags[1], flags[2]);
-        printf("[Info]     CHARGER_FLAGS_0: ");
+        printf("[Debug] ============\n");
+        printf("[Debug] Interrupt flags: CHARGER_FLAGS_0: 0x%02x; CHARGER_FLAGS_1: 0x%02x; FAULT_FLAGS_0: 0x%02x\n", flags[0], flags[1], flags[2]);
+        printf("[Debug]     CHARGER_FLAGS_0: ");
         for(size_t i = 0; i < 8; i++) {
             if(flags[0] & 1)
                 printf("%s (%d) |", CHARGER_FLAG_0_STRINGS[i], i);
             flags[0] >>= 1;
         }
 
-        printf("\n[Info]     CHARGER_FLAGS_1: ");
+        printf("\n[Debug]     CHARGER_FLAGS_1: ");
         for(size_t i = 0; i < 8; i++) {
             if(flags[1] & 1)
                 printf("%s |", CHARGER_FLAG_1_STRINGS[i]);
             flags[1] >>= 1;
         }
 
-        printf("\n[Info]     FAULT_FLAGS_0: ");
+        printf("\n[Debug]     FAULT_FLAGS_0: ");
         for(size_t i = 0; i < 8; i++) {
             if(flags[2] & 1)
                 printf("%s |", FAULT_FLAG_STRINGS[i]);
@@ -120,16 +126,16 @@ void print_flags_and_status(uint8_t flags[3], uint8_t status[3]) {
         printf("\n");
 
         // Read status registers
-        printf("[Info] Charger status 0: 0x%02x; Charger status 1: 0x%02x, FAULT status 0: 0x%02x\n", status[0], status[1], status[2]);
-        printf("[Info]     CHARGER_STATUS_0: ");
+        printf("[Debug] Charger status 0: 0x%02x; Charger status 1: 0x%02x, FAULT status 0: 0x%02x\n", status[0], status[1], status[2]);
+        printf("[Debug]     CHARGER_STATUS_0: ");
         for(size_t i = 0; i < 8; i++) {
             if(status[0] & 1)
                 printf("%s |", CHARGER_STATUS_0_STRINGS[i]);
             status[0] >>= 1;
         }
-        printf("\n[Info]     CHARGER_STATUS_1.CHG_STAT: %s\n", CHARGE_STATUS_STRINGS[(status[1]&REG_CHARGER_STATUS_1_CHG_STAT_MSK)>>3]);
-        printf("[Info]     FAULT_STATUS_0.TS_STAT: %s\n", TS_STAT_STRINGS[status[2]&0x07]);
-        printf("[Info]     FAULT_STATUS_0:");
+        printf("\n[Debug]     CHARGER_STATUS_1.CHG_STAT: %s\n", CHARGE_STATUS_STRINGS[(status[1]&REG_CHARGER_STATUS_1_CHG_STAT_MSK)>>3]);
+        printf("[Debug]     FAULT_STATUS_0.TS_STAT: %s\n", TS_STAT_STRINGS[status[2]&0x07]);
+        printf("[Debug]     FAULT_STATUS_0:");
 
         status[2] >>= 3;
         for(size_t i = 3; i < 8; i++) {
@@ -141,135 +147,43 @@ void print_flags_and_status(uint8_t flags[3], uint8_t status[3]) {
 }
 
 
-/*
- * Interrupt handler from the PMIC
- * Read flags registers to determine what caused the interrupt and clear them.
- */
-void pw_battery_int(uint gp, uint32_t events) {
-    
-    if(gp == BAT_INT_PIN) {
-
-        // Read `FLAG` registers to clear interrupts
-        pw_pmic_read_reg(REG_CHARGER_FLAG_0, interrupt_flags, 3);
-        pw_pmic_read_reg(REG_CHARGER_STATUS_0, interrupt_status, 3);
-
-        // Latch up, don't reset. Otherwise interrupts before we check the flag
-        // will cause things to spin forever
-        if(interrupt_flags[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) {
-            adc_done = true;
-            adc_finished_time = pw_time_get_ms();
+void bq25628e_print_fault_reason() {
+    uint8_t fault_flags = pmic_info.interrupt_flags[2];
+    printf("[Error] Fault flags: (0x%02x) ", fault_flags);
+    for(size_t i = 0; i < 8; i++) {
+        if(fault_flags & 1) {
+            printf("%s |", FAULT_FLAG_STRINGS[i]);
         }
+        fault_flags >>= 1;
+    }
+    printf("\n");
 
-        // Debug print if any of the fault flags show up
-        if(interrupt_flags[2] > 0) {
-            // Should probably do something with this info, like notify core about something like a fault, low battery, on charge
-            print_flags_and_status(interrupt_flags, interrupt_status);
+    uint8_t fault_mask = pmic_info.interrupt_mask[2];
+    printf("[Error] Fault mask: (0x%02x) ", fault_mask);
+    for(size_t i = 0; i < 8; i++) {
+        if(fault_mask & 1) {
+            printf("%s |", FAULT_FLAG_STRINGS[i]);
         }
-
-    } else {
-        printf("[Error] battery callback on pin gp%d\n", gp);
+        fault_mask >>= 1;
     }
-}
+    printf("\n");
 
-
-void pw_battery_shutdown() {
-    uint8_t val = REG_CHARGER_CONTROL_2_BATFET_CTRL_SHUTDOWN;
-    pw_pmic_write_reg(REG_CHARGER_CONTROL_2, &val, 1);
-}
-
-void pw_battery_init() {
-
-    board_i2c_init();
-
-    // Disable charge for now
-    gpio_init(BAT_CE_PIN);
-    gpio_set_dir(BAT_CE_PIN, GPIO_OUT);
-    gpio_put(BAT_CE_PIN, 1);
-
-    // Set up INT pin with callback
-    gpio_init(BAT_INT_PIN);
-    gpio_pull_up(BAT_INT_PIN);
-    gpio_set_irq_enabled_with_callback(BAT_INT_PIN, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
-
-    uint8_t buf[24] = {0};
-
-    // Reset the PMIC
-    pw_pmic_read_reg(REG_CHARGER_CONTROL_1, buf, 1);
-    buf[0] &= ~REG_CHARGER_CONTROL_1_REG_RST_MSK;
-    buf[0] |= REG_CHARGER_CONTROL_1_REG_RST;
-    pw_pmic_write_reg(REG_CHARGER_CONTROL_1, buf, 1);
-
-    // Check for part number
-    pw_pmic_read_reg(REG_PART_INFO, buf, 3);
-    printf("[Info ] BQ25628E part info: 0x%02x\n", buf[0]);
-
-    // Read `FLAG` registers to clear interrupts
-    // (possibly) important to clear "power-on" interrupt
-    pw_pmic_read_reg(REG_CHARGER_FLAG_0, buf, 3);
-
-    // Disable the watchdog timer so that its always in host mode.
-    // TODO: Probably safer to "pet" the watchdog periodically with a 
-    // hardware timer but this will do for now
-    // Default is 50s, can set up to 200s
-    pw_pmic_read_reg(REG_CHARGER_CONTROL_0, buf, 1);
-    buf[0] &= ~REG_CHARGER_CONTROL_0_WATCHDOG_MSK;
-    buf[0] |= REG_CHARGER_CONTROL_0_WATCHDOG_DISABLED;
-    pw_pmic_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
-
-    // Enable charge
-    gpio_put(BAT_CE_PIN, 0);
-
-    // Set up ADC targets for conversion
-    // Allow: VBAT, VSYS
-    buf[0] = REG_ADC_FUNCTION_DISABLE_0_VPMID |
-        REG_ADC_FUNCTION_DISABLE_0_TDIE |
-        REG_ADC_FUNCTION_DISABLE_0_IBAT |
-        REG_ADC_FUNCTION_DISABLE_0_IBUS |
-        REG_ADC_FUNCTION_DISABLE_0_VBUS |
-        REG_ADC_FUNCTION_DISABLE_0_TS ;
-    pw_pmic_write_reg(REG_ADC_FUNCTION_DISABLE_0, buf, 1);
-
-    /*
-    // Set ADC to one-shot mode, don't enable to save power
-    // Have long ADC samples at first to "prime" the ADC
-    buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
-             REG_ADC_CONTROL_ADC_RATE_ONESHOT |
-             //REG_ADC_CONTROL_ADC_SAMPLE_9_BIT | // default
-             //REG_ADC_CONTROL_ADC_SAMPLE_12_BIT | // extend ADC sample time to 30 ms
-             REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
-    uint8_t my_reg = buf[0];
-    pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
-
-    // Do a few samples to prime the ADC and stop it from instantly shutting down.
-    // TODO: Do this a better way
-    for(size_t i = 0; i < 3; i++) {
-        pw_power_get_battery_status();
+    uint8_t fault_status = pmic_info.interrupt_status[2];
+    printf("[Error] Fault status: (0x%02x) ", fault_status);
+    for(size_t i = 0; i < 8; i++) {
+        if(fault_status & 1)
+            printf("%s |", FAULT_STATUS_0_STRINGS[i]);
+        fault_status >>= 1;
     }
-    */
-
-    // Back to normal length ADC samples
-    buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
-             REG_ADC_CONTROL_ADC_RATE_ONESHOT |
-             REG_ADC_CONTROL_ADC_SAMPLE_10_BIT | // 7.5 ms each
-             REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
-    //my_reg = buf[0];
-    pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
-
-    // Just for fun
-    //pw_pmic_read_reg(reg_charger_status_0, buf, 3);
-    //printf("[info] bq25628e charge status: %s\n", charge_status_strings[(buf[1]>>3)&0x03]);
-
-    // TODO: Set REG_CHARGER_CONTROL_3.IBAT_PK to 0x0 for 1.5A discharge limit
-    // TODO: Charge current limit default 320mA, can reprogram. See REG_CHARGE_CURRENT_LIMIT
-    // TODO: VSYSMIN is 3520mV, can change with REG_MINIMAL_SYSTEM_VOLTAGE
-
+    printf("\n");
 }
+
 
 void debug_read_pmic() {
     uint16_t buf16[8];
     for(size_t i = 0; i < 8; i++)
         buf16[i] = 0;
-    pw_pmic_read_reg(REG_IBUS_ADC, (uint8_t*)buf16, 16);
+    bq25628e_read_reg(REG_IBUS_ADC, (uint8_t*)buf16, 16);
 
     printf("[Info] ADC values:\n");
     buf16[0] >>= ADC_SHIFTS[0];
@@ -285,32 +199,275 @@ void debug_read_pmic() {
     printf("\tTDIE: %f C\n", (float)(buf16[7]>>ADC_SHIFTS[7]) / (float)(0x118) * 140.0);
 }
 
-void pw_power_start_battery_measurement() {
-    uint8_t buf[8];
 
-    // Enable the ADC and start conversion
-    if(adc_timeout_stamp == 0) {
-        pw_pmic_read_reg(REG_ADC_CONTROL, buf, 1);
-        buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
-        buf[0] |= REG_ADC_CONTROL_ADC_EN_ENABLED;
-        pw_pmic_write_reg(REG_ADC_CONTROL, buf, 1);
-        adc_timeout_stamp = pw_time_get_ms() + ADC_TIMEOUT_MS;
-        adc_finished_time = 0;
+bool bq25628e_valid_fault(uint8_t fault_flags, uint8_t fault_status) {
+    // VBUS can fault when unplugging power source
+    // If the flag is set, check against the status to see if it really faulted
+    bool was_vbus_fault = pmic_info.interrupt_flags[2] & REG_FAULT_FLAG_0_VBUS_FAULT_FLAG;
+    bool vbus_status_bad = pmic_info.interrupt_status[2] & REG_FAULT_STATUS_0_VBUS_FAULT_STAT;
+    bool valid_vbus_fault = was_vbus_fault && vbus_status_bad;
+    
+    // For now, just compare against mask
+    uint8_t fault_mask = pmic_info.interrupt_mask[2];
+    return (fault_flags & fault_mask) != 0;
+}
+
+/*
+ * Interrupt handler from the PMIC
+ * Read flags registers to determine what caused the interrupt and clear them.
+ */
+void bq25628e_irq(uint gp, uint32_t events) {
+    
+    if(gp != BAT_INT_PIN) {
+        printf("[Error] battery callback on pin gp%d\n", gp);
+        return;
     }
 
-    // return control until ADC is finished
+    // Read `FLAG` registers to clear interrupts
+    bq25628e_read_reg(REG_CHARGER_FLAG_0, pmic_info.interrupt_flags, 3);
+    bq25628e_read_reg(REG_CHARGER_STATUS_0, pmic_info.interrupt_status, 3);
+
+    // Latch up, don't reset. Otherwise interrupts before we check the flag
+    // will cause things to spin forever
+    if(pmic_info.interrupt_flags[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) {
+        pmic_info.adc_done = true;
+        pmic_info.adc_finished_time = pw_time_get_ms();
+    }
+
+    if(bq25628e_valid_fault(pmic_info.interrupt_flags[2], pmic_info.interrupt_status[2])) {
+        //print_flags_and_status(interrupt_flags, interrupt_status);
+        pmic_info.fault = true;
+    }
+
+}
+
+
+void bq25628e_configure_interrupts() {
+    uint8_t buf[3];
+
+    // Charger 0
+    buf[0] = 
+        // Allow all
+        0;
+
+    // Charger 1
+    buf[1] = 
+        // Allow all
+        0;
+
+    // Fault
+    buf[2] = 
+        REG_FAULT_MASK_0_VBUS_FAULT_MASK | // VBUS can fault on unplug, ignore it
+        0;
+
+    bq25628e_write_reg(REG_CHARGER_MASK_0, buf, 3);
+}
+
+
+void bq25628e_disable_charge_pin() {
+    gpio_put(BAT_CE_PIN, 1);
+}
+
+
+void bq25628e_enable_charge_pin() {
+    gpio_put(BAT_CE_PIN, 0);
+}
+
+
+void bq25628e_software_reset() {
+    uint8_t buf[4];
+    bq25628e_read_reg(REG_CHARGER_CONTROL_1, buf, 1);
+    buf[0] &= ~REG_CHARGER_CONTROL_1_REG_RST_MSK;
+    buf[0] |= REG_CHARGER_CONTROL_1_REG_RST;
+    bq25628e_write_reg(REG_CHARGER_CONTROL_1, buf, 1);
+}
+
+
+uint8_t bq25628e_read_part_info() {
+    uint8_t part_info;
+    bq25628e_read_reg(REG_PART_INFO, &part_info, 1);
+    return part_info;
+}
+
+void bq25628e_disable_watchdog() {
+    uint8_t buf[4];
+
+    // Default is 50s, can set up to 200s
+    bq25628e_read_reg(REG_CHARGER_CONTROL_0, buf, 1);
+    buf[0] &= ~REG_CHARGER_CONTROL_0_WATCHDOG_MSK;
+    buf[0] |= REG_CHARGER_CONTROL_0_WATCHDOG_DISABLED;
+    bq25628e_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
+}
+
+
+void bq25628e_configure_adc_targets() {
+    uint8_t buf[4];
+
+    // Allow: VBAT, VSYS
+    buf[0] = 
+        REG_ADC_FUNCTION_DISABLE_0_VPMID |
+        REG_ADC_FUNCTION_DISABLE_0_TDIE |
+        REG_ADC_FUNCTION_DISABLE_0_IBAT |
+        REG_ADC_FUNCTION_DISABLE_0_IBUS |
+        REG_ADC_FUNCTION_DISABLE_0_VBUS |
+        REG_ADC_FUNCTION_DISABLE_0_TS |
+        0;
+    bq25628e_write_reg(REG_ADC_FUNCTION_DISABLE_0, buf, 1);
+}
+
+
+void bq25628e_configure_adc() {
+    uint8_t buf[4];
+
+    buf[0] = REG_ADC_CONTROL_ADC_AVG_DISABLED |
+             REG_ADC_CONTROL_ADC_RATE_ONESHOT |
+             //REG_ADC_CONTROL_ADC_SAMPLE_9_BIT | // default, 3.75 ms / target
+             REG_ADC_CONTROL_ADC_SAMPLE_10_BIT | // 7.5 ms / target
+             //REG_ADC_CONTROL_ADC_SAMPLE_11_BIT | // 15 ms / target
+             //REG_ADC_CONTROL_ADC_SAMPLE_12_BIT | // 30 ms / target
+             REG_ADC_CONTROL_ADC_AVG_INIT_NEW | // Always start average with new value
+             REG_ADC_CONTROL_ADC_EN_DISABLED; // don't enable yet
+
+    bq25628e_write_reg(REG_ADC_CONTROL, buf, 1);
+}
+
+
+void bq25628e_start_adc_measurement() {
+    uint8_t buf[4];
+    bq25628e_read_reg(REG_ADC_CONTROL, buf, 1);
+    buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
+    buf[0] |= REG_ADC_CONTROL_ADC_EN_ENABLED;
+    bq25628e_write_reg(REG_ADC_CONTROL, buf, 1);
+
+    pmic_info.adc_timeout_stamp = pw_time_get_ms() + ADC_TIMEOUT_MS;
+    pmic_info.adc_finished_time = 0;
+
+}
+
+
+uint8_t bq25628e_get_charge_status(uint8_t status_regs[3]) {
+    uint8_t charge_status = (status_regs[1]>>3)&0x03;
+    return charge_status;
+}
+
+
+/**
+ */ 
+uint32_t bq25628e_get_adc_conversion_time() {
+    uint32_t conversion_time = 0;
+    
+    if(pmic_info.adc_done) {
+        uint32_t adc_start_time = pmic_info.adc_timeout_stamp - ADC_TIMEOUT_MS;
+        conversion_time = pmic_info.adc_finished_time - adc_start_time;
+    } else {
+        conversion_time = ADC_TIMEOUT_MS;
+    }
+
+    pmic_info.adc_done = false;
+    pmic_info.adc_timeout_stamp = 0;
+    pmic_info.adc_finished_time = 0;
+
+    return conversion_time;
+}
+
+
+float bq25628e_read_vbat() {
+    uint8_t buf[2];
+    bq25628e_read_reg(REG_VBAT_ADC, buf, 2);
+    uint16_t reg_val = ((uint16_t)buf[0] << 0) | ((uint16_t)buf[1] << 8);
+    uint16_t adc_counts = REG_VBAT_ADC_VAL(reg_val);
+
+    // Value here is 0x000 - 0xaf0, max resolution of 1.99mV
+    float vbat = ((float)adc_counts * 5572.0 / (float)0x0af0);
+
+    return vbat;
+}
+
+
+float bq25628e_read_vsys() {
+    uint8_t buf[2];
+    bq25628e_read_reg(REG_VSYS_ADC, buf, 2);
+    uint16_t reg_val = ((uint16_t)buf[0] << 0) | ((uint16_t)buf[1] << 8);
+    uint16_t adc_counts = REG_VSYS_ADC_VAL(reg_val);
+
+    float vsys = (float)adc_counts * 5572.0 / (float)0x0af0;
+
+    return vsys;
+}
+
+
+/**
+ * ============================================================================
+ * Picowalker core functionality
+ * ============================================================================
+ */
+void pw_battery_shutdown() {
+    uint8_t val = REG_CHARGER_CONTROL_2_BATFET_CTRL_SHUTDOWN;
+    bq25628e_write_reg(REG_CHARGER_CONTROL_2, &val, 1);
+}
+
+void pw_battery_init() {
+
+    board_i2c_init();
+
+    gpio_init(BAT_CE_PIN);
+    gpio_set_dir(BAT_CE_PIN, GPIO_OUT);
+
+    // Disable charge for now
+    bq25628e_disable_charge_pin();
+
+    // Set up INT pin with callback
+    gpio_init(BAT_INT_PIN);
+    gpio_pull_up(BAT_INT_PIN);
+    gpio_set_irq_enabled_with_callback(BAT_INT_PIN, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
+
+    bq25628e_software_reset();
+
+    uint8_t part_info = bq25628e_read_part_info();
+    printf("[Info ] BQ25628E part info: 0x%02x\n", part_info);
+
+    // Read `FLAG` registers to clear interrupts
+    // (possibly) important to clear "power-on" interrupt
+    uint8_t buf[4] = {};
+    bq25628e_read_reg(REG_CHARGER_FLAG_0, buf, 3);
+
+    // Disable the watchdog timer so that its always in host mode.
+    bq25628e_disable_watchdog();
+    bq25628e_configure_interrupts();
+    bq25628e_configure_adc_targets();
+    bq25628e_configure_adc();
+
+    bq25628e_enable_charge_pin();
+
+    // TODO: Set REG_CHARGER_CONTROL_3.IBAT_PK to 0x0 for 1.5A discharge limit
+    // TODO: Charge current limit default 320mA, can reprogram. See REG_CHARGE_CURRENT_LIMIT
+    // TODO: VSYSMIN is 3520mV, can change with REG_MINIMAL_SYSTEM_VOLTAGE
+
+}
+
+
+void pw_power_start_measurement() {
+
+    // Don't start if one is already in progress
+    bool adc_in_progress = pmic_info.adc_timeout_stamp != 0;
+    if(adc_in_progress) {
+        return;
+    }
+
+    bq25628e_start_adc_measurement();
 
 }
 
 
 /**
- * Return true if ADC finished or timed out
+ * Return true if ADC finished, timed out or faulted
  * Don't clear since process_battery() needs the information too
  */
-bool pw_power_battery_measurement_available() {
-    bool is_active = adc_timeout_stamp > 0;
-    bool is_finished = adc_done || (pw_time_get_ms() >= adc_timeout_stamp);
-    return is_active && is_finished;
+bool pw_power_result_available() {
+    bool has_fault = pmic_info.fault;
+    bool is_active = pmic_info.adc_timeout_stamp > 0;
+    bool is_finished = pmic_info.adc_done || (pw_time_get_ms() >= pmic_info.adc_timeout_stamp);
+    return has_fault || (is_active && is_finished);
 }
 
 
@@ -318,69 +475,49 @@ bool pw_power_battery_measurement_available() {
  * Callback function called periodically by picowalker-core
  * Runs in normal context
  */
-pw_battery_status_t pw_power_get_battery_status() {
-    pw_battery_status_t bs = {.percent = 100, .flags = 0x00};
+pw_battery_status_t pw_power_get_status() {
+    pw_battery_status_t bs = {.percent = 0, .flags = 0x00};
 
-    if(!pw_power_battery_measurement_available()) {
+    if(!pw_power_result_available()) {
         printf("[Warn ] Asking for battery measurement when one isn't available\n");
-        bs.flags |= PW_BATTERY_STATUS_FLAGS_FAULT;
+        bs.flags |= PW_BATTERY_STATUS_FLAGS_TIMEOUT;
         return bs;
     }
-    uint8_t buf[8];
-    uint16_t *buf16 = (uint16_t*)buf;
-    // Check why we interrupted, if at all
-    //print_flags_and_status(interrupt_flags, interrupt_status);
 
-    // Pet the watchdog
-    // TODO: Can't rely on this in sleep mode
-    //pw_pmic_read_reg(REG_CHARGER_CONTROL_0, buf, 1);
-    //buf[0] &= ~REG_CHARGER_CONTROL_0_WD_RST_MSK;
-    //buf[0] |= REG_CHARGER_CONTROL_0_WD_RST;
-    //pw_pmic_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
+    // Interrupt handler read the status on interrupt, so we use that
 
-    // Read status registers
-    pw_pmic_read_reg(REG_CHARGER_STATUS_0, buf, 3);
-    uint8_t charge_status = (buf[1]>>3)&0x03;
-    //printf("[Info] bq25628e charge status: %s\n", CHARGE_STATUS_STRINGS[charge_status]);
+    // Immediately check faults
+    if(pmic_info.fault) {
+        pmic_info.fault = false;
+        bq25628e_print_fault_reason();
+        sleep_ms(100);
+        bs.flags |= PW_BATTERY_STATUS_FLAGS_FAULT;
+        // Faulted, so we leave now
+        return bs;
+    }
+
+    // Not faulted, so we must have ADC measurement or some other non-critical interrupt
+
+    uint8_t charge_status = bq25628e_get_charge_status(pmic_info.interrupt_status);
     if(charge_status != 0) {
         bs.flags |= PW_BATTERY_STATUS_FLAGS_CHARGING;
     }
 
-    uint8_t fault_mask = 
-        REG_FAULT_STATUS_0_SHUT_STAT |
-        REG_FAULT_STATUS_0_SYS_FAULT_STAT |
-        REG_FAULT_STATUS_0_BAT_FAULT_STAT |
-        REG_FAULT_STATUS_0_VBUS_FAULT_STAT;
-
-    uint8_t fault_status = buf[2] & fault_mask;
-    if(fault_status != 0) {
-        bs.flags |= PW_BATTERY_STATUS_FLAGS_FAULT;
-    }
-
-    // Wait for interrupt to say that ADC function is done
-    if(!adc_done) {
+    // Check if ADC timed out
+    uint32_t adc_conversion_time = bq25628e_get_adc_conversion_time();
+    if(adc_conversion_time >= ADC_TIMEOUT_MS) {
         printf("[Warn ] Battery ADC measurement exceeded %d ms\n", ADC_TIMEOUT_MS);
         bs.flags |= PW_BATTERY_STATUS_FLAGS_TIMEOUT;
-        adc_timeout_stamp = 0;
         return bs;
+    } else {
+        //printf("[Debug] ADC conversion took %u ms\n", adc_conversion_time);
     }
-    uint32_t adc_conversion_time = adc_finished_time - (adc_timeout_stamp - ADC_TIMEOUT_MS);
-    adc_done = false;
-    adc_timeout_stamp = 0;
-    adc_finished_time = 0;
 
-    // Read ADC registers that we're interested in 
-    buf[0] = buf[1] = 0;
-    pw_pmic_read_reg(REG_VBAT_ADC, buf, 2);
-    uint16_t raw_val = buf16[0];
-    uint16_t vbat = REG_VBAT_ADC_VAL(raw_val);
-    //printf("[Info] Raw VBAT 0x%04x\n", raw_val);
+    // Read ADC targets
+    float vbat_f = bq25628e_read_vbat();
+    //float vsys_f = bq25628e_read_vsys();
 
-    // Convert voltage to battery percentage
-    // TODO: Some form of LUT
-    // Value here is 0x000 - 0xaf0, max resolution of 1.99mV
-    float vbat_f = ((float)vbat / (float)0xaf0) * 5572.0;
-    //printf("[Log  ] VBAT: %4.0f mV\n", vbat_f);
+    // Convert vbat to percentage
     float percent_f = 100.0f*(vbat_f - VBAT_ABS_MINIMUM_MV)/(VBAT_ABS_MAXIMUM_MV-VBAT_ABS_MINIMUM_MV);
     bs.percent = (uint8_t)percent_f;
     if(percent_f > 105) {
@@ -391,51 +528,13 @@ pw_battery_status_t pw_power_get_battery_status() {
         printf("[Warn ] Battery percentage below 0%%: %d%%\n", (uint8_t)percent_f);
         bs.percent = 0;
     }
-    //bs.percent = 80;
-    //printf("[Info ] Battery is at %.2f%%\n", percent_f);
 
-
-    float neg = 1.0;
-
-    // Read battery current draw
-    // Convert to 2's compliment - negative means discharge
-    //pw_pmic_read_reg(REG_IBAT_ADC, buf, 2);
-    //raw_val = REG_IBAT_ADC_VAL(buf16[0]);
-    //if(raw_val > 0x1fff) { raw_val = (raw_val^0x3fff) + 1; neg = -1.0; }
-    //float ibat_f = neg * (float)(raw_val) / (float)(0x3e8) * 4000.0;
-    //printf("[Log ] IBAT: %4.0f mA\n", neg * (float)(raw_val) / (float)(0x3e8) * 4000.0);
-
-    // Read bus current draw
-    //pw_pmic_read_reg(REG_IBUS_ADC, buf, 2);
-    //raw_val = REG_IBUS_ADC_VAL(buf16[0]);
-    //if(raw_val > 0x3fff) { raw_val = (raw_val^0x7fff) + 1; neg = -1.0; }
-    //printf("[Log ] IBUS: %4.0f mA\n", neg * (float)(raw_val) / (float)(0x7d0) * 4000.0);
-    
-    // Read system voltage
-    // This gets converted down, but good to note what we're feeding the screen
-    pw_pmic_read_reg(REG_VSYS_ADC, buf, 2);
-    raw_val = REG_VSYS_ADC_VAL(buf16[0]);
-    float vsys_f = (float)raw_val * 5572.0 / (float)0x0af0;
-    //printf("[Log ] VSYS: %4.0f mV\n", (float)(raw_val) / (float)(0xaf0) * 5572.0);
-
-    /*
-    int len = snprintf(log_staging, 128,
-            //"[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"Mode\": \"%s\", \"Timestamp\":%lu}\n",
-            //vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"Sleep":"Normal", pw_time_get_rtc()
+    // Log and print
+    int len = snprintf(log_staging, sizeof(log_staging),
             "{\"vbat\":%4.0f,\"status\":\"%s\",\"mode\":\"%s\",\"time\":%lu}\n",
             vbat_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"S":"N", pw_time_get_rtc()
             );
-            */
-    int len = snprintf(log_staging, 128,
-            "{\"vbat\":%4.0f,\"status\":\"%s\",\"mode\":\"%s\",\"time\":%lu}\n",
-            vbat_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"S":"N", pw_time_get_rtc()
-            );
-    //printf("[Log  ] {\"VBAT_mV\": %4.0f, \"VSYS_mV\": %4.0f, \"Status\": \"%s\", \"ADC_conversion_ms\": %d}\n",
-            //vbat_f, vsys_f, CHARGE_STATUS_SHORT[charge_status], adc_conversion_time
-    //);
     printf(log_staging);
-
-    // ADC gets auto-disabled if we're in one-shot mode
 
     return bs;
 }
