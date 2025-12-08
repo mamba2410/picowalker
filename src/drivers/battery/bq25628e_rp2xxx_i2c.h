@@ -291,6 +291,14 @@ enum bq25628e_reg_address_e {
 #define REG_PART_INFO_PN_VAL(x)         (((x)>>3)&0x7)
 #define REG_PART_INFO_DEV_REV_VAL(x)    (((x)>>0)&0x7)
 
+
+enum {
+    CHARGE_STATUS_DISCHARGING = 0,
+    CHARGE_STATUS_CC,
+    CHARGE_STATUS_CV,
+    CHARGE_STATUS_TOP_OFF,
+};
+
 void pw_battery_init();
 void bq25628e_irq(uint gp, uint32_t events);
 

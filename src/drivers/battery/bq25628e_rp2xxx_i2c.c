@@ -71,6 +71,8 @@ typedef struct bq25628e_info_s {
     uint32_t adc_finished_time;
     bool adc_done;
     bool fault;
+    bool started_charging;
+    bool stopped_charging;
 } bq25628e_info_t;
 
 static volatile bq25628e_info_t pmic_info = {};
@@ -212,6 +214,8 @@ bool bq25628e_valid_fault(uint8_t fault_flags, uint8_t fault_status) {
     return (fault_flags & fault_mask) != 0;
 }
 
+uint8_t bq25628e_get_charge_status();
+
 /*
  * Interrupt handler from the PMIC
  * Read flags registers to determine what caused the interrupt and clear them.
@@ -232,6 +236,15 @@ void bq25628e_irq(uint gp, uint32_t events) {
     if(pmic_info.interrupt_flags[0] & REG_CHARGER_FLAG_0_ADC_DONE_FLAG) {
         pmic_info.adc_done = true;
         pmic_info.adc_finished_time = pw_time_get_ms();
+    }
+
+    if(pmic_info.interrupt_flags[1] & REG_CHARGER_FLAG_1_CHG_FLAG) {
+        uint8_t charge_status = bq25628e_get_charge_status(pmic_info.interrupt_status);
+        if(charge_status == CHARGE_STATUS_DISCHARGING) {
+            pmic_info.stopped_charging = true;
+        } else {
+            pmic_info.started_charging = true;
+        }
     }
 
     if(bq25628e_valid_fault(pmic_info.interrupt_flags[2], pmic_info.interrupt_status[2])) {
@@ -371,6 +384,17 @@ uint32_t bq25628e_get_adc_conversion_time() {
 }
 
 
+bool bq25628e_adc_timed_out() {
+    // No ADC running, so we can't be timed out
+    if(pmic_info.adc_timeout_stamp == 0) return false;
+    if(pmic_info.adc_done) return false;
+
+    uint32_t adc_start_time = pmic_info.adc_timeout_stamp - ADC_TIMEOUT_MS;
+    uint32_t conversion_time = pw_time_get_ms() - adc_start_time;
+    return conversion_time >= ADC_TIMEOUT_MS;
+}
+
+
 float bq25628e_read_vbat() {
     uint8_t buf[2];
     bq25628e_read_reg(REG_VBAT_ADC, buf, 2);
@@ -464,10 +488,9 @@ void pw_power_start_measurement() {
  * Don't clear since process_battery() needs the information too
  */
 bool pw_power_result_available() {
-    bool has_fault = pmic_info.fault;
     bool is_active = pmic_info.adc_timeout_stamp > 0;
     bool is_finished = pmic_info.adc_done || (pw_time_get_ms() >= pmic_info.adc_timeout_stamp);
-    return has_fault || (is_active && is_finished);
+    return is_active && is_finished;
 }
 
 
@@ -477,12 +500,6 @@ bool pw_power_result_available() {
  */
 pw_battery_status_t pw_power_get_status() {
     pw_battery_status_t bs = {.percent = 0, .flags = 0x00};
-
-    if(!pw_power_result_available()) {
-        printf("[Warn ] Asking for battery measurement when one isn't available\n");
-        bs.flags |= PW_BATTERY_STATUS_FLAGS_TIMEOUT;
-        return bs;
-    }
 
     // Interrupt handler read the status on interrupt, so we use that
 
@@ -498,20 +515,31 @@ pw_battery_status_t pw_power_get_status() {
 
     // Not faulted, so we must have ADC measurement or some other non-critical interrupt
 
-    uint8_t charge_status = bq25628e_get_charge_status(pmic_info.interrupt_status);
-    if(charge_status != 0) {
+    if(pmic_info.started_charging) {
+        pmic_info.started_charging = false;
         bs.flags |= PW_BATTERY_STATUS_FLAGS_CHARGING;
     }
 
-    // Check if ADC timed out
-    uint32_t adc_conversion_time = bq25628e_get_adc_conversion_time();
-    if(adc_conversion_time >= ADC_TIMEOUT_MS) {
+    if(pmic_info.stopped_charging) {
+        pmic_info.stopped_charging = false;
+        bs.flags |= PW_BATTERY_STATUS_FLAGS_CHARGE_ENDED;
+    }
+
+    //if(!pw_power_result_available()) {
+    if(bq25628e_adc_timed_out()) {
+        //printf("[Warn ] Asking for battery measurement when one isn't available\n");
         printf("[Warn ] Battery ADC measurement exceeded %d ms\n", ADC_TIMEOUT_MS);
         bs.flags |= PW_BATTERY_STATUS_FLAGS_TIMEOUT;
-        return bs;
-    } else {
-        //printf("[Debug] ADC conversion took %u ms\n", adc_conversion_time);
+        // clear ADC measurement
+        uint32_t conversion_time = bq25628e_get_adc_conversion_time();
     }
+
+    // Lastly, check if we have an ADC measurement. If not, we ditch early.
+    if(!pw_power_result_available()) return bs;
+
+    // We didn't leave, so we must have a measurement.
+    uint32_t conversion_time = bq25628e_get_adc_conversion_time();
+    bs.flags |= PW_BATTERY_STATUS_FLAGS_MEASUREMENT;
 
     // Read ADC targets
     float vbat_f = bq25628e_read_vbat();
@@ -528,6 +556,8 @@ pw_battery_status_t pw_power_get_status() {
         printf("[Warn ] Battery percentage below 0%%: %d%%\n", (uint8_t)percent_f);
         bs.percent = 0;
     }
+
+    uint8_t charge_status = bq25628e_get_charge_status(pmic_info.interrupt_status);
 
     // Log and print
     int len = snprintf(log_staging, sizeof(log_staging),
