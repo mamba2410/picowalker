@@ -73,6 +73,8 @@ typedef struct bq25628e_info_s {
     bool fault;
     bool started_charging;
     bool stopped_charging;
+    bool plugged;
+    bool unplugged;
 } bq25628e_info_t;
 
 static volatile bq25628e_info_t pmic_info = {};
@@ -244,6 +246,15 @@ void bq25628e_irq(uint gp, uint32_t events) {
             pmic_info.stopped_charging = true;
         } else {
             pmic_info.started_charging = true;
+        }
+    }
+
+    if(pmic_info.interrupt_flags[1] & REG_CHARGER_FLAG_1_VBUS_FLAG) {
+        uint8_t vbus_status = (pmic_info.interrupt_status[1] >> 0) & 0x07;
+        if(vbus_status == 0x04) {
+            pmic_info.plugged = true;
+        } else {
+            pmic_info.unplugged = true;
         }
     }
 
@@ -523,6 +534,16 @@ pw_battery_status_t pw_power_get_status() {
     if(pmic_info.stopped_charging) {
         pmic_info.stopped_charging = false;
         bs.flags |= PW_BATTERY_STATUS_FLAGS_CHARGE_ENDED;
+    }
+
+    if(pmic_info.plugged) {
+        pmic_info.plugged = false;
+        bs.flags |= PW_BATTERY_STATUS_FLAGS_PLUGGED;
+    }
+
+    if(pmic_info.unplugged) {
+        pmic_info.unplugged = false;
+        bs.flags |= PW_BATTERY_STATUS_FLAGS_UNPLUGGED;
     }
 
     //if(!pw_power_result_available()) {

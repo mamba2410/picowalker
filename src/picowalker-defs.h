@@ -201,6 +201,8 @@ void pw_accel_wake();
 #define PW_BATTERY_STATUS_FLAGS_TIMEOUT     (1<<2)
 #define PW_BATTERY_STATUS_FLAGS_MEASUREMENT (1<<3)
 #define PW_BATTERY_STATUS_FLAGS_CHARGE_ENDED (1<<4)
+#define PW_BATTERY_STATUS_FLAGS_PLUGGED     (1<<5)
+#define PW_BATTERY_STATUS_FLAGS_UNPLUGGED   (1<<6)
 #define PW_BATTERY_LOW_THRESHOLD            (10)
 
 typedef struct pw_battery_status_s {
