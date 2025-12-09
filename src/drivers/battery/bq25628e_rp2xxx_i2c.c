@@ -69,6 +69,7 @@ typedef struct bq25628e_info_s {
     uint8_t interrupt_status[4];
     uint32_t adc_timeout_stamp;
     uint32_t adc_finished_time;
+    bool irq;
     bool adc_done;
     bool fault;
     bool started_charging;
@@ -222,12 +223,7 @@ uint8_t bq25628e_get_charge_status();
  * Interrupt handler from the PMIC
  * Read flags registers to determine what caused the interrupt and clear them.
  */
-void bq25628e_irq(uint gp, uint32_t events) {
-    
-    if(gp != BAT_INT_PIN) {
-        printf("[Error] battery callback on pin gp%d\n", gp);
-        return;
-    }
+void bq25628e_service_irq() {
 
     // Read `FLAG` registers to clear interrupts
     bq25628e_read_reg(REG_CHARGER_FLAG_0, pmic_info.interrupt_flags, 3);
@@ -263,6 +259,15 @@ void bq25628e_irq(uint gp, uint32_t events) {
         pmic_info.fault = true;
     }
 
+}
+
+
+/*
+ * Minimal IRQ - i.e. don't read registers
+ * RP2350 doesn't like reading registers in IRQ when waking up from DORMANT
+ */
+void bq25628e_irq_minimal() {
+    pmic_info.irq = true;
 }
 
 
@@ -512,7 +517,12 @@ bool pw_power_result_available() {
 pw_battery_status_t pw_power_get_status() {
     pw_battery_status_t bs = {.percent = 0, .flags = 0x00};
 
-    // Interrupt handler read the status on interrupt, so we use that
+    // Minimal interrupt handler didn't read anything, so we do that now
+    if(pmic_info.irq) {
+        pmic_info.irq = false;
+        bq25628e_service_irq();
+    }
+
 
     // Immediately check faults
     if(pmic_info.fault) {

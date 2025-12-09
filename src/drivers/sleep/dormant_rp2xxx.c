@@ -14,6 +14,7 @@
 #include "../battery/bq25628e_rp2xxx_i2c.h"
 #include "../input/buttons_rp2xxx_gpio.h"
 #include "dormant_rp2xxx.h"
+#include "../interrupts/rp2xxx_gpio.h"
 
 static volatile bool power_should_sleep;
 pw_wake_reason_t wake_reason;

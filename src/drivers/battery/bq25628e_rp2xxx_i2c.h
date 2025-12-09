@@ -300,7 +300,7 @@ enum {
 };
 
 void pw_battery_init();
-void bq25628e_irq(uint gp, uint32_t events);
+void bq25628e_irq_minimal();
 
 #endif /* BATTERY_PICO_B25628E_H */
 

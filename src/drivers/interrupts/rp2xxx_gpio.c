@@ -21,7 +21,7 @@ void pw_gpio_interrupt_handler(uint gp, uint32_t events) {
     }
     case BAT_INT_PIN: {
         wake_reason |= PW_WAKE_REASON_BATTERY;
-        bq25628e_irq(gp, events);
+        bq25628e_irq_minimal();
         break;
     }
     case ACCEL_INT_PIN: {
