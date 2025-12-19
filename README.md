@@ -9,62 +9,44 @@
 
 ## About
 
-The overall Picowalker project aims to recreate the Pokewalker from Pokemon HeartGold/SoulSilver using custom hardware based around the Raspberry Pi Pico/rp2040 series of chips.
-This includes custom hardware, software and drivers, with some modern convenience features added in as well.
-Users should also be able to build their own based on a Raspberry Pi Pico, given that drivers are available for it.
+The Picowalker project aims to recreate the Pokewalker from Pokemon HeartGold/SoulSilver using modern hardware based around the Raspberry Pi Pico and RP2040 series of chips.
+This means custom hardware and software, with some modern convenience features added in as well.
+The picowalker will (eventually) be a fully compatible replacement for the Pokewalker, being able to interface with the games and other Pokewalkers.
 
-This repo is the board-specific firmware which supports the picowalker-core application code.
-
-See the core code for this project: [picowalker-core](https://github.com/mamba2410/picowalker-core).
-
-See the custom hardware these drivers are for: [picowalker-hardware](https://github.com/mamba2410/picowalker-hardware)
+- Drivers: This repo
+- Application core: [picowalker-core](https://github.com/mamba2410/picowalker-core)
+- Hardware: [picowalker-hardware](https://github.com/mamba2410/picowalker-hardware)
 
 Releases here will contain a full UF2 image which can be uploaded to the v1.0 picowalker hardware to run a full picowalker device.
 
 There are multiple branches in this repo, all with similar functionality
 (providing the "driver API" for the picowalker-core).
 
-- `hardware-v0.1` - The current active branch, drivers specific to the 
-    [custom PCB](https://github.com/mamba2410/picowalker-hardware) used as a
-    stepping stone to creating a modern rebuild.
-- `pico2` - Branch used to test out hardware using a pico 2 on a breadboard.
-    It is mostly compatible with `hardware-v0.1` except the pinouts will have
-    changed and some of the hardware is difficult to connect on a breadboard.
-- `waveshare` - An in-progress branch for the Waveshare RP2040 dev board
+Multiple boards are contained in this repo, but the main supported boards are for the picowalker hardware v1.0. Other boards are:
+
+- `hardware-v0.x` - Development boards while making the V1.0 hardware
+- `waveshare` - An in-progress branch for the commercially available Waveshare RP2350-LCD-1.28 board
 
 ## Project state
 
-This is working with the [picowalker-hardware v0.1](https://github.com/mamba2410/picowalker-hardware)
-which is a Raspberry Pi Pico 2 based custom PCB, including:
+This is working with the [picowalker-hardware v0.4](https://github.com/mamba2410/picowalker-hardware)
+which is a Raspberry Pi RP2350-based custom board, including:
 
-- DO180PFST05 OLED screen controlled over PIO QSPI or the rp2350 HSTX (SH8601Z driver)
-    - On-the-fly decode of picowalker images to RGB565.
-    - Currently only greyscale images.
+- DO180PFST05 OLED screen controlled over PIO QSPI (SH8601Z driver)
+    - On-the-fly decode of picowalker images to RGB565
+    - Currently only greyscale images
 - IrDA over PIO via Dmitry Gr.
-    - Currently CPU-fed but needs to be DMA-fed
 - M95512 64kB EEPROM
 - BMA400 Accelerometer over SPI
-    - Automatic step detection, with optional interrupts
-- BQ25628E PMIC for lithium battery charging and power management, with I2C interface
-    - Charging
-    - Voltage and current measurements
-- Serial debug outputs over pico stdout on a uart
-- Debugging on swd
-- Generic push buttons
+- BQ25628E PMIC for lithium battery charging and power management
 - USB (TinyUSB)
-    - Mass Storage Controller (MSC) for backing up and restoring the eeprom save data.
-- RTC
-    - Using RP2350's AON timer (internal LPOSC)
+    - Mass Storage Controller (MSC) for backing up and restoring the eeprom save data
+- RTC using RP2350's AON peripherals and an external 32.768 kHz clock
 
-Hardware to get working:
+Things for the future:
 
-- Battery
-    - Turn VBAT voltage reading into a battery level estimate
-    - Safe shutdown if battery voltage goes too low
-- Sound (not on hardware-v0.1)
-- External RTC (on hardware-v0.2)
 - Optimise sleep current (theoretically ~200uA is possible) [example](https://github.com/mamba2410/rp2350-powman-sleep).
-- Colour sprites.
+- Colour sprites [issue](https://github.com/mamba2410/picowalker-core/issues/9).
 
 ## Issues and Contributing
 
@@ -118,10 +100,6 @@ arm-none-eabi-gdb build/picowalker.elf
 - [Original pokewalker hack by Dmitry.GR](http://dmitry.gr/?r=05.Projects&proj=28.%20pokewalker)
 - [H8/300h Series software manual (for reverse-engineering)](https://www.renesas.com/us/en/document/mah/h8300h-series-software-manual)
 
-### Hardware
-
-(datasheets for the hardware go here when we have them)
-See [design doc for now](docs/DESIGN.md)
 
 ## License
 
