@@ -82,9 +82,11 @@ void pw_power_enter_sleep() {
     clocks_hw->sleep_en1 = 0;
     scb_hw->scr |= ARM_CPU_PREFIXED(SCR_SLEEPDEEP_BITS);
 
-    gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
-    gpio_set_dormant_irq_enabled(BAT_INT_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
-    gpio_set_dormant_irq_enabled(BUTTON_MIDDLE_PIN, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_LOW_BITS, true);
+    //gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, GPIO_IRQ_EDGE_RISE, true);
+    gpio_set_dormant_irq_enabled(BAT_INT_PIN, GPIO_IRQ_EDGE_FALL, true);
+    //gpio_set_dormant_irq_enabled(BUTTON_LEFT_PIN, GPIO_IRQ_EDGE_FALL, true);
+    //gpio_set_dormant_irq_enabled(BUTTON_RIGHT_PIN, GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_dormant_irq_enabled(BUTTON_MIDDLE_PIN, GPIO_IRQ_EDGE_FALL, true);
     //sleep_goto_dormant_until_pin(PIN_BUTTON_MIDDLE, true, false);
     // We should also be allowed to wake from AON timer
     rosc_set_dormant();
