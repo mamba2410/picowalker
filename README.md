@@ -100,10 +100,3 @@ arm-none-eabi-gdb build/picowalker.elf
 - [Original pokewalker hack by Dmitry.GR](http://dmitry.gr/?r=05.Projects&proj=28.%20pokewalker)
 - [H8/300h Series software manual (for reverse-engineering)](https://www.renesas.com/us/en/document/mah/h8300h-series-software-manual)
 
-
-## License
-
-Either MIT or GPL-3, whichever you want.
-
-If you fork or make changes, I'd love to know what cool things you're doing with it!
-
