@@ -17,7 +17,7 @@
 #define I2C_WRITE_MASK  (0x00)
 
 #define VBAT_ABS_MINIMUM_MV 3500.0f
-#define VBAT_ABS_MAXIMUM_MV 4200.0f
+#define VBAT_ABS_MAXIMUM_MV 4225.0f
 #define VBAT_SAFE_MINIMUM_MV 3600.0f
 
 static char log_staging[128] = "";
