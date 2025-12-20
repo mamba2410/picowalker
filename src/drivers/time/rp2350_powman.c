@@ -7,7 +7,8 @@
 #include "pico/time.h"
 #include "pico/types.h"
 #include "pico/aon_timer.h"
-
+#include "hardware/gpio.h"
+#include "stdio.h"
 
 #include "../sleep/dormant_rp2xxx.h"
 #include "../../picowalker-defs.h"

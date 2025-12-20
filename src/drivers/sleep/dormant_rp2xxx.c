@@ -5,8 +5,10 @@
 #include "hardware/clocks.h"
 #include "hardware/timer.h"
 #include "hardware/xosc.h"
+#include "hardware/powman.h"
 #include "pico/sleep.h"
 #include "pico/stdlib.h"
+#include "stdio.h"
 
 #include "board_resources.h"
 #include "../../picowalker-defs.h"
@@ -27,6 +29,7 @@ void user_idle_callback(void) {
     power_should_sleep = true;
 }
 
+
 /*
  * Note that we need to keep "refreshing" the same timer rather than
  * adding new timers, otherwise the MCU would sleep after *every* button press
@@ -45,11 +48,13 @@ void set_user_idle_timer() {
     timer_hw->alarm[USER_IDLE_ALARM_NUM] = (uint32_t)target;
 }
 
+
 void pw_power_init() {
     pw_battery_init();
 
     set_user_idle_timer();
 }
+
 
 void pw_power_enter_sleep() {
 
@@ -59,13 +64,9 @@ void pw_power_enter_sleep() {
 
     wake_reason = 0;
 
-    // Start the POWMAN timer from LPOSC which we aren't turning off
     struct timespec ts;
     aon_timer_get_time(&ts);
-    //printf("[Debug] Sleep saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
-
     powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
-    //powman_timer_set_ms(powman_ms);
     aon_timer_set_time(&ts);
 
     // Actually do the sleep
@@ -85,49 +86,23 @@ void pw_power_enter_sleep() {
 
     //gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, GPIO_IRQ_EDGE_RISE, true);
     gpio_set_dormant_irq_enabled(BAT_INT_PIN, GPIO_IRQ_EDGE_FALL, true);
-    //gpio_set_dormant_irq_enabled(BUTTON_LEFT_PIN, GPIO_IRQ_EDGE_FALL, true);
-    //gpio_set_dormant_irq_enabled(BUTTON_RIGHT_PIN, GPIO_IRQ_EDGE_FALL, true);
     gpio_set_dormant_irq_enabled(BUTTON_MIDDLE_PIN, GPIO_IRQ_EDGE_FALL, true);
-    //sleep_goto_dormant_until_pin(PIN_BUTTON_MIDDLE, true, false);
     // We should also be allowed to wake from AON timer
+
+    // Go to sleep
     rosc_set_dormant();
     //xosc_dormant();
+
+    // Interrupts happen here straight after waking up
+    // Note: peripheral clocks aren't up and running yet so IO will likely be wonky
 
     sleep_power_up();
     printf("[Debug] MCU is awake, wake reason: 0x%02x\n", wake_reason);
 
     // === End of danger zone ===
 
-    // Run POWMAN timer from XOSC since its more accurate
-    //powman_ms = powman_timer_get_ms();
-    //printf("[Debug] Waking powman timer with 0x%08x%08x ms\n", (uint32_t)(powman_ms>>32), (uint32_t)powman_ms);
-    //powman_sec = powman_ms/1000;
-    //printf("[Debug] Equivalent to 0x%08x s\n", powman_sec);
-    //powman_timer_set_1khz_tick_source_xosc();
-    //powman_timer_set_ms(powman_ms);
-
-    //aon_timer_get_time(&ts);
-    //printf("[Debug] Wake saving time as 0x%08x s\n", (uint32_t)ts.tv_sec);
-    //powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
-    //powman_timer_set_1khz_tick_source_xosc();
-    //aon_timer_set_time(&ts);
-
-    // TODO: Check what caused the wakeup, if it was AON timer then go back to sleep
-
-    // TODO: Wait one second and sample pin again?
-    // Can do that with another sleep timer clocked from AON
-
-    //pw_accel_wake();
-    //pw_flash_wake();
-    //pw_eeprom_wake();
-
-    //pw_ir_wake(); // Don't wake IR, we dont know if it was on
-
     // Re-configure buttons since the config got clobbered from sleeping
     pw_button_init();
-
-    // Wake screen last for least weirdness
-    //pw_screen_wake();
 
     // TODO: Change call when timer code gets updated
     power_should_sleep = false;
@@ -138,6 +113,7 @@ void pw_power_enter_sleep() {
     acknowledge_button_presses = true;
 }
 
+
 bool pw_power_should_sleep() {
     return power_should_sleep;
 }
@@ -146,6 +122,7 @@ bool pw_power_should_sleep() {
 pw_wake_reason_t pw_power_get_wake_reason() {
     return wake_reason;
 }
+
 
 void pw_power_clear_wake_reason(pw_wake_reason_t reason) {
     wake_reason &= ~reason;
