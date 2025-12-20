@@ -13,6 +13,7 @@
 #define LOG_READ_ADDRESS ((uint8_t*)(XIP_BASE + LOG_FLASH_OFFSET))
 #define LOG_LIMIT_BYTES (512*1024)
 #define LOG_PAGE_SIZE (FLASH_SECTOR_SIZE)
+#define LOG_METADATA_OFFSET (LOG_FLASH_OFFSET + LOG_LIMIT_BYTES)
 
 /**
  * Values all in bytes
@@ -28,6 +29,8 @@ extern pw_flash_log_t flash_log;
 
 size_t get_apparent_log_size();
 void log_read_from_address(size_t addr, uint8_t *out, size_t len);
+void flash_log_flush();
+void pw_flash_log_init();
 
 
 #endif /* PW_ONBOARD_LOG_H */
