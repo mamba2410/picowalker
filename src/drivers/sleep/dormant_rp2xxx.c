@@ -56,6 +56,16 @@ void pw_power_init() {
 }
 
 
+void pw_power_disable_sleep() {
+    power_sleep_enabled = false;
+}
+
+
+void pw_power_enable_sleep() {
+    power_sleep_enabled = true;
+}
+
+
 void pw_power_enter_sleep() {
 
     // Going to sleep, we don't want to respond to button presses
