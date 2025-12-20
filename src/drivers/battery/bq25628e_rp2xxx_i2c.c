@@ -371,6 +371,15 @@ void bq25628e_start_adc_measurement() {
 }
 
 
+void bq25628e_disable_adc() {
+    uint8_t buf[4];
+    bq25628e_read_reg(REG_ADC_CONTROL, buf, 1);
+    buf[0] &= ~REG_ADC_CONTROL_ADC_EN_MSK;
+    buf[0] |= REG_ADC_CONTROL_ADC_EN_DISABLED;
+    bq25628e_write_reg(REG_ADC_CONTROL, buf, 1);
+}
+
+
 uint8_t bq25628e_get_charge_status(uint8_t status_regs[3]) {
     uint8_t charge_status = (status_regs[1]>>3)&0x03;
     return charge_status;
@@ -459,6 +468,7 @@ void bq25628e_log_vbat(float vbat) {
  * ============================================================================
  */
 void pw_battery_shutdown() {
+    bq25628e_disable_adc();
     uint8_t val = REG_CHARGER_CONTROL_2_BATFET_CTRL_SHUTDOWN;
     bq25628e_write_reg(REG_CHARGER_CONTROL_2, &val, 1);
 }
