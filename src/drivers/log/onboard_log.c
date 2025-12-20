@@ -11,6 +11,8 @@
 
 #include "onboard_log.h"
 
+#define LOG_METADATA_WRITE_SIZE (sizeof(size_t)*3)
+
 pw_flash_log_t flash_log = {};
 
 
@@ -32,7 +34,7 @@ void log_read_from_address(size_t addr, uint8_t *out, size_t read_len) {
     // Check if we should read from flash, ram or fill with zeros
     if(addr < flash_used) {
         size_t read_addr = (addr + flash_log.flash_read_head) % LOG_LIMIT_BYTES;
-        memcpy(out, XIP_BASE + LOG_FLASH_OFFSET + read_addr, read_len);
+        memcpy(out, (uint8_t*)XIP_BASE + LOG_FLASH_OFFSET + read_addr, read_len);
     } else if(addr < flash_used + flash_log.ram_write_head) {
         size_t buffer_offset = addr - flash_used;
         memcpy(out, flash_log.buffer + buffer_offset, read_len);
@@ -55,6 +57,17 @@ static void call_flash_range_erase(void* param) {
     uint32_t offset = (uint32_t)param;
     //flash_range_erase(offset, FLASH_SECTOR_SIZE);
     flash_range_erase(offset, LOG_PAGE_SIZE);
+}
+
+
+static void call_flash_flush_struct(void* param) {
+    (void)param;
+
+    // Erase what's there already
+    flash_range_erase(LOG_METADATA_OFFSET, LOG_METADATA_WRITE_SIZE);
+
+    // Put in current state
+    flash_range_program(LOG_METADATA_OFFSET, (const uint8_t*)&flash_log, LOG_METADATA_WRITE_SIZE);
 }
 
 /**
@@ -119,4 +132,53 @@ void pw_log(char *msg, size_t len) {
 void pw_log_dump() {
     uart_write_blocking(uart0, (uint8_t*)LOG_READ_ADDRESS, LOG_PAGE_SIZE);
 }
+
+// Write everything to flash, and a marker
+void flash_log_flush() {
+    size_t write_addr = LOG_METADATA_OFFSET;
+    // Erase whatever is already in the page
+    int rc = flash_safe_execute(call_flash_range_erase, (void*)write_addr, UINT32_MAX);
+    hard_assert(rc == PICO_OK);
+
+    // Reprogram it with what we want
+    uintptr_t params[] = {write_addr, (uintptr_t)flash_log.buffer};
+    rc = flash_safe_execute(call_flash_range_program, params, UINT32_MAX);
+    hard_assert(rc == PICO_OK);
+
+    // Do the same for `flash_log` struct page
+    rc = flash_safe_execute(call_flash_flush_struct, NULL,  UINT32_MAX);
+    hard_assert(rc == PICO_OK);
+    
+}
+
+
+void pw_flash_log_init() {
+    // Read the first 3 members of `flash_log` from flash
+    uint8_t *src = (uint8_t*)XIP_BASE + LOG_METADATA_OFFSET;
+    uint8_t *dst = (uint8_t*)&flash_log;
+    memcpy(dst, src, LOG_METADATA_WRITE_SIZE);
+
+    // Check if they are valid
+    bool ram_write_head_valid = flash_log.ram_write_head < LOG_PAGE_SIZE;
+    bool flash_write_head_valid = flash_log.flash_write_head < LOG_LIMIT_BYTES;
+    bool flash_read_head_valid = flash_log.flash_read_head < LOG_LIMIT_BYTES;
+    bool all_valid = ram_write_head_valid && flash_write_head_valid && flash_read_head_valid;
+
+    if(all_valid) {
+        // Read the partially written page back into RAM
+        src = (uint8_t*)XIP_BASE + LOG_FLASH_OFFSET + flash_log.flash_write_head;
+        dst = flash_log.buffer;
+        memcpy(dst, src, flash_log.ram_write_head);
+        printf("[Debug] Flash log initialised from saved data: ram head=%d, flash write page=%d, flash read page=%d\n",
+                flash_log.ram_write_head, flash_log.flash_write_head/LOG_PAGE_SIZE, flash_log.flash_read_head/LOG_PAGE_SIZE);
+    } else {
+        // If not, we start from scratch
+        flash_log.ram_write_head = 0;
+        flash_log.flash_write_head = 0;
+        flash_log.flash_read_head = 0;
+        printf("[Debug] Flash log initialised from scratch\n");
+    }
+
+}
+
 

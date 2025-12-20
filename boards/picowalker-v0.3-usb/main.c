@@ -58,6 +58,9 @@ int main() {
     //board_init();
     tusb_init(BOARD_TUD_RHPORT, &dev_init);
 
+    // TODO: move
+    pw_flash_log_init();
+
     extern void (*current_loop)(void);
 
     while(1) {
@@ -74,7 +77,7 @@ void tud_mount_cb(void) {
     printf("[Info ] tusb mounted\n");
 
     // Halt sleep timer so we don't mess up tusb
-    power_sleep_enabled = false;
+    pw_power_disable_sleep();
 
 }
 
@@ -82,7 +85,7 @@ void tud_umount_cb(void) {
     printf("[Info ] tusb unmounted\n");
 
     // Unmount and now we're safe to sleep
-    power_sleep_enabled = true;
+    pw_power_enable_sleep();
     set_user_idle_timer();
 }
 

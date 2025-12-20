@@ -484,6 +484,7 @@ void bq25628e_log_vbat(float vbat) {
  * ============================================================================
  */
 void pw_battery_shutdown() {
+    flash_log_flush();
     bq25628e_disable_adc();
     uint8_t val = REG_CHARGER_CONTROL_2_BATFET_CTRL_SHUTDOWN;
     bq25628e_write_reg(REG_CHARGER_CONTROL_2, &val, 1);
