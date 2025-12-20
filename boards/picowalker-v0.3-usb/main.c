@@ -41,67 +41,11 @@ void board_i2c_init() {
 
 int main() {
     bi_decl(bi_program_description("picowalker"));
-
-    // Downclock the system to save a bit of power and allow the HSTX
-    // to have a lower clock
-    //set_sys_clock_khz(48000, true);
-
-    /*
-    // emergency blink routine
-    gpio_init(27);
-    gpio_set_dir(27, GPIO_OUT);
-
-    while(1) {
-        gpio_put(27, 0);
-        sleep_ms(1000);
-        gpio_put(27, 1);
-        sleep_ms(1000);
-    }
-    */
-
-
-
     stdio_init_all();
 
     sleep_ms(1000);
 
     printf("[Info] ==== Hello, picowalker! ====\n");
-
-    /* Program the EEPROM over debug uart
-    // Send a full rom file using `cat`
-    // Beware: no validation is done
-    pw_eeprom_init();
-
-    uint16_t address = 0;
-    uint8_t page[128];
-    while(1){
-        if(uart_is_readable(uart0)) {
-            page[address&0x7f] = uart_getc(uart0);
-            address++;
-            if((address&0x7f) == 0) {
-                pw_eeprom_write(address-128, page, 128);
-                printf("Written page to 0x%04x\n", address-128);
-            }
-        }
-    }
-    */
-
-    /*
-    // Dump eeprom over debug port
-    // picocom -b 115200 /dev/ttyACM0 -g logfile.bin
-    pw_eeprom_init();
-
-    uint32_t address = 0;
-    uint8_t page[128];
-    while(address < 0x10000) {
-        pw_eeprom_read(address, page, 128);
-        uart_write_blocking(uart0, page, 128);
-        address += 128;
-    }
-    while(1);
-    */
-
-    //audio_test_program();
 
     // Start picowalker-core
     walker_setup();
@@ -111,14 +55,10 @@ int main() {
         .speed = TUSB_SPEED_AUTO
     };
 
-    board_init();
+    //board_init();
     tusb_init(BOARD_TUD_RHPORT, &dev_init);
 
     extern void (*current_loop)(void);
-
-    //if(board_init_after_tusb) {
-    //    board_init_after_tusb();
-    //}
 
     while(1) {
         tud_task();
