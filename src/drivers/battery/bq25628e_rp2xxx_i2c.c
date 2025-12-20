@@ -370,6 +370,7 @@ void bq25628e_start_adc_measurement() {
 
     pmic_info.adc_timeout_stamp = pw_time_get_ms() + ADC_TIMEOUT_MS;
     pmic_info.adc_finished_time = 0;
+    pmic_info.adc_done = false;
 
 }
 
@@ -380,22 +381,9 @@ uint8_t bq25628e_get_charge_status(uint8_t status_regs[3]) {
 }
 
 
-/**
- */ 
 uint32_t bq25628e_get_adc_conversion_time() {
-    uint32_t conversion_time = 0;
-    
-    if(pmic_info.adc_done) {
-        uint32_t adc_start_time = pmic_info.adc_timeout_stamp - ADC_TIMEOUT_MS;
-        conversion_time = pmic_info.adc_finished_time - adc_start_time;
-    } else {
-        conversion_time = ADC_TIMEOUT_MS;
-    }
-
-    pmic_info.adc_done = false;
-    pmic_info.adc_timeout_stamp = 0;
-    pmic_info.adc_finished_time = 0;
-
+    uint32_t adc_start_time = pmic_info.adc_timeout_stamp - ADC_TIMEOUT_MS;
+    uint32_t conversion_time = pmic_info.adc_finished_time - adc_start_time;
     return conversion_time;
 }
 
@@ -404,10 +392,7 @@ bool bq25628e_adc_timed_out() {
     // No ADC running, so we can't be timed out
     if(pmic_info.adc_timeout_stamp == 0) return false;
     if(pmic_info.adc_done) return false;
-
-    uint32_t adc_start_time = pmic_info.adc_timeout_stamp - ADC_TIMEOUT_MS;
-    uint32_t conversion_time = pw_time_get_ms() - adc_start_time;
-    return conversion_time >= ADC_TIMEOUT_MS;
+    return pw_time_get_ms() >= pmic_info.adc_timeout_stamp;
 }
 
 
@@ -476,6 +461,7 @@ void pw_battery_init() {
     bq25628e_configure_interrupts();
     bq25628e_configure_adc_targets();
     bq25628e_configure_adc();
+    bq25628e_clear_adc_state();
 
     bq25628e_enable_charge_pin();
 
@@ -495,7 +481,6 @@ void pw_power_start_measurement() {
     }
 
     bq25628e_start_adc_measurement();
-
 }
 
 
@@ -505,7 +490,7 @@ void pw_power_start_measurement() {
  */
 bool pw_power_result_available() {
     bool is_active = pmic_info.adc_timeout_stamp > 0;
-    bool is_finished = pmic_info.adc_done || (pw_time_get_ms() >= pmic_info.adc_timeout_stamp);
+    bool is_finished = pmic_info.adc_done;
     return is_active && is_finished;
 }
 
@@ -522,7 +507,6 @@ pw_battery_status_t pw_power_get_status() {
         pmic_info.irq = false;
         bq25628e_service_irq();
     }
-
 
     // Immediately check faults
     if(pmic_info.fault) {
@@ -556,13 +540,10 @@ pw_battery_status_t pw_power_get_status() {
         bs.flags |= PW_BATTERY_STATUS_FLAGS_UNPLUGGED;
     }
 
-    //if(!pw_power_result_available()) {
     if(bq25628e_adc_timed_out()) {
-        //printf("[Warn ] Asking for battery measurement when one isn't available\n");
         printf("[Warn ] Battery ADC measurement exceeded %d ms\n", ADC_TIMEOUT_MS);
         bs.flags |= PW_BATTERY_STATUS_FLAGS_TIMEOUT;
-        // clear ADC measurement
-        uint32_t conversion_time = bq25628e_get_adc_conversion_time();
+        bq25628e_clear_adc_state();
     }
 
     // Lastly, check if we have an ADC measurement. If not, we ditch early.
