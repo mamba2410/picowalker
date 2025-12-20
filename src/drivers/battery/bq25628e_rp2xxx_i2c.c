@@ -12,10 +12,6 @@
 #include "../interrupts/rp2xxx_gpio.h"
 #include "../../picowalker-defs.h"
 
-//#define I2C_READ_MASK   (0x80)
-#define I2C_READ_MASK   (0x00)
-#define I2C_WRITE_MASK  (0x00)
-
 #define VBAT_ABS_MINIMUM_MV 3500.0f
 #define VBAT_ABS_MAXIMUM_MV 4225.0f
 #define VBAT_SAFE_MINIMUM_MV 3600.0f
@@ -94,7 +90,7 @@ static void bq25628e_write_reg(uint8_t reg, uint8_t *buf, size_t len) {
     for(uint8_t i = 1; i <= len; i++)
         buf2[i] = buf[i-1];
 
-    i2c_write_blocking(BAT_I2C_HW, BAT_I2C_ADDR | I2C_WRITE_MASK, buf2, len+1, false);
+    i2c_write_blocking(BAT_I2C_HW, BAT_I2C_ADDR, buf2, len+1, false);
 }
 
 /*
