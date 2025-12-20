@@ -17,8 +17,9 @@
 #include "../interrupts/rp2xxx_gpio.h"
 
 static volatile bool power_should_sleep;
-pw_wake_reason_t wake_reason;
-extern lposc_value;
+volatile bool power_sleep_enabled = true;
+volatile pw_wake_reason_t wake_reason;
+extern int lposc_value;
 
 void user_idle_callback(void) {
     // Clear interrupt
