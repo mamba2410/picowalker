@@ -421,6 +421,42 @@ float bq25628e_read_vsys() {
 }
 
 
+void bq25628e_clear_adc_state() {
+    pmic_info.adc_done = false;
+    pmic_info.adc_timeout_stamp = 0;
+    pmic_info.adc_finished_time = 0;
+}
+
+
+float bq25628e_voltage_to_percent(float vbat) {
+    float percent = 0;
+
+    if(vbat > VBAT_ABS_MAXIMUM_MV) {
+        printf("[Warn ] Battery voltage above maximum: %4.0f > %4.0f\n", vbat, VBAT_ABS_MAXIMUM_MV);
+        percent = 100.0f;
+    } else if(vbat < VBAT_ABS_MINIMUM_MV) {
+        printf("[Warn ] Battery voltage below minimum: %4.0f < %4.0f\n", vbat, VBAT_ABS_MINIMUM_MV);
+        percent = 0.0f;
+    } else {
+        percent = 100.0f*(vbat - VBAT_ABS_MINIMUM_MV)/(VBAT_ABS_MAXIMUM_MV-VBAT_ABS_MINIMUM_MV);
+    }
+
+    return percent;
+}
+
+
+void bq25628e_log_vbat(float vbat) {
+    uint8_t charge_status = bq25628e_get_charge_status(pmic_info.interrupt_status);
+
+    // Log and print
+    int len = snprintf(log_staging, sizeof(log_staging),
+            "{\"vbat\":%4.0f,\"status\":\"%s\",\"mode\":\"%s\",\"time\":%lu}\n",
+            vbat, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"S":"N", pw_time_get_rtc()
+            );
+    printf(log_staging);
+}
+
+
 /**
  * ============================================================================
  * Picowalker core functionality
@@ -554,29 +590,14 @@ pw_battery_status_t pw_power_get_status() {
     bs.flags |= PW_BATTERY_STATUS_FLAGS_MEASUREMENT;
 
     // Read ADC targets
-    float vbat_f = bq25628e_read_vbat();
+    float vbat = bq25628e_read_vbat();
     //float vsys_f = bq25628e_read_vsys();
 
-    // Convert vbat to percentage
-    float percent_f = 100.0f*(vbat_f - VBAT_ABS_MINIMUM_MV)/(VBAT_ABS_MAXIMUM_MV-VBAT_ABS_MINIMUM_MV);
-    bs.percent = (uint8_t)percent_f;
-    if(percent_f > 105) {
-        printf("[Warn ] Battery percentage above 100%%: %d%%\n", (uint8_t)percent_f);
-        bs.percent = 100;
-    }
-    if(percent_f < 0) {
-        printf("[Warn ] Battery percentage below 0%%: %d%%\n", (uint8_t)percent_f);
-        bs.percent = 0;
-    }
+    float vbat_percent = bq25628e_voltage_to_percent(vbat);
+    bs.percent = (uint8_t)vbat_percent;
 
-    uint8_t charge_status = bq25628e_get_charge_status(pmic_info.interrupt_status);
-
-    // Log and print
-    int len = snprintf(log_staging, sizeof(log_staging),
-            "{\"vbat\":%4.0f,\"status\":\"%s\",\"mode\":\"%s\",\"time\":%lu}\n",
-            vbat_f, CHARGE_STATUS_SHORT[charge_status], (pw_power_get_mode())?"S":"N", pw_time_get_rtc()
-            );
-    printf(log_staging);
+    bq25628e_log_vbat(vbat);
+    bq25628e_clear_adc_state();
 
     return bs;
 }
