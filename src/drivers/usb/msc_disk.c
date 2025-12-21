@@ -148,7 +148,7 @@ static void edit_fat_table(uint8_t *buffer, size_t bufsize) {
 
 
 static void handle_fat_request(uint8_t *buffer, size_t bufsize, size_t offset, size_t lba_into_fat) {
-    if(lba_into_fat + DISK_FAT_FIRST_INDEX < DISK_FAT_LAST_INDEX) {
+    if(lba_into_fat + DISK_FAT_FIRST_INDEX <= DISK_FAT_LAST_INDEX) {
         uint8_t const* addr = msc_disk[DISK_FAT_FIRST_INDEX + lba_into_fat] + offset;
         memcpy(buffer, addr, bufsize);
         edit_fat_table(buffer, bufsize);
@@ -174,14 +174,14 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
   }
 
   // FAT1
-  if(lba == FAT1_FIRST_LBA) {
+  if(lba >= FAT1_FIRST_LBA && lba <= FAT1_LAST_LBA) {
     size_t lba_into_fat = lba - FAT1_FIRST_LBA;
     handle_fat_request(buffer, bufsize, offset, lba_into_fat);
     return (int32_t)bufsize;
   }
 
   // FAT2
-  if(lba == FAT2_FIRST_LBA) {
+  if(lba >= FAT2_FIRST_LBA && lba <= FAT2_LAST_LBA) {
     size_t lba_into_fat = lba - FAT2_FIRST_LBA;
     handle_fat_request(buffer, bufsize, offset, lba_into_fat);
     return (int32_t)bufsize;
