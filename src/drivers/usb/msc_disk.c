@@ -103,6 +103,46 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
   return true;
 }
 
+
+static void truncate_chain(uint8_t *buf, uint16_t first_cluster, size_t buffer_size_bytes, size_t truncated_length) {
+    uint16_t *fat = (uint16_t*)buf;
+    uint16_t next_cluster = first_cluster;
+    uint16_t prev_cluster = 0xffff;
+    size_t length = 0;
+
+    for(length = 0; length < truncated_length; length++) {
+        prev_cluster = next_cluster;
+        next_cluster = fat[next_cluster];
+    }
+
+    // Truncate chain
+    //printf("[Debug] Truncating by setting FAT entry 0x%04x to 0xffff\n", prev_cluster);
+    fat[prev_cluster] = 0xffff;
+
+    // Zero rest of the chain
+    /*
+    for(; next_cluster != 0xffff && next_cluster != 0xfff8 && next_cluster != 0x0000 && next_cluster < last_cluster; ) {
+        prev_cluster = next_cluster;
+        next_cluster = fat[next_cluster];
+        fat[prev_cluster] = 0x0000;
+    }
+    */
+    // Shortcut when assuming chains are always in order and this is the last one.
+    // Just zero the rest of the buffer.
+    memset(&fat[prev_cluster+1], 0, buffer_size_bytes - prev_cluster*2);
+
+}
+
+
+static void edit_fat_table(uint8_t *buffer) {
+
+    // Truncate cluster chain to actual file length, to satisfy fsck
+    size_t log_size = get_apparent_log_size();
+    size_t chain_size = (log_size + DISK_CLUSTER_SIZE-1)/DISK_CLUSTER_SIZE;
+    truncate_chain(buffer, LOG_TXT_FIRST_CLUSTER, DISK_SECTOR_SIZE, chain_size);
+}
+
+
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and return number of copied bytes.
 int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize)
@@ -122,6 +162,9 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
   if(lba == FAT1_FIRST_LBA) {
     uint8_t const* addr = msc_disk[DISK_FAT1_INDEX] + offset;
     memcpy(buffer, addr, bufsize);
+
+    edit_fat_table(buffer);
+
     return (int32_t)bufsize;
   }
 
@@ -129,6 +172,9 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
   if(lba == FAT2_FIRST_LBA) {
     uint8_t const* addr = msc_disk[DISK_FAT2_INDEX] + offset;
     memcpy(buffer, addr, bufsize);
+
+    edit_fat_table(buffer);
+
     return (int32_t)bufsize;
   }
 
@@ -136,7 +182,7 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buff
   if(lba == ROOT_DIR_FIRST_LBA) {
     uint8_t const* addr = msc_disk[DISK_ROOT_DIR_INDEX] + offset;
     memcpy(buffer, addr, bufsize);
-    uint32_t *log_size = (uint32_t*)&buffer[LOG_TXT_ENTRY_OFFSET+32-4];
+    uint32_t *log_size = (uint32_t*)(buffer + LOG_TXT_ENTRY_OFFSET+32-4);
     //*log_size = flash_log.flash_write_head + flash_log.ram_write_head;
     *log_size = get_apparent_log_size();
     return (int32_t)bufsize;
