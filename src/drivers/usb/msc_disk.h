@@ -31,8 +31,8 @@
 #define ROOT_DIR_LAST_LBA 99
 
 #define DISK_BPB_INDEX 0
-#define DISK_FAT1_INDEX 1
-#define DISK_FAT2_INDEX 2
+#define DISK_FAT_FIRST_INDEX 1
+#define DISK_FAT_LAST_INDEX 2
 #define DISK_ROOT_DIR_INDEX 3
 
 uint8_t msc_disk[4][512] = {
