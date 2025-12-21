@@ -104,42 +104,46 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
 }
 
 
-static void truncate_chain(uint8_t *buf, uint16_t first_cluster, size_t buffer_size_bytes, size_t truncated_length) {
+static size_t truncate_chain(uint8_t *buf, uint16_t first_cluster, size_t buffer_size_bytes, size_t truncated_length) {
     uint16_t *fat = (uint16_t*)buf;
     uint16_t next_cluster = first_cluster;
-    uint16_t prev_cluster = 0xffff;
+    uint16_t read_index = 0xffff;
     size_t length = 0;
 
     for(length = 0; length < truncated_length; length++) {
-        prev_cluster = next_cluster;
-        next_cluster = fat[next_cluster];
+        read_index = next_cluster;
+        next_cluster = fat[read_index];
     }
 
     // Truncate chain
-    //printf("[Debug] Truncating by setting FAT entry 0x%04x to 0xffff\n", prev_cluster);
-    fat[prev_cluster] = 0xffff;
+    //printf("[Debug] Truncating by setting FAT entry 0x%04x to 0xffff\n", read_index);
+    fat[read_index] = 0xffff;
 
-    // Zero rest of the chain
-    /*
-    for(; next_cluster != 0xffff && next_cluster != 0xfff8 && next_cluster != 0x0000 && next_cluster < last_cluster; ) {
-        prev_cluster = next_cluster;
-        next_cluster = fat[next_cluster];
-        fat[prev_cluster] = 0x0000;
-    }
-    */
-    // Shortcut when assuming chains are always in order and this is the last one.
-    // Just zero the rest of the buffer.
-    memset(&fat[prev_cluster+1], 0, buffer_size_bytes - prev_cluster*2);
-
+    return next_cluster;
 }
 
 
-static void edit_fat_table(uint8_t *buffer) {
+static void zero_chain(uint16_t *fat, uint16_t first_cluster, uint16_t fat_size) {
+    uint16_t next_cluster = first_cluster;
 
+    size_t zero_length = 0;
+    while(next_cluster != 0xfff8 && next_cluster != 0xffff && next_cluster != 0x0000) {
+        uint16_t read_index = next_cluster;
+        next_cluster = fat[read_index];
+        fat[read_index] = 0x0000;
+        zero_length++;
+    }
+
+    //printf("[Debug] Zeroed %d entries\n", zero_length);
+}
+
+
+static void edit_fat_table(uint8_t *buffer, size_t bufsize) {
     // Truncate cluster chain to actual file length, to satisfy fsck
     size_t log_size = get_apparent_log_size();
     size_t chain_size = (log_size + DISK_CLUSTER_SIZE-1)/DISK_CLUSTER_SIZE;
-    truncate_chain(buffer, LOG_TXT_FIRST_CLUSTER, DISK_SECTOR_SIZE, chain_size);
+    uint16_t first_zero = truncate_chain(buffer, LOG_TXT_FIRST_CLUSTER, DISK_SECTOR_SIZE, chain_size);
+    zero_chain((uint16_t*)buffer, first_zero, bufsize/sizeof(uint16_t));
 }
 
 
@@ -147,7 +151,7 @@ static void handle_fat_request(uint8_t *buffer, size_t bufsize, size_t offset, s
     if(lba_into_fat + DISK_FAT_FIRST_INDEX < DISK_FAT_LAST_INDEX) {
         uint8_t const* addr = msc_disk[DISK_FAT_FIRST_INDEX + lba_into_fat] + offset;
         memcpy(buffer, addr, bufsize);
-        edit_fat_table(buffer);
+        edit_fat_table(buffer, bufsize);
     } else {
         memset(buffer, 0, bufsize);
     }
