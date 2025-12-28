@@ -49,6 +49,11 @@ const uint16_t colour_map[4] = {
     0xa419, // black
 };
 
+// AMOLED brightness range is 0x00 - 0xff
+// Limit range to something useable that won't drain battery too much
+#define AMOLED_MAX_BRIGHTNESS 0xff
+#define AMOLED_MIN_BRIGHTNESS 0x10
+
 enum screen_cmd {
     CMD_NOP             = 0x00,
     CMD_SWRST           = 0x01,

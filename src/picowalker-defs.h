@@ -41,6 +41,9 @@ enum {
 #define SCREEN_WIDTH    96
 #define SCREEN_HEIGHT   64
 
+#define MIN_BRIGHTNESS_LEVEL 0
+#define MAX_BRIGHTNESS_LEVEL 9
+
 /*
  * Functions defined by the driver
  */

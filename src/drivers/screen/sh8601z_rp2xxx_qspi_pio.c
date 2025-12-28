@@ -504,14 +504,30 @@ void pw_screen_fill_area(screen_pos_t x, screen_pos_t y,
 
 }
 
+
 void pw_screen_sleep() {
     // Enable display standby
     uint8_t params[2] = {0x01};
     amoled_send_1wire(CMD_DSTB_CTRL, 1, params);
 }
 
+
 void pw_screen_wake() {
     // Wake it up and re-configure it
     // Same as a power-on reset
     amoled_reset();
 }
+
+
+void pw_screen_set_brightness(uint8_t level) {
+    if(level > MAX_BRIGHTNESS_LEVEL) return;
+    
+    uint8_t brightness_range = AMOLED_MAX_BRIGHTNESS - AMOLED_MIN_BRIGHTNESS + 1;
+    uint8_t level_range = MAX_BRIGHTNESS_LEVEL - MIN_BRIGHTNESS_LEVEL + 1;
+    float step = (float)brightness_range / (float)level_range;
+    uint8_t amoled_setting = AMOLED_MIN_BRIGHTNESS + (uint8_t)((float)level * step);
+
+    amoled_send_1wire(CMD_SET_BRIGHTNESS, 1, &amoled_setting);
+    printf("[Debug] Set brightness to 0x%02x (%d)\n", amoled_setting, level);
+}
+
