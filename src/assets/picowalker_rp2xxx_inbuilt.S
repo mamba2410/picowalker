@@ -1,22 +1,18 @@
 #include "picowalker_rp2xxx_inbuilt.h"
 
-//.section .data.flashrom, "ax", %progbits
-//.type flashrom, %object
-//.size flashrom, FLASHROM_SIZE
-//
-//.global flashrom
-//flashrom: .incbin "../rom/pwflash.rom"
-
-/*
-// Moved to drivers/eeprom_pico_ram.*
-.section .data.eeprom, "ax", %progbits
-.type eeprom, %object
-.size eeprom, EEPROM_SIZE
-
-.global eeprom
-eeprom: .incbin "../rom/pweep.rom"
-*/
-
 .section .rodata.picowalker
 .global sad_pokewalker
 sad_pokewalker: .incbin "../../rom/test_image.bin"
+
+.global picowalker_fancy_text
+picowalker_fancy_text: .incbin "../../rom/picowalker-fancy.bin"
+
+.global picowalker_border_text
+picowalker_border_text: .incbin "../../rom/picowalker-border.bin"
+
+.global battery_fancy_text
+battery_fancy_text: .incbin "../../rom/battery-fancy.bin"
+
+.global percent_char
+percent_char: .incbin "../../rom/percent-char.bin"
+
