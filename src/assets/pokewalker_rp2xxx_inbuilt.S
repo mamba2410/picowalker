@@ -1,9 +1,6 @@
 #include "pokewalker_rp2xxx_inbuilt.h"
 
-.section .data.flash_images, "ax", %progbits
-.type pw_flash_images, %object
-.size pw_flash_images, DRIVER_FLASH_IMAGES_SIZE
-
+.section .rodata.flash_images
 .global pw_flash_images
 pw_flash_images: .incbin "../../rom/flash_images.bin"
 
