@@ -80,7 +80,7 @@ void pw_power_enter_sleep() {
     aon_timer_set_time(&ts);
 
     // Actually do the sleep
-    printf("[Debug] Sleeping MCU at 0x%08x s\n", (uint32_t)ts.tv_sec);
+    //printf("[Debug] Sleeping MCU at 0x%08x s\n", (uint32_t)ts.tv_sec);
 
     // === Start of danger zone ===
 

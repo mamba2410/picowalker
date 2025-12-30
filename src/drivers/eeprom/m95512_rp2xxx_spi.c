@@ -54,7 +54,7 @@ void pw_eeprom_init() {
     pw_eeprom_cs_disable();
 }
 
-int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len) {
+int pw_eeprom_read(pw_eeprom_addr_t addr, uint8_t *buf, size_t len) {
     //printf("EEPROM: reading %04x\n", addr);
 
     pw_eeprom_wait_for_ready();
@@ -80,11 +80,11 @@ int pw_eeprom_read(eeprom_addr_t addr, uint8_t *buf, size_t len) {
     return n_read;
 }
 
-int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len) {
+int pw_eeprom_write(pw_eeprom_addr_t addr, uint8_t *buf, size_t len) {
     uint8_t msg[3];
     size_t this_write, bytes_left;
     int n_written = 0;
-    eeprom_addr_t addr_end = addr + len;
+    pw_eeprom_addr_t addr_end = addr + len;
     //printf("EEPROM: writing %04x\n", addr);
 
 
@@ -120,7 +120,7 @@ int pw_eeprom_write(eeprom_addr_t addr, uint8_t *buf, size_t len) {
     return n_written;
 }
 
-void pw_eeprom_set_area(eeprom_addr_t addr, uint8_t v, size_t len) {
+void pw_eeprom_set_area(pw_eeprom_addr_t addr, uint8_t v, size_t len) {
     // get a buffer of value
     uint8_t *buf = malloc(128);
     memset(buf, v, 128);

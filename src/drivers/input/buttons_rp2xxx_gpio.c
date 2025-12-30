@@ -43,13 +43,13 @@ void pw_pico_button_callback(uint gp, uint32_t events) {
 
     switch(gp) {
     case BUTTON_LEFT_PIN:
-        b |= BUTTON_L;
+        b |= PW_BUTTON_L;
         break;
     case BUTTON_MIDDLE_PIN:
-        b |= BUTTON_M;
+        b |= PW_BUTTON_M;
         break;
     case BUTTON_RIGHT_PIN:
-        b |= BUTTON_R;
+        b |= PW_BUTTON_R;
         break;
     default:
         printf("[Info] Button callback on pin %d\n", gp);

@@ -541,8 +541,8 @@ bool pw_power_result_available() {
  * Callback function called periodically by picowalker-core
  * Runs in normal context
  */
-pw_battery_status_t pw_power_get_status() {
-    pw_battery_status_t bs = {.percent = 0, .flags = 0x00};
+pw_power_status_t pw_power_get_status() {
+    pw_power_status_t bs = {.flags = 0x00, .percent = 0};
 
     // Minimal interrupt handler didn't read anything, so we do that now
     if(pmic_info.irq) {
@@ -555,7 +555,7 @@ pw_battery_status_t pw_power_get_status() {
         pmic_info.fault = false;
         bq25628e_print_fault_reason();
         sleep_ms(100);
-        bs.flags |= PW_BATTERY_STATUS_FLAGS_FAULT;
+        bs.flags |= PW_POWER_STATUS_FLAGS_FAULT;
         // Faulted, so we leave now
         return bs;
     }
@@ -564,27 +564,27 @@ pw_battery_status_t pw_power_get_status() {
 
     if(pmic_info.started_charging) {
         pmic_info.started_charging = false;
-        bs.flags |= PW_BATTERY_STATUS_FLAGS_CHARGING;
+        bs.flags |= PW_POWER_STATUS_FLAGS_CHARGING;
     }
 
     if(pmic_info.stopped_charging) {
         pmic_info.stopped_charging = false;
-        bs.flags |= PW_BATTERY_STATUS_FLAGS_CHARGE_ENDED;
+        bs.flags |= PW_POWER_STATUS_FLAGS_CHARGE_ENDED;
     }
 
     if(pmic_info.plugged) {
         pmic_info.plugged = false;
-        bs.flags |= PW_BATTERY_STATUS_FLAGS_PLUGGED;
+        bs.flags |= PW_POWER_STATUS_FLAGS_PLUGGED;
     }
 
     if(pmic_info.unplugged) {
         pmic_info.unplugged = false;
-        bs.flags |= PW_BATTERY_STATUS_FLAGS_UNPLUGGED;
+        bs.flags |= PW_POWER_STATUS_FLAGS_UNPLUGGED;
     }
 
     if(bq25628e_adc_timed_out()) {
         printf("[Warn ] Battery ADC measurement exceeded %d ms\n", ADC_TIMEOUT_MS);
-        bs.flags |= PW_BATTERY_STATUS_FLAGS_TIMEOUT;
+        bs.flags |= PW_POWER_STATUS_FLAGS_TIMEOUT;
         bq25628e_clear_adc_state();
     }
 
@@ -593,7 +593,7 @@ pw_battery_status_t pw_power_get_status() {
 
     // We didn't leave, so we must have a measurement.
     uint32_t conversion_time = bq25628e_get_adc_conversion_time();
-    bs.flags |= PW_BATTERY_STATUS_FLAGS_MEASUREMENT;
+    bs.flags |= PW_POWER_STATUS_FLAGS_MEASUREMENT;
 
     // Read ADC targets
     float vbat = bq25628e_read_vbat();

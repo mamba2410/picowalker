@@ -108,9 +108,9 @@ static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len
 
 screen_area_t transform_pw_to_amoled(screen_area_t pw_area, amoled_t a) {
     screen_area_t amoled_area = {0};
-    //amoled_area.x = (SCREEN_HEIGHT - pw_area.height - pw_area.y)*SCREEN_SCALE + a.offset_x;
+    //amoled_area.x = (PW_SCREEN_HEIGHT - pw_area.height - pw_area.y)*SCREEN_SCALE + a.offset_x;
     amoled_area.x = pw_area.y * SCREEN_SCALE + a.offset_x;
-    amoled_area.y = (SCREEN_WIDTH - pw_area.x - pw_area.width)*SCREEN_SCALE + a.offset_y;
+    amoled_area.y = (PW_SCREEN_WIDTH - pw_area.x - pw_area.width)*SCREEN_SCALE + a.offset_y;
     amoled_area.width = pw_area.height * SCREEN_SCALE;
     amoled_area.height = pw_area.width * SCREEN_SCALE;
     return amoled_area;
@@ -315,7 +315,7 @@ void amoled_reset() {
     amoled_draw_block(
         amoled.offset_x, amoled.offset_y,
         AMOLED_ACTIVE_WIDTH, AMOLED_ACTIVE_HEIGHT,
-        colour_map[SCREEN_BLACK]
+        colour_map[PW_SCREEN_BLACK]
     );
 
     // Note: different final row/column to draw areas
@@ -377,7 +377,7 @@ void pw_screen_init() {
 }
 
 
-void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y) {
+void pw_screen_draw_img(pw_img_t *img, pw_screen_pos_t x, pw_screen_pos_t y) {
     // TODO: checks image isn't too large
     decode_img(img, AMOLED_BUFFER_SIZE, amoled_buffer);
 
@@ -392,7 +392,7 @@ void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y) {
         .height = img->height,
     }, amoled);
     amoled_draw_buffer(
-            //((SCREEN_HEIGHT-img->height-y)*SCREEN_SCALE)+amoled.offset_x, (x*SCREEN_SCALE)+amoled.offset_y,
+            //((PW_SCREEN_HEIGHT-img->height-y)*SCREEN_SCALE)+amoled.offset_x, (x*SCREEN_SCALE)+amoled.offset_y,
             //img->height*SCREEN_SCALE, img->width*SCREEN_SCALE,
             amoled_area.x, amoled_area.y,
             amoled_area.width, amoled_area.height,
@@ -401,7 +401,7 @@ void pw_screen_draw_img(pw_img_t *img, screen_pos_t x, screen_pos_t y) {
 }
 
 
-void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_pos_t h) {
+void pw_screen_clear_area(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos_t w, pw_screen_pos_t h) {
 
     screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){
         .x = x,
@@ -413,12 +413,12 @@ void pw_screen_clear_area(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen
     amoled_draw_block(
         amoled_area.x, amoled_area.y,
         amoled_area.width, amoled_area.height,
-        colour_map[SCREEN_WHITE]
+        colour_map[PW_SCREEN_WHITE]
     );
 
 }
 
-void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t w, screen_colour_t c) {
+void pw_screen_draw_horiz_line(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos_t w, pw_screen_color_t c) {
     screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){
         .x = x,
         .y = y,
@@ -433,13 +433,13 @@ void pw_screen_draw_horiz_line(screen_pos_t x, screen_pos_t y, screen_pos_t w, s
 }
 
 
-void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1,
-                             screen_pos_t width, screen_pos_t height,
-                             screen_colour_t c) {
+void pw_screen_draw_text_box(pw_screen_pos_t x1, pw_screen_pos_t y1,
+                             pw_screen_pos_t width, pw_screen_pos_t height,
+                             pw_screen_color_t c) {
 
     // assume y2 > y1 and x2 > x1
-    screen_pos_t x2 = x1 + width - 1;
-    screen_pos_t y2 = y1 + height - 1;
+    pw_screen_pos_t x2 = x1 + width - 1;
+    pw_screen_pos_t y2 = y1 + height - 1;
 
     screen_area_t amoled_area = {0}, pw_area = {0};
 
@@ -481,20 +481,20 @@ void pw_screen_draw_text_box(screen_pos_t x1, screen_pos_t y1,
 void pw_screen_clear() {
     screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){
         .x=0, .y=0,
-        .width=SCREEN_WIDTH, .height=SCREEN_HEIGHT
+        .width=PW_SCREEN_WIDTH, .height=PW_SCREEN_HEIGHT
     }, amoled);
     amoled_draw_block(
         amoled_area.x, amoled_area.y,
         amoled_area.width, amoled_area.height,
-        colour_map[SCREEN_WHITE]
+        colour_map[PW_SCREEN_WHITE]
     );
 
 }
 
 
-void pw_screen_fill_area(screen_pos_t x, screen_pos_t y,
-                         screen_pos_t w, screen_pos_t h,
-                         screen_colour_t c) {
+void pw_screen_fill_area(pw_screen_pos_t x, pw_screen_pos_t y,
+                         pw_screen_pos_t w, pw_screen_pos_t h,
+                         pw_screen_color_t c) {
     screen_area_t amoled_area = transform_pw_to_amoled((screen_area_t){.x=x, .y=y, .width=w, .height=h}, amoled);
     amoled_draw_block(
         amoled_area.x, amoled_area.y,
@@ -520,10 +520,10 @@ void pw_screen_wake() {
 
 
 void pw_screen_set_brightness(uint8_t level) {
-    if(level > MAX_BRIGHTNESS_LEVEL) return;
+    if(level > PW_SCREEN_MAX_BRIGHTNESS) return;
     
     uint8_t brightness_range = AMOLED_MAX_BRIGHTNESS - AMOLED_MIN_BRIGHTNESS + 1;
-    uint8_t level_range = MAX_BRIGHTNESS_LEVEL - MIN_BRIGHTNESS_LEVEL + 1;
+    uint8_t level_range = PW_SCREEN_MAX_BRIGHTNESS + 1;
     float step = (float)brightness_range / (float)level_range;
     uint8_t amoled_setting = AMOLED_MIN_BRIGHTNESS + (uint8_t)((float)level * step);
 
