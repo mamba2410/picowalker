@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "../picowalker-defs.h"
+#include "../picowalker_structures.h"
 #include "pokewalker_rp2xxx_inbuilt.h"
 
 static const size_t offsets[] = {0x0000, 0x0100, 0x0120, 0x0140, 0x0160, 0x0170, 0x180};

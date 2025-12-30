@@ -12,7 +12,7 @@
 #include "hardware/structs/hstx_fifo.h"
 #include <pico/stdlib.h>
 
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 #include "sh8601_rp2350_hstx.h"
 
 static amoled_t amoled = {0};

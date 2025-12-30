@@ -11,7 +11,7 @@
 #include "stdio.h"
 
 #include "../sleep/dormant_rp2xxx.h"
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 
 #define UNIX_TIME_OFFSET 946684800ul
 #define TIMER_INTERVAL_SEC 60

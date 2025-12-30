@@ -5,7 +5,7 @@
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
 
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 #include "w25q128_rp2xxx_spi.h"
 
 static spi_inst_t *flash_spi;

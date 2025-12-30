@@ -7,7 +7,7 @@
 #include "../battery/bq25628e_rp2xxx_i2c.h"
 #include "../accel/bma400_rp2xxx_spi.h"
 #include "../sleep/dormant_rp2xxx.h"
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 
 void pw_gpio_interrupt_handler(uint gp, uint32_t events) {
     //printf("[Debug] interrupt on pin GP%d\n", gp);

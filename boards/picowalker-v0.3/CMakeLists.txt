@@ -42,7 +42,8 @@ add_executable(picowalker
     ${MAIN_SRC_DIR}/assets/pokewalker_rp2xxx_inbuilt.c
     ${MAIN_SRC_DIR}/assets/pokewalker_rp2xxx_inbuilt.h
 
-    ${MAIN_SRC_DIR}/picowalker-defs.h
+    ${MAIN_SRC_DIR}/picowalker_structures.h
+    ${MAIN_SRC_DIR}/picowalker_core.h
 )
 
 ## PIO stuff for SDK

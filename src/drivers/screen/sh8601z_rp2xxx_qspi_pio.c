@@ -11,7 +11,7 @@
 #include "pico/stdlib.h"
 
 #include "board_resources.h"
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 #include "sh8601z_rp2xxx_qspi_pio.h"
 
 #include "qspi.pio.h"

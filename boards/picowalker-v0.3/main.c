@@ -8,7 +8,8 @@
 #include "hardware/pll.h"
 
 //#include "drivers/eeprom/m95512_rp2xxx_spi.h"
-#include "picowalker-defs.h"
+#include "picowalker_structures.h"
+#include "picowalker_core.h"
 
 #include "board_resources.h"
 
@@ -101,11 +102,11 @@ int main() {
     //audio_test_program();
 
     // Start picowalker-core
-    walker_setup();
+    pw_setup();
 
-    extern void (*current_loop)(void);
+    extern void (*pw_current_loop)(void);
     while(1) {
-        current_loop();
+        pw_current_loop();
     }
 
     // unreachable

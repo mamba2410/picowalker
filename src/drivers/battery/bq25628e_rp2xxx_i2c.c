@@ -10,7 +10,7 @@
 #include "board_resources.h"
 #include "bq25628e_rp2xxx_i2c.h"
 #include "../interrupts/rp2xxx_gpio.h"
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 
 #define VBAT_ABS_MINIMUM_MV 3500.0f
 #define VBAT_ABS_MAXIMUM_MV 4225.0f

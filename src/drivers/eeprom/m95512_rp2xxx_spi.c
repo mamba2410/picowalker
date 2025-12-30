@@ -7,7 +7,7 @@
 #include "hardware/gpio.h"
 
 #include "board_resources.h"
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 #include "m95512_rp2xxx_spi.h"
 
 static void pw_eeprom_cs_enable() {

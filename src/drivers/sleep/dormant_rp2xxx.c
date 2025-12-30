@@ -11,7 +11,7 @@
 #include "stdio.h"
 
 #include "board_resources.h"
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 #include "../accel/bma400_rp2xxx_spi.h"
 #include "../battery/bq25628e_rp2xxx_i2c.h"
 #include "../input/buttons_rp2xxx_gpio.h"

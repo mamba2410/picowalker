@@ -1,13 +1,15 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include <hardware/gpio.h>
 #include <hardware/pwm.h>
 #include "hardware/timer.h"
 
 #include "board_resources.h"
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
+#include "../../picowalker_core.h"
 
 #define AUDIO_CLKDIV 4.0f
 #define AUDIO_PWM_RANGE ((1<<16)-1)
@@ -21,6 +23,7 @@ struct audio_queue_s {
     size_t head;
 } audio_queue;
 
+bool pw_audio_is_playing_sound();
 
 /**
  *
@@ -167,29 +170,6 @@ void pw_audio_play_sound_data(const pw_sound_frame_t *sound_data, size_t sz) {
 
 bool pw_audio_is_playing_sound() {
     return audio_queue.len > 0;
-}
-
-void audio_test_program() {
-    pw_audio_init();
-    pw_eeprom_init();
-    pw_button_init();
-
-    gpio_init(18);
-    gpio_set_dir(18, GPIO_OUT);
-
-    pw_audio_volume = VOLUME_FULL;
-
-    while(1) {
-        pw_audio_play_sound(SOUND_DOWSING_FOUND_ITEM);
-        while(pw_audio_is_playing_sound()) {
-            gpio_put(18, 1);
-            sleep_ms(1000);
-            gpio_put(18, 0);
-            sleep_ms(1000);
-        }
-        sleep_ms(5000);
-    }
-
 }
 
 

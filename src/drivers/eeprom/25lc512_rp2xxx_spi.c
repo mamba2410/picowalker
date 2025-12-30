@@ -6,7 +6,7 @@
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 #include "25lc512_rp2xxx_spi.h"
 
 static spi_inst_t *eeprom_spi;

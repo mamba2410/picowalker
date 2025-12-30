@@ -7,7 +7,7 @@
 #include "pico/stdlib.h"
 
 #include "board_resources.h"
-#include "../../picowalker-defs.h"
+#include "../../picowalker_structures.h"
 #include "buttons_rp2xxx_gpio.h"
 #include "../interrupts/rp2xxx_gpio.h"
 #include "../sleep/dormant_rp2xxx.h"
