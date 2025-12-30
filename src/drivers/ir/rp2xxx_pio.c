@@ -82,10 +82,12 @@ static bool pw_ir_pio_tx_is_ongoing(void);
  * Checks if the global TX circular buffer is full
  * Equivalent of `palmcardIrPrvCircBufIsFull()`
  */
+/*
 static bool pw_ir_pio_circ_buf_is_full(void) {
     uint8_t next_write = ((g_ir_pio_circ_buf.write + 1) == CIRC_BUF_LEN) ? 0 : (g_ir_pio_circ_buf.write + 1);
     return next_write != g_ir_pio_circ_buf.read;
 }
+*/
 
 /*
  * Cecks if the global circular buffer is empty
@@ -414,6 +416,7 @@ static uint16_t pw_ir_pio_transform_data(uint8_t byte) {
  * Crucially sets interrupt for when PIO TX isn't full. This calls interrupt handler
  * Returns the number of bytes added to the buffer. User should check the return value
  */
+/*
 static uint32_t __attribute__((noinline)) pw_ir_pio_serial_tx_blocking(const uint8_t *data, size_t len) {
     size_t len_orig = len;
 
@@ -434,6 +437,7 @@ static uint32_t __attribute__((noinline)) pw_ir_pio_serial_tx_blocking(const uin
 
     return len_orig - len;
 }
+*/
 
 
 /*
@@ -611,7 +615,8 @@ bool palmcardIrSetup(uint8_t *firstFreeSmP, uint8_t *firstFreePioInstrP, uint8_t
  * On receive data, throw it into the global circular buffer
  * Safe because by the time we want to fill it with TX data, we are done with RX
  */
-void pw_ir_pio_rx_callback(void* _context, uint16_t *data, size_t len) {
+void pw_ir_pio_rx_callback(void* context, uint16_t *data, size_t len) {
+    (void)context;
     for(size_t i = 0; i < len; i++) {
         if( !(data[i] & PW_IR_PIO_FRAME_ERROR_BIT) )
             pw_ir_pio_circ_buf_add(data[i]);
@@ -625,6 +630,7 @@ void pw_ir_pio_rx_callback(void* _context, uint16_t *data, size_t len) {
  */
 
 int pw_ir_read(uint8_t *buf, size_t max_len) {
+    (void)max_len;
     size_t cursor = 0;
     int64_t diff;
     

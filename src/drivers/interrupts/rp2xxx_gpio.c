@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "board_resources.h"
 #include "../input/buttons_rp2xxx_gpio.h"

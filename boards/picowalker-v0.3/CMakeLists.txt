@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
+set(PICO_BOARD pico2)
+
 ## Include pico cmake file
 include(../../pico_sdk_import.cmake)
 include(../../pico_extras_import.cmake)
@@ -76,6 +78,8 @@ target_link_libraries(picowalker
     hardware_powman
     ${CMAKE_CURRENT_LIST_DIR}/../../lib/libpicowalker-core.a
 )
+
+target_compile_options(picowalker PRIVATE -Wall -Wextra -Wpedantic -std=c17)
 
 target_include_directories(picowalker PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}

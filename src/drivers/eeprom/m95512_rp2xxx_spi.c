@@ -83,7 +83,7 @@ int pw_eeprom_read(pw_eeprom_addr_t addr, uint8_t *buf, size_t len) {
 int pw_eeprom_write(pw_eeprom_addr_t addr, uint8_t *buf, size_t len) {
     uint8_t msg[3];
     size_t this_write, bytes_left;
-    int n_written = 0;
+    size_t n_written = 0;
     pw_eeprom_addr_t addr_end = addr + len;
     //printf("EEPROM: writing %04x\n", addr);
 

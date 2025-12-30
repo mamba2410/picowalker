@@ -17,5 +17,6 @@
 eeprom: .incbin "../rom/pweep.rom"
 */
 
+.section .rodata.picowalker
 .global sad_pokewalker
 sad_pokewalker: .incbin "../../rom/test_image.bin"

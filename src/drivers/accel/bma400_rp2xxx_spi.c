@@ -1,7 +1,6 @@
 #include <stdint.h>
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
@@ -10,9 +9,9 @@
 #include "bma400_rp2xxx_spi.h"
 #include "../interrupts/rp2xxx_gpio.h"
 
-static int32_t prev_steps;
+extern void pw_time_delay_ms(size_t ms);
 
-#define ACCEL_STEP_COUNT_SETTINGS_LEN 24
+#define ACCEL_STEP_COUNT_SETTINGS_LEN 25
 static const uint8_t NON_WRIST_OPTIMAL_SETTINGS[ACCEL_STEP_COUNT_SETTINGS_LEN] = {
     0x59,
     1, 50, 120, 230, 135, 0, 132,
@@ -40,14 +39,16 @@ static void pw_accel_read_spi(uint8_t *buf, size_t len) {
 
 }
 
-static void pw_accel_write_spi(uint8_t *buf, size_t len) {
-    buf[0] &= ACCEL_WRITE_MASK;
+static void pw_accel_write_spi(const uint8_t *buf, size_t len) {
+    //buf[0] &= ACCEL_WRITE_MASK;
+    uint8_t cmd = buf[0] & ACCEL_WRITE_MASK;
     pw_accel_cs_enable();
-    spi_write_blocking(ACCEL_SPI_HW, buf, len);
+    spi_write_blocking(ACCEL_SPI_HW, &cmd, 1);
+    spi_write_blocking(ACCEL_SPI_HW, buf+1, len-1);
     pw_accel_cs_disable();
 }
 
-void pw_accel_read_accel(uint8_t *buf, size_t len) {
+void pw_accel_read_accel(uint8_t *buf) {
     buf[0] = ACCEL_REG_STATUS;
     pw_accel_read_spi(buf, 1);
     uint8_t power_mode = (buf[0]>>1)&0x03;
@@ -55,7 +56,8 @@ void pw_accel_read_accel(uint8_t *buf, size_t len) {
         buf[0] = ACCEL_REG_ACC_CONFIG0;
         buf[1] = 0x02;
         pw_accel_write_spi(buf, 2);
-        sleep_ms(2);
+        //sleep_ms(2);
+        pw_time_delay_ms(2);
     }
 
     buf[0] = ACCEL_REG_ACC_X_LSB;
@@ -70,7 +72,8 @@ static void pw_accel_read_steps(uint8_t *buf) {
         buf[0] = ACCEL_REG_ACC_CONFIG0;
         buf[1] = ACCEL_POWER_NORMAL;
         pw_accel_write_spi(buf, 2);
-        sleep_ms(2);    // 1500 us
+        //sleep_ms(2);    // 1500 us
+        pw_time_delay_ms(2);
     }
 
     buf[0] = ACCEL_REG_STEP_CNT_0;
@@ -138,16 +141,17 @@ void pw_accel_test() {
 
 uint32_t pw_accel_get_new_steps() {
     uint8_t buf[5];
+    static uint32_t prev_steps = 0;
     pw_accel_read_steps(buf);
-    int32_t steps = (buf[2]<<16) | (buf[1]<<8) | (buf[0]);
-    int32_t new_steps = steps - prev_steps;
+    uint32_t steps = (buf[2]<<16) | (buf[1]<<8) | (buf[0]);
+    if(prev_steps > steps) return 0;
+    uint32_t new_steps = steps - prev_steps;
     prev_steps = steps;
-    printf("[Debug] Accel has %u steps\n", steps);
-    if(new_steps < 0) return 0;
-    else return (uint32_t)new_steps;
+    printf("[Debug] Accel has %lu steps\n", steps);
+    return new_steps;
 }
 
-int8_t pw_accel_init() {
+void pw_accel_init() {
     gpio_init(ACCEL_CSB_PIN);
     gpio_set_dir(ACCEL_CSB_PIN, GPIO_OUT);
     pw_accel_cs_disable();
@@ -164,7 +168,7 @@ int8_t pw_accel_init() {
     bma400_send_cmd(REG_CMD_SOFTRESET);
 
     // Delay for reset, unknown time
-    sleep_ms(2);
+    pw_time_delay_ms(2);
 
     // Dummy read again to set us back into SPI4 mode
     buf[0] = ACCEL_REG_CHIPID;
@@ -176,7 +180,7 @@ int8_t pw_accel_init() {
 
     if(buf[0] != CHIP_ID) {
         printf("[ERROR] Couldn't establish accel comms\n");
-        return -1;
+        return;
     }
 
     // Set up interrupts to be active low, open drain
@@ -211,12 +215,10 @@ int8_t pw_accel_init() {
     gpio_pull_up(ACCEL_INT_PIN);
     //gpio_set_irq_enabled_with_callback(ACCEL_INT_PIN, GPIO_IRQ_EDGE_FALL, true, &pw_gpio_interrupt_handler);
 
-    prev_steps = 0;
-
     pw_accel_reset_int();
 
     pw_accel_write_spi(NON_WRIST_OPTIMAL_SETTINGS, ACCEL_STEP_COUNT_SETTINGS_LEN);
 
-    return 0;
+    return;
 }
 

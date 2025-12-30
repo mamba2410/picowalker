@@ -63,7 +63,7 @@ static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len
 
     // quit if the output buffer can't hold all the data
     if(out_len < pw_img->size * 2*SCREEN_SCALE*SCREEN_SCALE) {
-        printf("Error: Decoded image (%lu bytes) is larger than output buffer (%lu bytes)\n",
+        printf("Error: Decoded image (%u bytes) is larger than output buffer (%u bytes)\n",
                 pw_img->size * 2*SCREEN_SCALE*SCREEN_SCALE, out_len);
         return;
     }
@@ -225,7 +225,7 @@ void amoled_draw_buffer(int x_start, int y_start, int width, int height,
 
     size_t n_bytes = width*height*AMOLED_BYTES_PER_PIXEL;
     if(n_bytes > len) {
-        printf("Error: Drawing %lu bytes from undersized (%lu) buffer\n",
+        printf("Error: Drawing %u bytes from undersized (%u) buffer\n",
                 n_bytes, len);
         return;
     }
@@ -245,7 +245,7 @@ void amoled_draw_block(int x_start, int y_start, int width, int height, uint16_t
     // If we are doing draws larger than this area, we need to know to do it in chunks
     size_t n_bytes = width*height*AMOLED_BYTES_PER_PIXEL;
     if(n_bytes > AMOLED_BUFFER_SIZE) {
-        printf("Error: Drawing %lu bytes from undersized (%lu) buffer\n",
+        printf("Error: Drawing %u bytes from undersized (%u) buffer\n",
                 n_bytes, AMOLED_BUFFER_SIZE);
         return;
     }
@@ -344,8 +344,6 @@ void amoled_reset() {
  */
 
 void pw_screen_init() {
-
-    uint8_t params[4] = {0};
 
     /*
      * Set up HSTX

@@ -48,7 +48,7 @@
 
 %c-sdk {
 #include "hardware/gpio.h"
-static inline pio_qspi_4wire_tx_init(PIO pio, uint sm, uint prog_offs, uint n_bits,
+static inline void pio_qspi_4wire_tx_init(PIO pio, uint sm, uint prog_offs, uint n_bits,
     float clkdiv, uint pin_sck, uint out_pins){
 
     pio_sm_config c = qspi_4wire_tx_cpha0_program_get_default_config(prog_offs);
@@ -70,7 +70,7 @@ static inline pio_qspi_4wire_tx_init(PIO pio, uint sm, uint prog_offs, uint n_bi
 
 }
 
-static inline pio_qspi_1wire_tx_init(PIO pio, uint sm, uint prog_offs, uint n_bits,
+static inline void pio_qspi_1wire_tx_init(PIO pio, uint sm, uint prog_offs, uint n_bits,
     float clkdiv, uint pin_sck, uint out_pins){
 
     pio_sm_config c = qspi_1wire_tx_cpha0_program_get_default_config(prog_offs);

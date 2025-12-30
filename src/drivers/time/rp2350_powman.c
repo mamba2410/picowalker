@@ -20,7 +20,6 @@
 
 #define USE_EXTERNAL_RTC true
 
-static pw_dhms_t last_check = {0,};
 static struct timespec next_alarm = {0,};
 uint16_t lposc_value = 32768;
 
@@ -87,7 +86,7 @@ void pw_time_init_rtc(uint32_t sync_time) {
     //struct timespec ts = {0, 0};
     //ts.tv_sec = (uint64_t)(sync_time);
     ts.tv_sec |= sync_time;
-    printf("[Debug] Initialising RTC to 0x%08x\n", sync_time);
+    printf("[Debug] Initialising RTC to 0x%08lx\n", sync_time);
 
     bool ok = aon_timer_set_time(&ts);
     if(ok) {
@@ -107,7 +106,7 @@ void pw_time_set_rtc(uint32_t sync_time) {
     //ts.tv_sec = (uint64_t)(sync_time);
     ts.tv_sec |= sync_time;
     //ts.tv_sec = (uint64_t)(sync_time) + UNIX_TIME_OFFSET;
-    printf("[Debug] Setting RTC to 0x%08x\n", sync_time);
+    printf("[Debug] Setting RTC to 0x%08lx\n", sync_time);
     aon_timer_set_time(&ts);
 }
 

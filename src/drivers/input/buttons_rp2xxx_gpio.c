@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "hardware/timer.h"
 #include "hardware/gpio.h"
@@ -8,6 +9,7 @@
 
 #include "board_resources.h"
 #include "../../picowalker_structures.h"
+#include "../../picowalker_core.h"
 #include "buttons_rp2xxx_gpio.h"
 #include "../interrupts/rp2xxx_gpio.h"
 #include "../sleep/dormant_rp2xxx.h"
@@ -35,6 +37,7 @@ void pw_button_init() {
 }
 
 void pw_pico_button_callback(uint gp, uint32_t events) {
+    (void)events;
     uint8_t b = 0;
 
 
