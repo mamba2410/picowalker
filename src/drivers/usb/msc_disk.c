@@ -27,7 +27,7 @@
 #include "tusb.h"
 
 
-#include "picowalker-defs.h"
+#include "picowalker_structures.h"
 #include "../log/onboard_log.h"
 #include "msc_disk.h"
 
