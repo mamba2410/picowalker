@@ -10,12 +10,18 @@
 
 //#include "drivers/eeprom/m95512_rp2xxx_spi.h"
 #include "drivers/sleep/dormant_rp2xxx.h"
-#include "picowalker-defs.h"
+#include "picowalker_core.h"
+#include "picowalker_structures.h"
+#include "drivers/log/onboard_log.h"
 
 #include "board_resources.h"
 
 static bool spi_is_inited = false;
 static bool i2c_is_inited = false;
+
+void cdc_task();
+void pw_power_enable_sleep();
+void pw_power_disable_sleep();
 
 void board_spi_init() {
     if(spi_is_inited) return;
@@ -48,7 +54,7 @@ int main() {
     printf("[Info] ==== Hello, picowalker! ====\n");
 
     // Start picowalker-core
-    walker_setup();
+    pw_setup();
 
     tusb_rhport_init_t dev_init = {
         .role = TUSB_ROLE_DEVICE,
@@ -65,7 +71,7 @@ int main() {
 
     while(1) {
         tud_task();
-        current_loop();
+        pw_current_loop();
         cdc_task();
     }
 
