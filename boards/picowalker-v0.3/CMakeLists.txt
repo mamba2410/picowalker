@@ -33,6 +33,7 @@ add_executable(picowalker
     ${MAIN_SRC_DIR}/drivers/interrupts/rp2xxx_gpio.h
     ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.c
     ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.h
+    ${MAIN_SRC_DIR}/drivers/log/stdio_rp2xxx_uart.c
     ${MAIN_SRC_DIR}/drivers/screen/sh8601z_rp2xxx_qspi_pio.c
     ${MAIN_SRC_DIR}/drivers/screen/sh8601z_rp2xxx_qspi_pio.h
     ${MAIN_SRC_DIR}/drivers/sleep/dormant_rp2xxx.c
@@ -79,7 +80,7 @@ target_link_libraries(picowalker
     ${CMAKE_CURRENT_LIST_DIR}/../../lib/libpicowalker-core.a
 )
 
-target_compile_options(picowalker PRIVATE -Wall -Wextra -Wpedantic -std=c17)
+target_compile_options(picowalker PRIVATE -Wall -Wextra -Wpedantic)
 
 target_include_directories(picowalker PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
