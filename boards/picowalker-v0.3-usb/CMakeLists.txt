@@ -34,6 +34,7 @@ add_executable(picowalker
     ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.c
     ${MAIN_SRC_DIR}/drivers/ir/rp2xxx_pio.h
     ${MAIN_SRC_DIR}/drivers/log/onboard_log.c
+    ${MAIN_SRC_DIR}/drivers/log/stdio_rp2xxx_uart.c
     ${MAIN_SRC_DIR}/drivers/log/onboard_log.h
     ${MAIN_SRC_DIR}/drivers/screen/sh8601z_rp2xxx_qspi_pio.c
     ${MAIN_SRC_DIR}/drivers/screen/sh8601z_rp2xxx_qspi_pio.h

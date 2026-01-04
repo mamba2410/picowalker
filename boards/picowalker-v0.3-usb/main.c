@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include <tusb.h>
@@ -51,7 +50,7 @@ int main() {
 
     sleep_ms(1000);
 
-    printf("[Info] ==== Hello, picowalker! ====\n");
+    pw_log_info("==== Hello, picowalker! ====\n");
 
     // Start picowalker-core
     pw_setup();
@@ -80,7 +79,7 @@ int main() {
 }
 
 void tud_mount_cb(void) {
-    printf("[Info ] tusb mounted\n");
+    pw_log_info("tusb mounted\n");
 
     // Halt sleep timer so we don't mess up tusb
     pw_power_disable_sleep();
@@ -88,7 +87,7 @@ void tud_mount_cb(void) {
 }
 
 void tud_umount_cb(void) {
-    printf("[Info ] tusb unmounted\n");
+    pw_log_info("tusb unmounted\n");
 
     // Unmount and now we're safe to sleep
     pw_power_enable_sleep();
