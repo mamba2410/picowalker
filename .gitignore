@@ -8,5 +8,4 @@ rom/
 .gdbinit
 
 *.swp
-*.bin
 

@@ -1,18 +1,16 @@
 #include "picowalker_rp2xxx_inbuilt.h"
 
 .section .rodata.picowalker
-.global sad_pokewalker
-sad_pokewalker: .incbin "../../rom/test_image.bin"
 
 .global picowalker_fancy_text
-picowalker_fancy_text: .incbin "../../rom/picowalker-fancy.bin"
+picowalker_fancy_text: .incbin "assets/picowalker/picowalker_fancy.bin"
 
 .global picowalker_border_text
-picowalker_border_text: .incbin "../../rom/picowalker-border.bin"
+picowalker_border_text: .incbin "assets/picowalker/picowalker_border.bin"
 
 .global battery_fancy_text
-battery_fancy_text: .incbin "../../rom/battery-fancy.bin"
+battery_fancy_text: .incbin "assets/picowalker/battery_fancy.bin"
 
 .global percent_char
-percent_char: .incbin "../../rom/percent-char.bin"
+percent_char: .incbin "assets/picowalker/percent_char.bin"
 
