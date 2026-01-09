@@ -51,6 +51,7 @@
 #define IR_DMA_IRQ_NUM 0
 
 #define USER_IDLE_ALARM_NUM 0
+#define LIGHT_SLEEP_ALARM_NUM 2
 
 #define SCREEN_SCK_PIN 8
 #define SCREEN_SD0_PIN 12

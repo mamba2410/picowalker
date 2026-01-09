@@ -69,3 +69,14 @@ void pw_pico_button_callback(uint gp, uint32_t events) {
     set_user_idle_timer();
 
 }
+
+
+bool pw_button_is_pressed(pw_buttons_t b) {
+    switch(b) {
+        case PW_BUTTON_L: return gpio_get(BUTTON_LEFT_PIN) == 0;
+        case PW_BUTTON_M: return gpio_get(BUTTON_MIDDLE_PIN) == 0;
+        case PW_BUTTON_R: return gpio_get(BUTTON_RIGHT_PIN) == 0;
+    }
+    return false;
+}
+
