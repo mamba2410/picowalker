@@ -26,6 +26,12 @@
 #include "bsp/board_api.h"
 #include "tusb.h"
 
+#include "board_resources.h"
+
+#ifndef IR_SERIAL
+#define IR_SERIAL 0
+#endif
+
 /* A combination of interfaces must have a unique product id, since PC will save device driver after the first plug.
  * Same VID/PID with different interface e.g MSC (first), then CDC (later) will possibly cause system error on PC.
  *
@@ -77,6 +83,10 @@ uint8_t const *tud_descriptor_device_cb(void) {
 enum {
   ITF_NUM_CDC = 0,
   ITF_NUM_CDC_DATA,
+#if IR_SERIAL
+  ITF_NUM_CDC_1,
+  ITF_NUM_CDC_1_DATA,
+#endif
   ITF_NUM_MSC,
   ITF_NUM_TOTAL
 };
@@ -101,7 +111,18 @@ enum {
 
 #endif
 
+#if IR_SERIAL // Not TUD_ENDPOINT_ONE_DIRECTION_ONLY???
+#define EPNUM_CDC_1_NOTIF   0x84
+#define EPNUM_CDC_1_OUT     0x04
+#define EPNUM_CDC_1_IN      0x85
+#undef EPNUM_MSC_OUT
+#undef EPNUM_MSC_IN
+#define EPNUM_MSC_OUT     0x05
+#define EPNUM_MSC_IN      0x86
+#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + (2 * TUD_CDC_DESC_LEN) + TUD_MSC_DESC_LEN)
+#else
 #define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_MSC_DESC_LEN)
+#endif
 
 // full speed configuration
 uint8_t const desc_fs_configuration[] = {
@@ -109,10 +130,16 @@ uint8_t const desc_fs_configuration[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
 
     // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, 64),
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, 64), // 0x81, 8, 0x02, 0x82, 64
+
+#if IR_SERIAL
+    // CDC 1: IR Communication
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_1, 6, EPNUM_CDC_1_NOTIF, 8, EPNUM_CDC_1_OUT, EPNUM_CDC_1_IN, 64),
+#endif
 
     // Interface number, string index, EP Out & EP In address, EP size
-    TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, 5, EPNUM_MSC_OUT, EPNUM_MSC_IN, 64),
+    TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, 5, EPNUM_MSC_OUT, EPNUM_MSC_IN, 64), // 0x05, 0x85, 64
+
 };
 
 
@@ -145,6 +172,9 @@ char const *string_desc_arr[] = {
     NULL,                               // 3: Serials will use unique ID if possible
     "Picowalker Debug",                 // 4: CDC Interface
     "Picowalker Storage",               // 5: MSC Interface
+#if IR_SERIAL
+    "Picowalker IR",                    // 6: CDC 1 Inteface (IR Communication)
+#endif
 };
 
 static uint16_t _desc_str[32 + 1];
