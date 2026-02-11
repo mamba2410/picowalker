@@ -162,15 +162,12 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
 ********************************************************************************/
 void tud_cdc_rx_cb(uint8_t itf)
 {
-    // DON'T read the data here! Just log that it arrived.
-    // The IR driver (pw_ir_read) will consume it via service_usb_cdc()
-    
     // uint32_t avail = tud_cdc_n_available(itf);
     // printf("[CDC%d] RX callback: %lu bytes available\n", itf, avail);
-    // if (avail > 0 && itf == 1) 
-    // {
-    //     printf("[CDC1] IR data ready for pw_ir_read()\n");
-    // }
+
+    // // DON'T read the data here! Just log that it arrived.
+    // // The IR driver (pw_ir_read) will consume it via service_usb_cdc()
+    // if (avail > 0 && itf == 1) printf("[CDC1] IR data ready for pw_ir_read()\n");
 }
 
 /********************************************************************************
