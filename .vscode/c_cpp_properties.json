@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${env:PICO_SDK_PATH}/**",
+                "${env:PICO_EXTRA_PATH}/**",
+                "${workspaceFolder}/lib/lvgl",
+                "${workspaceFolder}/src/assets"
+            ],
+            "defines": [
+                "PICO_BOARD=pico2",
+                "PICO_RP2350=1",
+                "LV_CONF_INCLUDE_SIMPLE"
+            ],
+            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "gcc-arm"
+        }
+    ],
+    "version": 4
+}
