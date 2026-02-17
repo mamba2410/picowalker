@@ -23,10 +23,6 @@
 #endif
 #endif
 
-// #ifndef PW_SPEAKER_PIN
-// #define PW_SPEAKER_PIN 16
-// #endif
-
 // LVGL Settings
 static lv_disp_drv_t driver_display;
 static lv_disp_draw_buf_t display_buffer;
@@ -90,38 +86,6 @@ typedef struct {
 } metadata_t;
 
 metadata_t metadata;
-
-
-// /********************************************************************************
-//  * @brief           Play simple beep sound using piezo buzzer
-//  * @param duration  Duration in milliseconds
-//  ********************************************************************************/
-// static void play_beep(uint32_t duration)
-// {
-//     // Turn on piezo at 4kHz (resonant frequency) with 50% duty cycle
-//     // With wrap=1000, 50% duty cycle = 500
-//     pwm_set_gpio_level(PW_SPEAKER_PIN, 500);
-//     sleep_ms(duration);
-    
-//     // Turn off
-//     pwm_set_gpio_level(PW_SPEAKER_PIN, 0);
-// }
-
-// /********************************************************************************
-//  * @brief           Play click sound for button presses
-//  ********************************************************************************/
-// static void play_click_sound()
-// {
-//     play_beep(50); // Short 50ms beep
-// }
-
-// /********************************************************************************
-//  * @brief           Play confirmation sound for actions
-//  ********************************************************************************/
-// static void play_confirm_sound()
-// {
-//     play_beep(100); // Longer 100ms beep
-// }
 
 /********************************************************************************
  * @brief           LVGL Repeating Timer Callback used to pass a tick / time
@@ -197,7 +161,6 @@ static void touch_read_callback(lv_indev_drv_t *driver, lv_indev_data_t *data)
 ********************************************************************************/
 static void button_left_callback(lv_event_t *event)
 {
-    // play_click_sound();
     pw_button_callback(PW_BUTTON_L);
 }
 
@@ -207,7 +170,6 @@ static void button_left_callback(lv_event_t *event)
 ********************************************************************************/
 static void button_middle_callback(lv_event_t *event)
 {
-    // play_click_sound();
     pw_button_callback(PW_BUTTON_M);
 }
 
@@ -217,7 +179,6 @@ static void button_middle_callback(lv_event_t *event)
 ********************************************************************************/
 static void button_right_callback(lv_event_t *event)
 {
-    // play_click_sound();
     pw_button_callback(PW_BUTTON_R);
 }
 
@@ -227,7 +188,6 @@ static void button_right_callback(lv_event_t *event)
 ********************************************************************************/
 static void button_steps_callback(lv_event_t * event)
 {
-    // play_click_sound();
     pw_accel_add_steps(1000);
     printf("[Debug] Steps pressed - step added!\n");
 }
@@ -365,17 +325,6 @@ void pw_screen_update_battery()
 ********************************************************************************/
 void pw_screen_init() 
 {
-    // // Initialize audio/buzzer for 4kHz piezo optimal frequency
-    // gpio_init(PW_SPEAKER_PIN);
-    // gpio_set_function(PW_SPEAKER_PIN, GPIO_FUNC_PWM);
-    // uint slice_num = pwm_gpio_to_slice_num(PW_SPEAKER_PIN);
-    
-    // // Configure for 4kHz frequency: 125MHz / (31.25 * 1000) = 4kHz
-    // pwm_set_wrap(slice_num, 1000);           // Higher resolution
-    // pwm_set_chan_level(slice_num, PWM_CHAN_A, 0);  // Start silent
-    // pwm_set_clkdiv(slice_num, 31.25f);       // 4kHz frequency for piezo resonance
-    // pwm_set_enabled(slice_num, true);
-
     // Initialize WaveShare 1.28" LCD - Screen
     GC9A01A_Init(SCREEN_ROTATION);
     GC9A01A_Set_PWM(10);
@@ -516,7 +465,7 @@ void pw_screen_init()
     lv_obj_t *tile_menu = lv_tileview_add_tile(tile_view, 0, 1, LV_DIR_TOP|LV_DIR_BOTTOM);
     lv_obj_t *tile_menu_label = lv_label_create(tile_menu);
     lv_label_set_text(tile_menu_label, "System Menu");
-    lv_obj_align(tile_menu_label, LV_ALIGN_CENTER, 0, -80);
+    lv_obj_align(tile_menu_label, LV_ALIGN_CENTER, 0, -50);
     lv_obj_set_style_text_color(tile_menu_label, lv_color_black(), 0);
 
     // Drowpdown Background
@@ -639,9 +588,6 @@ void pw_screen_init()
     lv_obj_center(eeprom_reset_label);
     lv_obj_set_style_text_font(eeprom_reset_label, &lv_font_montserrat_14, 0);
     lv_group_add_obj(tile_group, eeprom_reset_button);
-
-    // Initialize core1
-    // init_core1();
 }
 
 /********************************************************************************
