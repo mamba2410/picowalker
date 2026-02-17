@@ -27,10 +27,10 @@ cmake --build ../../build/rp2350touchlcd128
 cd ../..
 echo " "
 
-# echo "RP2350TouchLCD169 Build"
-# cd boards/rp2350touchlcd169
-# rm -rf ../../build/rp2350touchlcd169
-# cmake -B ../../build/rp2350touchlcd169 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
-# cmake --build ../../build/rp2350touchlcd169
-# cd ../..
-# echo " "
+echo "RP2350TouchLCD169 Build"
+cd boards/rp2350touchlcd169
+rm -rf ../../build/rp2350touchlcd169
+cmake -B ../../build/rp2350touchlcd169 -DPICO_BOARD=pico2 -DUSE_LVGL=ON
+cmake --build ../../build/rp2350touchlcd169
+cd ../..
+echo " "
