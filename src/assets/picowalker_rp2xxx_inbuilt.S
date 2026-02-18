@@ -14,3 +14,6 @@ battery_fancy_text: .incbin "assets/picowalker/battery_fancy.bin"
 .global percent_char
 percent_char: .incbin "assets/picowalker/percent_char.bin"
 
+.global color_fancy_text
+color_fancy_text: .incbin "assets/picowalker/color_fancy.bin"
+
