@@ -16,3 +16,6 @@ percent_char: .incbin "assets/picowalker/percent_char.bin"
 
 .global color_fancy_text
 color_fancy_text: .incbin "assets/picowalker/color_fancy.bin"
+
+.global grey_fancy_text
+grey_fancy_text: .incbin "assets/picowalker/grey_fancy.bin"
