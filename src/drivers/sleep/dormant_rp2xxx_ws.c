@@ -1,0 +1,55 @@
+#include "dormant_rp2xxx_ws.h"
+
+static volatile bool power_should_sleep;
+pw_wake_reason_t wake_reason;
+
+// TODO will probably need extern variables to signal LVGL code to turn of screen or sleep
+
+/********************************************************************************
+ * @brief           Power Initialize
+ * @param N/A
+********************************************************************************/
+void pw_power_init()
+{
+    // ADC Config
+    adc_init();
+    adc_gpio_init(BAT_ADC_PIN);
+    adc_select_input(BAT_CHANNEL);
+}
+
+/********************************************************************************
+ * @brief           Power Enter Sleep
+ * @param N/A
+********************************************************************************/
+void pw_power_enter_sleep()
+{
+    // TODO Enter Sleep Code
+}
+
+/********************************************************************************
+ * @brief           Power Should Sleep
+ * @param N/A
+********************************************************************************/
+bool pw_power_should_sleep()
+{
+    return power_should_sleep;
+}
+
+/********************************************************************************
+ * @brief           Power Get Awake Reason
+ * @param N/A
+ * @return pw_wake_reason_t
+********************************************************************************/
+pw_wake_reason_t pw_power_get_wake_reason()
+{
+    return wake_reason;
+}
+
+/********************************************************************************
+ * @brief           Power Clear Wake Reason
+ * @param reason    Wake reason flags to clear
+********************************************************************************/
+void pw_power_clear_wake_reason(pw_wake_reason_t reason)
+{
+    wake_reason &= ~reason;
+}

@@ -7,9 +7,12 @@
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
+#include <stddef.h>
 
 extern uint8_t *batterY_fancy_text;
 extern size_t battery_fancy_text_len;
+extern uint8_t *color_fancy_text;
+extern size_t color_fancy_text_len;
 
 #endif /* __ASSEMBLER__ */
 

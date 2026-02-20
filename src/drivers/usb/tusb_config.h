@@ -30,6 +30,12 @@
  extern "C" {
 #endif
 
+#include "board_resources.h"
+
+#ifndef IR_SERIAL
+#define IR_SERIAL 0
+#endif
+
 //--------------------------------------------------------------------+
 // Board Specific Configuration
 //--------------------------------------------------------------------+
@@ -91,7 +97,11 @@
 #endif
 
 //------------- CLASS -------------//
+#if IR_SERIAL
+#define CFG_TUD_CDC              2 // [CDC0] Debug [CDC1] IR
+#else
 #define CFG_TUD_CDC              1
+#endif
 #define CFG_TUD_MSC              1
 #define CFG_TUD_HID              0
 #define CFG_TUD_MIDI             0

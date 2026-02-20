@@ -13,11 +13,32 @@
  *
  */
 
+ /*
+ *  ==================================================================================
+ *  EEPROM
+ *  ==================================================================================
+ */
+
+typedef uint16_t pw_eeprom_addr_t;
+
 /*
  *  ==================================================================================
  *  SCREEN
  *  ==================================================================================
  */
+
+  /**
+ * Pokemon Metadata
+ * uint8_t variant = pokemon_flags_1 & 0x1F;
+ * bool is_female = pokemon_flags_1 & 0x20;
+ * bool has_form = pokemon_flags_2 & 0x01;
+ * bool is_shiny = pokemon_flags_2 & 0x02;
+ */
+ typedef struct {
+    uint16_t species;
+    uint8_t pokemon_flags_1;
+    uint8_t pokemon_flags_2;
+} pw_metadata_t;
 
 #define PW_SCREEN_WIDTH    96
 #define PW_SCREEN_HEIGHT   64
@@ -34,12 +55,20 @@ typedef uint8_t pw_screen_dim_t;
 
 /**
  * An image data structure for pokewalker images
- * Will change when colour images are implemented
  */
 typedef struct pw_img_s {
+    pw_screen_dim_t width, height;
     uint8_t *data;
     size_t size;
-    pw_screen_dim_t height, width;
+
+    struct {
+        pw_eeprom_addr_t addr;
+        bool use_alt: 1;
+    
+        union {
+            pw_metadata_t pokemon;
+        } metadata;
+    } lookup_table;
 } pw_img_t;
 
 
@@ -63,13 +92,7 @@ typedef enum pw_screen_color_e {
 #define PW_SCREEN_MAX_BRIGHTNESS 9
 
 
-/*
- *  ==================================================================================
- *  EEPROM
- *  ==================================================================================
- */
 
-typedef uint16_t pw_eeprom_addr_t;
 
 
 /*
