@@ -67,7 +67,53 @@ static uint8_t background_index = 0;
 // Your background image object (create this once at startup)
 lv_obj_t *background_image;
 
-// Swipe event callback
+// Cache metadata for Pokemon Walk End
+typedef struct {
+    uint16_t species;
+    uint8_t pokemon_flags_1;
+    uint8_t pokemon_flags_2;
+} metadata_t;
+
+metadata_t metadata;
+
+// Define color palettes indexed by pw_color_mode
+typedef lv_color_t palette_t[4];
+static const palette_t palettes[] = {
+    // Mode 0: Greyscale (original)
+    {
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(195, 205, 185),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(170, 170, 170),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(85,  85,  85 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(0,   0,   0  ),
+    },
+    // Mode 1: Greyscale (Greenish)
+    { 
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(168, 182, 106),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(110, 130, 70 ),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(60,  80,  40 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(20,  35,  15 ),
+    },
+    // Mode 2: Greyscale (Redish)
+    { 
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(205, 185, 185),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(161, 110, 110),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(110, 60,  60 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(35,  10,  10 ),
+    },
+    // Mode 3: Color
+    {
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(255, 255, 255),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(170, 170, 170),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(85,  85,  85 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(0,   0,   0  ),
+    }
+
+};
+
+/********************************************************************************
+ * @brief           Background Callback
+ * @param event     LVGL event call back
+********************************************************************************/
 static void background_callback(lv_event_t *event)
 {
     lv_event_code_t code = lv_event_get_code(event);
@@ -77,15 +123,6 @@ static void background_callback(lv_event_t *event)
         lv_img_set_src(background_image, backgrounds[index]);
     }
 }
-
-// Cache metadata for Pokemon Walk End
-typedef struct {
-    uint16_t species;
-    uint8_t pokemon_flags_1;
-    uint8_t pokemon_flags_2;
-} metadata_t;
-
-metadata_t metadata;
 
 /********************************************************************************
  * @brief           LVGL Repeating Timer Callback used to pass a tick / time
@@ -448,8 +485,7 @@ void pw_screen_init()
     lv_obj_align(canvas, LV_ALIGN_CENTER, 0, CANVAS_Y_OFFSET);
     lv_obj_set_size(canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
     //lv_obj_add_flag(canvas, LV_OBJ_FLAG_CLICKABLE);
-    if (true) lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_COVER); // is_color = true
-    else lv_canvas_fill_bg(canvas, lv_color_make(195, 205, 185), LV_OPA_COVER);
+    lv_canvas_fill_bg(canvas, palettes[pw_color_mode][PW_SCREEN_WHITE], LV_OPA_COVER);
     
     // Rounded overlay to create rounded corners effect
     lv_obj_t *canvas_overlay = lv_obj_create(tile_picowalker);
@@ -599,20 +635,20 @@ lv_color_t get_color(uint16_t color, bool is_color)
 {
     lv_color_t lv_color;
 
-    // Convert PW greyscale colors to LVGL colors
-    if (is_color)
+    if (pw_color_mode == 3 & is_color)
     {
         switch(color)
         {
-            case PW_SCREEN_WHITE: lv_color = lv_color_white(); break; //lv_color_make(195, 205, 185); break;
-            case PW_SCREEN_LGREY: lv_color = lv_color_make(135, 135, 161); break; //lv_color_make(170,170,170); break;
-            case PW_SCREEN_DGREY: lv_color = lv_color_make(88, 88, 138); break; //lv_color_make(85,85,85); break;
-            case PW_SCREEN_BLACK: lv_color = lv_color_black(); break;
+            // In case the user wants a different color palette...
+            case PW_SCREEN_WHITE: lv_color = palettes[pw_color_mode][PW_SCREEN_WHITE]; break;
+            case PW_SCREEN_LGREY: lv_color = palettes[pw_color_mode][PW_SCREEN_LGREY]; break;
+            case PW_SCREEN_DGREY: lv_color = palettes[pw_color_mode][PW_SCREEN_DGREY]; break;
+            case PW_SCREEN_BLACK: lv_color = palettes[pw_color_mode][PW_SCREEN_BLACK]; break;
             default: 
                 // RGB565 color - extract RGB components
-                uint8_t r = ((color >> 11) & 0x1F) << 3; // 5-bit red -> 8-bit
+                uint8_t r = ((color >> 11) & 0x1F) << 3; // 5-bit red   -> 8-bit
                 uint8_t g = ((color >> 5) & 0x3F) << 2;  // 6-bit green -> 8-bit
-                uint8_t b = (color & 0x1F) << 3;         // 5-bit blue -> 8-bit
+                uint8_t b = (color & 0x1F) << 3;         // 5-bit blue  -> 8-bit
 
                 // Expand to full 8-bit range
                 r |= (r >> 5);
@@ -623,18 +659,7 @@ lv_color_t get_color(uint16_t color, bool is_color)
                 break;
         }
     }
-    else
-    {
-        switch(color)
-        {
-            case PW_SCREEN_WHITE: lv_color = lv_color_make(195, 205, 185); break;
-            case PW_SCREEN_LGREY: lv_color = lv_color_make(170,170,170); break;
-            case PW_SCREEN_DGREY: lv_color = lv_color_make(85,85,85); break;
-            case PW_SCREEN_BLACK: lv_color = lv_color_black(); break;
-            default: lv_color = lv_color_white(); break;
-        }
-    }
-
+    else lv_color = palettes[pw_color_mode][color];
 
     return lv_color;
 }
@@ -721,133 +746,136 @@ void pw_screen_draw_img(pw_img_t *image, pw_screen_pos_t x, pw_screen_pos_t y)
     bool has_form;              // pokemon_flags_2 & 0x01: AND mask extracts bit 0 (has_form flag)
     bool is_shiny;              // pokemon_flags_2 & 0x02: AND mask extracts bit 1 (shiny flag)
 
-    // Check if we should use alternate color lookup (RGB565)
-    if (image->lookup_table.use_alt)
+    // Color ?
+    if (pw_color_mode == 3)
     {
-        // Our Pokemon
-        if (image->lookup_table.addr == 0x933E || image->lookup_table.addr == 0x963E // Large
-        || image->lookup_table.addr == 0x91BE || image->lookup_table.addr == 0x927E) // Small
+        // Check if we should use alternate color lookup (RGB565)
+        if (image->lookup_table.use_alt)
         {
-            // uint16_t species;
-            // uint8_t pokemon_flags_1;
-            // uint8_t pokemon_flags_2;
-            pw_eeprom_read(0x8F00, (uint8_t*)&species, 2);
-            pw_eeprom_read(0x8F0D, &pokemon_flags_1, 1);
-            pw_eeprom_read(0x8F0E, &pokemon_flags_2, 1);
-            
-            // Pokemon Walk Start & End Animation for Small and Large respectively...
-            if (species == 0 & pokemon_flags_1 == 0 & pokemon_flags_2 == 0) 
+            // Our Pokemon
+            if (image->lookup_table.addr == 0x933E || image->lookup_table.addr == 0x963E // Large
+            || image->lookup_table.addr == 0x91BE || image->lookup_table.addr == 0x927E) // Small
             {
-                species = metadata.species;
-                pokemon_flags_1 = metadata.pokemon_flags_1;
-                pokemon_flags_2 = metadata.pokemon_flags_2;
-            }
-            else 
-            {
-                metadata.species = species;
-                metadata.pokemon_flags_1 = pokemon_flags_1;
-                metadata.pokemon_flags_2 = pokemon_flags_2;
-            }
-            
-        }
-            
-        if (image->lookup_table.addr == 0x933E || image->lookup_table.addr == 0x963E) // Large
-        {
-            uint8_t variant = pokemon_flags_1 & 0x1F;
-            bool is_female = pokemon_flags_1 & 0x20;
-            bool has_form = pokemon_flags_2 & 0x01;
-            bool is_shiny = pokemon_flags_2 & 0x02;
-            if (has_form) is_female = 0; // variants assume the male form.
-            
-            const pokemon_large_entry_t *poke_large;
-            // printf("[COLOR_POKEMON_LARGE] Species: %u Variant: %u Female: %u Form:%u Shiny:%u\n", species, variant, is_female, has_form, is_shiny); 
-            if (is_shiny) poke_large = find_pokemon_large_shiny(species, variant, is_female);
-            else poke_large = find_pokemon_large(species, variant, is_female);
-
-            if (poke_large != NULL)
-            {
-                if (is_shiny) bin_data = color_pokemon_large_shiny + poke_large->bin_offset;
-                else bin_data = color_pokemon_large + poke_large->bin_offset;
-
-                image->width = 64;
-                image->height = 48;
-                is_color = true;
-                is_transparent = true;
-                uncompressed_size = poke_large->uncompressed_size;
-
-                if (image->lookup_table.addr == 0x963E) is_second_frame = true;
-            }
-        }
-        // Pokemon Small, All of them...
-        if (image->lookup_table.addr == 0x91BE || image->lookup_table.addr == 0x927E    // 0 Pokemon (Ours)
-        || image->lookup_table.addr == 0x9D7E || image->lookup_table.addr == 0x9E3E     // 1 Pokemon
-        || image->lookup_table.addr == 0x9A7E || image->lookup_table.addr == 0x9B3E     // 2 Pokemon
-        || image->lookup_table.addr == 0x9BFE || image->lookup_table.addr == 0x9CBE)    // 3 Pokemon
-        {   
-            species = image->lookup_table.metadata.pokemon.species;
-            variant = image->lookup_table.metadata.pokemon.pokemon_flags_1 & 0x1F;
-
-            // No Lookup Table Metadata Pokemon Walk Start for Small...
-            if (species == 0 & variant == 0) 
-            {
-                species = metadata.species;
-                variant = metadata.pokemon_flags_1 & 0x1F;
-            }
-
-            printf("[COLOR_POKEMON_SMALL] Species: %u Variant: %u\n", species, variant); 
-            const pokemon_small_entry_t *poke_small = find_pokemon_small(species, variant);
-
-            if (poke_small != NULL)
-            {
-                bin_data = color_pokemon_small + poke_small->bin_offset;
-                uncompressed_size = poke_small->uncompressed_size;
-                image->width = 32;
-                image->height = 24;
-                is_color = true;
-                is_transparent = true;
-
-                // Second Frame
-                if (image->lookup_table.addr == 0x927E 
-                    || image->lookup_table.addr == 0x9E3E
-                    || image->lookup_table.addr == 0x9B3E
-                    || image->lookup_table.addr == 0x9CBE)
+                // uint16_t species;
+                // uint8_t pokemon_flags_1;
+                // uint8_t pokemon_flags_2;
+                pw_eeprom_read(0x8F00, (uint8_t*)&species, 2);
+                pw_eeprom_read(0x8F0D, &pokemon_flags_1, 1);
+                pw_eeprom_read(0x8F0E, &pokemon_flags_2, 1);
+                
+                // Pokemon Walk Start & End Animation for Small and Large respectively...
+                if (species == 0 & pokemon_flags_1 == 0 & pokemon_flags_2 == 0) 
                 {
-                    is_second_frame = true;
+                    species = metadata.species;
+                    pokemon_flags_1 = metadata.pokemon_flags_1;
+                    pokemon_flags_2 = metadata.pokemon_flags_2;
+                }
+                else 
+                {
+                    metadata.species = species;
+                    metadata.pokemon_flags_1 = pokemon_flags_1;
+                    metadata.pokemon_flags_2 = pokemon_flags_2;
+                }
+                
+            }
+                
+            if (image->lookup_table.addr == 0x933E || image->lookup_table.addr == 0x963E) // Large
+            {
+                uint8_t variant = pokemon_flags_1 & 0x1F;
+                bool is_female = pokemon_flags_1 & 0x20;
+                bool has_form = pokemon_flags_2 & 0x01;
+                bool is_shiny = pokemon_flags_2 & 0x02;
+                if (has_form) is_female = 0; // variants assume the male form.
+                
+                const pokemon_large_entry_t *poke_large;
+                // printf("[COLOR_POKEMON_LARGE] Species: %u Variant: %u Female: %u Form:%u Shiny:%u\n", species, variant, is_female, has_form, is_shiny); 
+                if (is_shiny) poke_large = find_pokemon_large_shiny(species, variant, is_female);
+                else poke_large = find_pokemon_large(species, variant, is_female);
+
+                if (poke_large != NULL)
+                {
+                    if (is_shiny) bin_data = color_pokemon_large_shiny + poke_large->bin_offset;
+                    else bin_data = color_pokemon_large + poke_large->bin_offset;
+
+                    image->width = 64;
+                    image->height = 48;
+                    is_color = true;
+                    is_transparent = true;
+                    uncompressed_size = poke_large->uncompressed_size;
+
+                    if (image->lookup_table.addr == 0x963E) is_second_frame = true;
+                }
+            }
+            // Pokemon Small, All of them...
+            if (image->lookup_table.addr == 0x91BE || image->lookup_table.addr == 0x927E    // 0 Pokemon (Ours)
+            || image->lookup_table.addr == 0x9D7E || image->lookup_table.addr == 0x9E3E     // 1 Pokemon
+            || image->lookup_table.addr == 0x9A7E || image->lookup_table.addr == 0x9B3E     // 2 Pokemon
+            || image->lookup_table.addr == 0x9BFE || image->lookup_table.addr == 0x9CBE)    // 3 Pokemon
+            {   
+                species = image->lookup_table.metadata.pokemon.species;
+                variant = image->lookup_table.metadata.pokemon.pokemon_flags_1 & 0x1F;
+
+                // No Lookup Table Metadata Pokemon Walk Start for Small...
+                if (species == 0 & variant == 0) 
+                {
+                    species = metadata.species;
+                    variant = metadata.pokemon_flags_1 & 0x1F;
+                }
+
+                printf("[COLOR_POKEMON_SMALL] Species: %u Variant: %u\n", species, variant); 
+                const pokemon_small_entry_t *poke_small = find_pokemon_small(species, variant);
+
+                if (poke_small != NULL)
+                {
+                    bin_data = color_pokemon_small + poke_small->bin_offset;
+                    uncompressed_size = poke_small->uncompressed_size;
+                    image->width = 32;
+                    image->height = 24;
+                    is_color = true;
+                    is_transparent = true;
+
+                    // Second Frame
+                    if (image->lookup_table.addr == 0x927E 
+                        || image->lookup_table.addr == 0x9E3E
+                        || image->lookup_table.addr == 0x9B3E
+                        || image->lookup_table.addr == 0x9CBE)
+                    {
+                        is_second_frame = true;
+                    }
+                }
+            }
+            // Routes
+            else if (image->lookup_table.addr == 0x8FBE)
+            {   
+                uint8_t index;
+                pw_eeprom_read(0x8F27, &index, 1); // 0x8F27 Route Index
+                const color_routes_t *route = find_route_by_index(index);
+
+                if (route != NULL)
+                {
+                    bin_data = color_routes + route->bin_offset;
+                    uncompressed_size = route->uncompressed_size;
+                    image->width = 32;
+                    image->height = 24;
+                    is_color = true;
+                }
+            }
+            // Icons
+            else
+            {
+                const color_icons_t *icons = find_icon_by_eeprom_address(image->lookup_table.addr);
+                
+                if (icons != NULL)
+                {
+                    bin_data = color_icons + icons->bin_offset;
+                    uncompressed_size = icons->uncompressed_size;
+                    image->width = icons->width;
+                    image->height = icons->height;
+                    is_color = true;
                 }
             }
         }
-        // Routes
-        else if (image->lookup_table.addr == 0x8FBE)
-        {   
-            uint8_t index;
-            pw_eeprom_read(0x8F27, &index, 1); // 0x8F27 Route Index
-            const color_routes_t *route = find_route_by_index(index);
-
-            if (route != NULL)
-            {
-                bin_data = color_routes + route->bin_offset;
-                uncompressed_size = route->uncompressed_size;
-                image->width = 32;
-                image->height = 24;
-                is_color = true;
-            }
-        }
-        // Icons
-        else
-        {
-            const color_icons_t *icons = find_icon_by_eeprom_address(image->lookup_table.addr);
-            
-            if (icons != NULL)
-            {
-                bin_data = color_icons + icons->bin_offset;
-                uncompressed_size = icons->uncompressed_size;
-                image->width = icons->width;
-                image->height = icons->height;
-                is_color = true;
-            }
-        }
     }
-
     // Calculate image size (2 bytes per 8 pixels for 2bpp, or 2 bytes per pixel for RGB565)
     if (is_color)
     {
@@ -856,9 +884,8 @@ void pw_screen_draw_img(pw_img_t *image, pw_screen_pos_t x, pw_screen_pos_t y)
         // uncompress the image data...
         uint16_t *color_data = (uint16_t *)rle_decompress_rgb565(bin_data, uncompressed_size);
         if (is_second_frame) color_data += (image->width * image->height);
-        // uint16_t *color_data = (uint16_t *)image_data;
         uint16_t transparency_color = color_data[0];
-        lv_color_t background_color = lv_color_white(); // TODO I need a color pallete...
+        lv_color_t background_color = palettes[pw_color_mode][PW_SCREEN_WHITE]; //lv_color_white(); // TODO I need a color pallete...
 
         for (size_t i = 0; i < pixel_count; i++)
         {
@@ -904,7 +931,7 @@ void pw_screen_draw_img(pw_img_t *image, pw_screen_pos_t x, pw_screen_pos_t y)
                 size_t x_normal = (i / 2) % image->width;
                 size_t y_normal = 8 * (i / (2 * image->width)) + j;
 
-                lv_color_t lv_color = get_color(pixel_value, true);
+                lv_color_t lv_color = get_color(pixel_value, false);
 
                 for (size_t py = 0; py < CANVAS_SCALE; py++)
                 {
@@ -930,10 +957,8 @@ void pw_screen_draw_img(pw_img_t *image, pw_screen_pos_t x, pw_screen_pos_t y)
 void pw_screen_clear_area(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos_t width, pw_screen_pos_t height)
 {
     if (!canvas) return;
-    lv_color_t bg_color;
     // Clear area by setting pixels directly to background color with scaling
-    if (true) bg_color = lv_color_white();
-    else bg_color = lv_color_make(195, 205, 185);
+    lv_color_t bg_color = palettes[pw_color_mode][PW_SCREEN_WHITE];
     draw_to_scale(x, y, width, height, bg_color);
 }
 
@@ -988,8 +1013,7 @@ void pw_screen_draw_text_box(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos
 void pw_screen_clear()
 {
     if (!canvas) return;
-    if (true) lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_COVER); // is_color = true
-    else lv_canvas_fill_bg(canvas, lv_color_make(195, 205, 185), LV_OPA_COVER);
+    lv_canvas_fill_bg(canvas, palettes[pw_color_mode][PW_SCREEN_WHITE], LV_OPA_COVER);
 }
 
 /********************************************************************************

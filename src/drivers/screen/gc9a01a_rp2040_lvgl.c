@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "gc9a01a_rp2040_lvgl.h"
 #include "adc_rp2xxx.h"
@@ -64,7 +65,53 @@ static uint8_t background_index = 0;
 // Your background image object (create this once at startup)
 lv_obj_t *background_image;
 
-// Swipe event callback
+// Cache metadata for Pokemon Walk End
+typedef struct {
+    uint16_t species;
+    uint8_t pokemon_flags_1;
+    uint8_t pokemon_flags_2;
+} metadata_t;
+
+metadata_t metadata;
+
+// Define color palettes indexed by pw_color_mode
+typedef lv_color_t palette_t[4];
+static const palette_t palettes[] = {
+    // Mode 0: Greyscale (original)
+    {
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(195, 205, 185),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(170, 170, 170),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(85,  85,  85 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(0,   0,   0  ),
+    },
+    // Mode 1: Greyscale (Greenish)
+    { 
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(168, 182, 106),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(110, 130, 70 ),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(60,  80,  40 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(20,  35,  15 ),
+    },
+    // Mode 2: Greyscale (Redish)
+    { 
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(205, 185, 185),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(161, 110, 110),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(110, 60,  60 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(35,  10,  10 ),
+    },
+    // Mode 3: Color
+    {
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(255, 255, 255),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(170, 170, 170),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(85,  85,  85 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(0,   0,   0  ),
+    }
+
+};
+
+/********************************************************************************
+ * @brief           Background Callback
+ * @param event     LVGL event call back
+********************************************************************************/
 static void background_callback(lv_event_t *event)
 {
     lv_event_code_t code = lv_event_get_code(event);
@@ -74,37 +121,6 @@ static void background_callback(lv_event_t *event)
         lv_img_set_src(background_image, backgrounds[index]);
     }
 }
-
-// /********************************************************************************
-//  * @brief           Play simple beep sound using piezo buzzer
-//  * @param duration  Duration in milliseconds
-//  ********************************************************************************/
-// static void play_beep(uint32_t duration)
-// {
-//     // Turn on piezo at 4kHz (resonant frequency) with 50% duty cycle
-//     // With wrap=1000, 50% duty cycle = 500
-//     pwm_set_gpio_level(PW_SPEAKER_PIN, 500);
-//     sleep_ms(duration);
-    
-//     // Turn off
-//     pwm_set_gpio_level(PW_SPEAKER_PIN, 0);
-// }
-
-// /********************************************************************************
-//  * @brief           Play click sound for button presses
-//  ********************************************************************************/
-// static void play_click_sound()
-// {
-//     play_beep(50); // Short 50ms beep
-// }
-
-// /********************************************************************************
-//  * @brief           Play confirmation sound for actions
-//  ********************************************************************************/
-// static void play_confirm_sound()
-// {
-//     play_beep(100); // Longer 100ms beep
-// }
 
 /********************************************************************************
  * @brief           LVGL Repeating Timer Callback used to pass a tick / time
@@ -180,7 +196,6 @@ static void touch_read_callback(lv_indev_drv_t *driver, lv_indev_data_t *data)
 ********************************************************************************/
 static void button_left_callback(lv_event_t *event)
 {
-    // play_click_sound();
     pw_button_callback(PW_BUTTON_L);
 }
 
@@ -190,7 +205,6 @@ static void button_left_callback(lv_event_t *event)
 ********************************************************************************/
 static void button_middle_callback(lv_event_t *event)
 {
-    // play_click_sound();
     pw_button_callback(PW_BUTTON_M);
 }
 
@@ -200,7 +214,6 @@ static void button_middle_callback(lv_event_t *event)
 ********************************************************************************/
 static void button_right_callback(lv_event_t *event)
 {
-    // play_click_sound();
     pw_button_callback(PW_BUTTON_R);
 }
 
@@ -210,7 +223,6 @@ static void button_right_callback(lv_event_t *event)
 ********************************************************************************/
 static void button_steps_callback(lv_event_t * event)
 {
-    // play_click_sound();
     pw_accel_add_steps(1000);
     printf("[Debug] Steps pressed - step added!\n");
 }
@@ -488,7 +500,7 @@ void pw_screen_init()
     lv_obj_align(canvas, LV_ALIGN_CENTER, 0, CANVAS_Y_OFFSET);
     lv_obj_set_size(canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
     //lv_obj_add_flag(canvas, LV_OBJ_FLAG_CLICKABLE);
-    lv_canvas_fill_bg(canvas, lv_color_make(195, 205, 185), LV_OPA_COVER);
+    lv_canvas_fill_bg(canvas, palettes[pw_color_mode][PW_SCREEN_WHITE], LV_OPA_COVER);
     
     // Rounded overlay to create rounded corners effect
     lv_obj_t *canvas_overlay = lv_obj_create(tile_picowalker);
@@ -642,11 +654,12 @@ lv_color_t get_color(pw_screen_color_t color)
     // Convert PW colors to LVGL colors
     switch(color) 
     {
-        case PW_SCREEN_WHITE: lv_color = lv_color_make(195, 205, 185); break;
-        case PW_SCREEN_LGREY: lv_color = lv_color_make(170,170,170); break;
-        case PW_SCREEN_DGREY: lv_color = lv_color_make(85,85,85); break;
-        case PW_SCREEN_BLACK: lv_color = lv_color_black(); break;
-        default: lv_color = lv_color_white(); break;
+        // In case the user wants a different color palette...
+        case PW_SCREEN_WHITE: lv_color = palettes[pw_color_mode][PW_SCREEN_WHITE]; break;
+        case PW_SCREEN_LGREY: lv_color = palettes[pw_color_mode][PW_SCREEN_LGREY]; break;
+        case PW_SCREEN_DGREY: lv_color = palettes[pw_color_mode][PW_SCREEN_DGREY]; break;
+        case PW_SCREEN_BLACK: lv_color = palettes[pw_color_mode][PW_SCREEN_BLACK]; break;
+        default: lv_color = palettes[pw_color_mode][PW_SCREEN_WHITE]; break;
     }
     
     return lv_color;
@@ -742,7 +755,7 @@ void pw_screen_clear_area(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos_t 
     if (!canvas) return;
     
     // Clear area by setting pixels directly to background color with scaling
-    lv_color_t bg_color = lv_color_make(195, 205, 185);
+    lv_color_t bg_color = palettes[pw_color_mode][PW_SCREEN_WHITE];
     draw_to_scale(x, y, width, height, bg_color);
 }
 
@@ -797,7 +810,7 @@ void pw_screen_draw_text_box(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos
 void pw_screen_clear()
 {
     if (!canvas) return;
-    lv_canvas_fill_bg(canvas, lv_color_make(195, 205, 185), LV_OPA_COVER);
+    lv_canvas_fill_bg(canvas, palettes[pw_color_mode][PW_SCREEN_WHITE], LV_OPA_COVER);
 }
 
 /********************************************************************************
