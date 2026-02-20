@@ -59,7 +59,7 @@ static bool repeating_lvgl_timer_callback(struct repeating_timer *timer);
 // Battery functions
 void pw_screen_update_battery();
 
-// Image scaling functions
+// Image color functions
 lv_color_t get_color(pw_screen_color_t color);
 
 #endif /* PW_DRIVER_SCREEN_GC9A01A_LVGL_H */

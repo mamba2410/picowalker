@@ -67,7 +67,7 @@ static bool repeating_lvgl_timer_callback(struct repeating_timer *timer);
 // Battery functions
 void pw_screen_update_battery();
 
-// Image scaling functions
+// Image color functions
 lv_color_t get_color(uint16_t color, bool is_color);
 
 #endif /* PW_DRIVER_SCREEN_RP2XXX_ST7789V2_LVGL_H */
