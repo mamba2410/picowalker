@@ -9,7 +9,7 @@
 
 ## About
 
-The Picowalker project aims to recreate the Pokewalker from Pokemon HeartGold/SoulSilver using modern hardware based around the Raspberry Pi Pico and RP2040 series of chips.
+The Picowalker project aims to recreate the Pokewalker from Pokemon HeartGold/SoulSilver using modern hardware based around the Raspberry Pi RP2350 microcontroller.
 This means custom hardware and software, with some modern convenience features added in as well.
 The picowalker will (eventually) be a fully compatible replacement for the Pokewalker, being able to interface with the games and other Pokewalkers.
 
@@ -22,10 +22,22 @@ Releases here will contain a full UF2 image which can be uploaded to the v1.0 pi
 There are multiple branches in this repo, all with similar functionality
 (providing the "driver API" for the picowalker-core).
 
-Multiple boards are contained in this repo, but the main supported boards are for the picowalker hardware v1.0. Other boards are:
+Multiple boards are contained in this repo, but the main supported board is the picowalker hardware v1.0. Other boards are:
 
-- `hardware-v0.x` - Development boards while making the V1.0 hardware
-- `waveshare` - An in-progress branch for the commercially available Waveshare RP2350-LCD-1.28 board
+- picowalker development boards (`hardware-v0.x`)
+- Waveshare RP2040 and RP2350 touch LCD screens (`waveshare`)
+
+This project:
+
+- Is a recreation of the Pokewalker hardware and software from scratch.
+- Adds modern conveniences like internal battery, USB data access and bright screen.
+- Is open source, meaning you can put other software on or make your own apps.
+
+This project is not:
+
+- An emulator or cheat device.
+- Meant to interact with other devices, like an emulator running on a mobile phone.
+
 
 ## Project state
 
@@ -43,10 +55,14 @@ which is a Raspberry Pi RP2350-based custom board, including:
     - Mass Storage Controller (MSC) for backing up and restoring the eeprom save data
 - RTC using RP2350's AON peripherals and an external 32.768 kHz clock
 
-Things for the future:
+Things to complete:
 
-- Optimise sleep current (theoretically ~200uA is possible) [example](https://github.com/mamba2410/rp2350-powman-sleep).
+- Optimise sleep current (theoretically ~200uA is possible but 500-800 is feasible) [example](https://github.com/mamba2410/rp2350-powman-sleep).
+    - This is about 2 weeks battery life when left idle.
 - Colour sprites [issue](https://github.com/mamba2410/picowalker-core/issues/9).
+    - Fully implemented on Waveshare boards, needs porting to the picowalker hardware.
+- Other features for parity with the Pokewalker, like random events, peer play animation, special events (never used in the wild).
+    - See the [application core](https://github.com/mamba2410/picowalker-core)
 
 ## Issues and Contributing
 
