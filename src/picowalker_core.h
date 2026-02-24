@@ -44,6 +44,10 @@ extern pw_volume_t pw_audio_get_volume();
  */
 extern int pw_power_get_mode();
 
+/**
+ * Current value of color mode
+ */
+extern uint8_t pw_color_mode;
 
 /**
  * Debug log functions
