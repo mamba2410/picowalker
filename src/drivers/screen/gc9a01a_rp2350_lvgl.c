@@ -164,17 +164,17 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
 }
 
 /********************************************************************************
- * @brief           Touch Callback
+ * @brief           Touch IRQ Callback
  * @param gpio      Signal PIN
  * @param events    Events from LVGL
 ********************************************************************************/
-static void touch_callback(uint gpio, uint32_t events)
+static void touch_irq_callback(uint gpio, uint32_t events)
 {
     if (gpio == TOUCH_INT_PIN)
     {
         CST816S_Get_Point(SCREEN_ROTATION, GC9A01A_WIDTH, GC9A01A_HEIGHT);
-        touch_x = Touch_CTS816.x_point;
-        touch_y = Touch_CTS816.y_point;
+        touch_x = CST816S.x_point;
+        touch_y = CST816S.y_point;
         touch_state = LV_INDEV_STATE_PRESSED;
     }
 }
@@ -385,7 +385,7 @@ void pw_screen_init()
     driver_touch.type = LV_INDEV_TYPE_POINTER;    
     driver_touch.read_cb = touch_read_callback;            
     lv_indev_t * touch_screen = lv_indev_drv_register(&driver_touch);
-    gpio_set_irq_enabled_with_callback(TOUCH_INT_PIN, GPIO_IRQ_EDGE_RISE, true, &touch_callback);
+    gpio_set_irq_enabled_with_callback(TOUCH_INT_PIN, GPIO_IRQ_EDGE_RISE, true, &touch_irq_callback);
 #endif
     // Initialize DMA Direct Memory Access
     dma_channel_set_irq0_enabled(GC9A01A_DMA_TX, true);
