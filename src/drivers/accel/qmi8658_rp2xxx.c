@@ -106,6 +106,7 @@ void pw_accel_init()
     qmi8658_config.aeOdr = QMI8658_AeOdr_128Hz;
     
     qmi8658_config.enablePedometer = 1;
+    // Original RP2040 settings (kept for reference)
     pedo_config.sample_count = 50;
     pedo_config.fix_peak2peak = 200;
     pedo_config.fix_peak = 100;
@@ -114,19 +115,29 @@ void pw_accel_init()
     pedo_config.time_count_entry = 10;
     pedo_config.fix_precision = 0;
     pedo_config.signal_count = 4;
+
+    // More sensitive settings for RP2350
+    // pedo_config.sample_count = 80;          // Increased from 50
+    // pedo_config.fix_peak2peak = 300;        // Increased from 200
+    // pedo_config.fix_peak = 150;             // Increased from 100
+    // pedo_config.time_up = 250;              // Increased from 200
+    // pedo_config.time_low = 15;              // Decreased from 20
+    // pedo_config.time_count_entry = 8;       // Decreased from 10
+    // pedo_config.fix_precision = 0;          // Keep same
+    // pedo_config.signal_count = 3;  
     
     qmi8658_config.pedoConfig = pedo_config;
 
     QMI8658_init(qmi8658_config);
     QMI8658_Config_Pedometer_Interrupt();
-    
+
     // IRQ Config
     gpio_init(DOF_INT1);
     gpio_set_dir(DOF_INT1, GPIO_IN);
-    gpio_pull_down(DOF_INT1);
+    gpio_pull_up(DOF_INT1);
 
     // Enable interrupt on rising edge (when QMI8658 sets INT1 high)
-    gpio_set_irq_enabled_with_callback(DOF_INT1, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &accel_irq_callback);
+    gpio_set_irq_enabled_with_callback(DOF_INT1, GPIO_IRQ_EDGE_RISE, true, &accel_irq_callback);
 
     // // Get initial hardware step count
     // QMI8658_Read_Step_Count(&previous_hardware_steps);
@@ -182,12 +193,39 @@ uint32_t pw_accel_get_new_steps()
         pedometer_data_ready = false;
         printf("[Pedometer] Read %u new steps (total: %u)\n", new_steps, current_hardware_steps);
     }
-    // // Check if pedometer has data
-    // uint8_t status1 = QMI8658_Read_Status1();
-    // printf("[Debug] STATUS1: 0x%02x (bit4=%d = pedometer interrupt)\n", status1, (status1 >> 4) & 1);
+    // Check if pedometer has data
+    uint8_t status1 = QMI8658_Read_Status1();
+    printf("[Debug] STATUS1: 0x%02x (bit4=%d = pedometer interrupt)\n", status1, (status1 >> 4) & 1);
 
-    // bool pin_state = gpio_get(DOF_INT1);
-    // printf("DOF_INT1 initial state: %s\n", pin_state ? "HIGH" : "LOW");
+    bool pin_state = gpio_get(DOF_INT1);
+    printf("DOF_INT1 initial state: %s\n", pin_state ? "HIGH" : "LOW");
+
+    // Read chip ID and revision
+    unsigned char chip_id, revision_id;
+    QMI8658_I2C_Read_Buffer(0x00, &chip_id, 1);     // WhoAmI register
+    QMI8658_I2C_Read_Buffer(0x01, &revision_id, 1); // Revision register
+    printf("Chip ID: 0x%02x, Revision: 0x%02x\n", chip_id, revision_id);
+
+    unsigned char ctrl_regs[8];
+    QMI8658_I2C_Read_Buffer(QMI8658_Register_Ctrl1, ctrl_regs, 8);
+    printf("\n=== QMI8658 Registers ===\n");
+    printf("CTRL1: 0x%02x\n", ctrl_regs[0]);
+    printf("CTRL2: 0x%02x (should be 0x07 for 2g@62.5Hz)\n", ctrl_regs[1]);
+    printf("CTRL3: 0x%02x\n", ctrl_regs[2]);
+    printf("CTRL4: 0x%02x\n", ctrl_regs[3]);
+    printf("CTRL5: 0x%02x\n", ctrl_regs[4]);
+    printf("CTRL6: 0x%02x\n", ctrl_regs[5]);
+    printf("CTRL7: 0x%02x (should be 0x01 for ACC only)\n", ctrl_regs[6]);
+    printf("CTRL8: 0x%02x (should be 0xd8 for pedo enabled)\n", ctrl_regs[7]);
+    printf("================================\n");
+
+    // Read accelerometer multiple times to see if data is changing
+    for (int i = 0; i < 5; i++) {
+        float acc[3];
+        QMI8658_Read_Acc_XYZ(acc);
+        printf("[TEST %d] Accel: X=%.2f Y=%.2f Z=%.2f m/s²\n", i, acc[0], acc[1], acc[2]);
+        sleep_ms(100);
+    }
 
     // polling method for now...
     uint32_t current_hardware_steps;
@@ -203,6 +241,7 @@ uint32_t pw_accel_get_new_steps()
         add_steps = 0;
     }
 
+    printf("[Pedometer] Read %u new steps (total: %u)\n", new_steps, current_hardware_steps);
     return new_steps;
 }
 
