@@ -20,7 +20,9 @@
 #define RTC_CLK_PIN 22
 #endif
 
+#ifndef USE_EXTERNAL_RTC
 #define USE_EXTERNAL_RTC true
+#endif
 
 static struct timespec next_alarm = {0,};
 uint16_t lposc_value = 32768;

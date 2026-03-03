@@ -34,8 +34,8 @@
 #define TOUCH_INT_PIN       (21)
 #define TOUCH_RST_PIN       (22)
 
-#define IMU_INT1            (23)
-#define IMU_INT2            (24)
+#define DOF_INT1            (23)
+#define DOF_INT2            (24)
 
 #define BAT_PWR_PIN         (15)
 #define BAT_ADC_PIN         (29)
@@ -75,6 +75,7 @@
 #define SCREEN_ROTATION 3       // 0 = 0d, 1 = 90d, 2 = 180d, 3 = 270d
 #define CANVAS_SCALE    3       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
 #define RTC_CLK_PIN     RTC_INT_PIN
+#define USE_EXTERNAL_RTC false
 
 void board_spi_init();
 void board_i2c_init();
