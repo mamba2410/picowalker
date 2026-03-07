@@ -134,16 +134,18 @@ void pw_accel_init()
     // IRQ Config
     gpio_init(DOF_INT1);
     gpio_set_dir(DOF_INT1, GPIO_IN);
-    gpio_pull_up(DOF_INT1);
+    gpio_pull_down(DOF_INT1);
 
     // Enable interrupt on rising edge (when QMI8658 sets INT1 high)
     gpio_set_irq_enabled_with_callback(DOF_INT1, GPIO_IRQ_EDGE_RISE, true, &accel_irq_callback);
 
+#if !PEDOMETER_ENGINE
     // // Get initial hardware step count
-    // QMI8658_Read_Step_Count(&previous_hardware_steps);
+    QMI8658_Read_Step_Count(&previous_hardware_steps);
     
     // // Start timer for continuous step processing (100ms interval)
-    // add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
+    add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
+#endif
 }
 
 /********************************************************************************
@@ -152,9 +154,10 @@ void pw_accel_init()
 ********************************************************************************/
 void pw_accel_sleep()
 {
+#if !PEDOMETER_ENGINE
     // Cancel step processing timer to save power
-    // cancel_repeating_timer(&step_timer);
-
+    cancel_repeating_timer(&step_timer);
+#endif
     // Keep accelerometer enabled for hardware pedometer
     QMI8658_Enable_Sensors(QMI8658_CTRL7_ACC_ENABLE);
     printf("[Debug] Accelerometer sleeping - timer stopped, hardware pedometer active\n");
@@ -168,7 +171,9 @@ void pw_accel_wake()
 {
     // Re-enable accelerometer and restart step processing timer
     QMI8658_Enable_Sensors(QMI8658_CTRL7_ACC_ENABLE);
-    // add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
+#if !PEDOMETER_ENGINE
+    add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
+#endif
     printf("[Debug] Accelerometer wake up - timer restarted\n");
 }
 
@@ -179,6 +184,15 @@ void pw_accel_wake()
 ********************************************************************************/
 uint32_t pw_accel_get_new_steps()
 {
+#if !PEDOMETER_ENGINE
+    static uint32_t steps_at_last_call = 0;
+    
+    // Return new steps since last call (timer accumulates them in background)
+    uint32_t new_steps = accumulated_steps - steps_at_last_call;
+    steps_at_last_call = accumulated_steps;
+    
+    if (new_steps > 0) printf("[Debug] Returning %u new steps (total: %u)\n", new_steps, accumulated_steps);
+#else
     uint32_t new_steps = 0;
     // IRQ Callback not working?
     if (pedometer_data_ready)
@@ -193,41 +207,8 @@ uint32_t pw_accel_get_new_steps()
         pedometer_data_ready = false;
         printf("[Pedometer] Read %u new steps (total: %u)\n", new_steps, current_hardware_steps);
     }
-    // Check if pedometer has data
-    uint8_t status1 = QMI8658_Read_Status1();
-    printf("[Debug] STATUS1: 0x%02x (bit4=%d = pedometer interrupt)\n", status1, (status1 >> 4) & 1);
 
-    bool pin_state = gpio_get(DOF_INT1);
-    printf("DOF_INT1 initial state: %s\n", pin_state ? "HIGH" : "LOW");
-
-    // Read chip ID and revision
-    unsigned char chip_id, revision_id;
-    QMI8658_I2C_Read_Buffer(0x00, &chip_id, 1);     // WhoAmI register
-    QMI8658_I2C_Read_Buffer(0x01, &revision_id, 1); // Revision register
-    printf("Chip ID: 0x%02x, Revision: 0x%02x\n", chip_id, revision_id);
-
-    unsigned char ctrl_regs[8];
-    QMI8658_I2C_Read_Buffer(QMI8658_Register_Ctrl1, ctrl_regs, 8);
-    printf("\n=== QMI8658 Registers ===\n");
-    printf("CTRL1: 0x%02x\n", ctrl_regs[0]);
-    printf("CTRL2: 0x%02x (should be 0x07 for 2g@62.5Hz)\n", ctrl_regs[1]);
-    printf("CTRL3: 0x%02x\n", ctrl_regs[2]);
-    printf("CTRL4: 0x%02x\n", ctrl_regs[3]);
-    printf("CTRL5: 0x%02x\n", ctrl_regs[4]);
-    printf("CTRL6: 0x%02x\n", ctrl_regs[5]);
-    printf("CTRL7: 0x%02x (should be 0x01 for ACC only)\n", ctrl_regs[6]);
-    printf("CTRL8: 0x%02x (should be 0xd8 for pedo enabled)\n", ctrl_regs[7]);
-    printf("================================\n");
-
-    // Read accelerometer multiple times to see if data is changing
-    for (int i = 0; i < 5; i++) {
-        float acc[3];
-        QMI8658_Read_Acc_XYZ(acc);
-        printf("[TEST %d] Accel: X=%.2f Y=%.2f Z=%.2f m/s²\n", i, acc[0], acc[1], acc[2]);
-        sleep_ms(100);
-    }
-
-    // polling method for now...
+    // polling method for now...since interrupts are not working properly
     uint32_t current_hardware_steps;
     QMI8658_Read_Step_Count(&current_hardware_steps);
     if (current_hardware_steps > last_read_steps) new_steps = current_hardware_steps - last_read_steps;
@@ -240,8 +221,41 @@ uint32_t pw_accel_get_new_steps()
         new_steps = add_steps;
         add_steps = 0;
     }
+    // printf("[Pedometer] Read %u new steps (total: %u)\n", new_steps, current_hardware_steps);
+    // // Check if pedometer has data
+    // uint8_t status1 = QMI8658_Read_Status1();
+    // printf("[Debug] STATUS1: 0x%02x (bit4=%d = pedometer interrupt)\n", status1, (status1 >> 4) & 1);
 
-    printf("[Pedometer] Read %u new steps (total: %u)\n", new_steps, current_hardware_steps);
+    // bool pin_state = gpio_get(DOF_INT1);
+    // printf("DOF_INT1 initial state: %s\n", pin_state ? "HIGH" : "LOW");
+
+    // // Read chip ID and revision
+    // unsigned char chip_id, revision_id;
+    // QMI8658_I2C_Read_Buffer(0x00, &chip_id, 1);     // WhoAmI register
+    // QMI8658_I2C_Read_Buffer(0x01, &revision_id, 1); // Revision register
+    // printf("Chip ID: 0x%02x, Revision: 0x%02x\n", chip_id, revision_id);
+
+    // unsigned char ctrl_regs[8];
+    // QMI8658_I2C_Read_Buffer(QMI8658_Register_Ctrl1, ctrl_regs, 8);
+    // printf("\n=== QMI8658 Registers ===\n");
+    // printf("CTRL1: 0x%02x\n", ctrl_regs[0]);
+    // printf("CTRL2: 0x%02x (should be 0x07 for 2g@62.5Hz)\n", ctrl_regs[1]);
+    // printf("CTRL3: 0x%02x\n", ctrl_regs[2]);
+    // printf("CTRL4: 0x%02x\n", ctrl_regs[3]);
+    // printf("CTRL5: 0x%02x\n", ctrl_regs[4]);
+    // printf("CTRL6: 0x%02x\n", ctrl_regs[5]);
+    // printf("CTRL7: 0x%02x (should be 0x01 for ACC only)\n", ctrl_regs[6]);
+    // printf("CTRL8: 0x%02x (should be 0xd8 for pedo enabled)\n", ctrl_regs[7]);
+    // printf("================================\n");
+
+    // // Read accelerometer multiple times to see if data is changing
+    // for (int i = 0; i < 5; i++) {
+    //     float acc[3];
+    //     QMI8658_Read_Acc_XYZ(acc);
+    //     printf("[TEST %d] Accel: X=%.2f Y=%.2f Z=%.2f m/s²\n", i, acc[0], acc[1], acc[2]);
+    //     sleep_ms(100);
+    // }
+#endif
     return new_steps;
 }
 
@@ -253,12 +267,12 @@ void pw_accel_reset_steps()
 {    
     accumulated_steps = 0;
     previous_hardware_steps = 0;
-    
+    last_read_steps = 0;
+
     // Reset software fallback variables
     prev_magnitude = 0.0f;
     last_step_time = 0;
     magnitude_filter = 0.0f;
-    last_read_steps = 0;
 
     // Try to reset hardware counter
     QMI8658_Reset_Step_Count();
