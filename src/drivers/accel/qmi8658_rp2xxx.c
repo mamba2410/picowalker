@@ -215,12 +215,6 @@ uint32_t pw_accel_get_new_steps()
     else new_steps = current_hardware_steps;
     last_read_steps = current_hardware_steps;
 
-    // This is for adding steps manually (Cheating...mainly for debugging)
-    if (add_steps > 0)
-    {
-        new_steps = add_steps;
-        add_steps = 0;
-    }
     // printf("[Pedometer] Read %u new steps (total: %u)\n", new_steps, current_hardware_steps);
     // // Check if pedometer has data
     // uint8_t status1 = QMI8658_Read_Status1();
@@ -256,6 +250,14 @@ uint32_t pw_accel_get_new_steps()
     //     sleep_ms(100);
     // }
 #endif
+
+    // This is for adding steps manually (Cheating...mainly for debugging)
+    if (add_steps > 0)
+    {
+        new_steps = add_steps;
+        add_steps = 0;
+    }
+    
     return new_steps;
 }
 
