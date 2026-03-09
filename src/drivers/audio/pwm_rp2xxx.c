@@ -11,6 +11,10 @@
 #include "../../picowalker_structures.h"
 #include "../../picowalker_core.h"
 
+#ifndef AUDIO_SCALE
+#define AUDIO_SCALE 1
+#endif
+
 #define AUDIO_CLKDIV 4.0f
 #define AUDIO_PWM_RANGE ((1<<16)-1)
 
@@ -147,7 +151,7 @@ void pw_audio_play_sound_data(const pw_sound_frame_t *sound_data, size_t sz) {
             duration = (0x1400 * sf.info/sh) - 0x14;
         }
 
-        audio_queue.pwm_values[audio_queue.len] = PW_AUDIO_PERIODTAB[sf.period_idx & 0x7f] << 8;
+        audio_queue.pwm_values[audio_queue.len] = (PW_AUDIO_PERIODTAB[sf.period_idx & 0x7f] << 8) * AUDIO_SCALE; // 8;
         audio_queue.durations[audio_queue.len] = duration;
 
         //printf("[Debug] Adding period %d, duration %d\n",
