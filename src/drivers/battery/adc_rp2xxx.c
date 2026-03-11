@@ -23,12 +23,13 @@ pw_power_status_t pw_power_get_status()
     // Convert voltage to percentage (Li-ion: 3.0V-4.2V range)
     pw_power_status_t status = {.flags = 0x00, .percent = 0};
 
+    status.percent = (uint8_t)((voltage - 3.0f) / 1.2f * 100);
     if (voltage >= 4.2f) status.percent = 100;
-    else if (voltage <= 3.0f) status.percent = 0;
-    else status.percent = (uint8_t)((voltage - 3.0f) / 1.2f * 100);     
+    if (voltage <= 3.2f) status.percent = 0;
 
     if (voltage < 3.2f) status.flags |= PW_POWER_STATUS_FLAGS_FAULT;
-          
+    else status.flags |= PW_POWER_STATUS_FLAGS_MEASUREMENT;
+
     return status;
 }
 

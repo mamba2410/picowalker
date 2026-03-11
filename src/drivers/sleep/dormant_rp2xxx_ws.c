@@ -11,6 +11,12 @@ pw_wake_reason_t wake_reason;
 ********************************************************************************/
 void pw_power_init()
 {
+#ifdef BAT_PWR_PIN
+    // Battery Power
+    gpio_init(BAT_PWR_PIN);
+    gpio_set_dir(BAT_PWR_PIN, GPIO_OUT);
+    gpio_put(BAT_PWR_PIN, 1);
+#endif
     // ADC Config
     adc_init();
     adc_gpio_init(BAT_ADC_PIN);

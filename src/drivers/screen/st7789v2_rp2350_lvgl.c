@@ -58,7 +58,6 @@ static lv_obj_t *battery_label;
 static lv_obj_t *tile_view;
 
 static struct repeating_timer lvgl_timer;
-static struct repeating_timer battery_timer;
 bool is_sleeping = false;
 
 // Array of background images
@@ -311,32 +310,6 @@ static void eeprom_save_button_callback(lv_event_t * event)
 }
 
 /********************************************************************************
- * @brief           Updates Battery Display
- * @param timer     Repeating Timer Struct
- * @return bool
-********************************************************************************/
-static bool repeating_battery_timer_callback(struct repeating_timer *timer)
-{
-    if (is_sleeping || !battery_bar) return true;
-    
-    // Read battery status
-    // pw_battery_status_t battery_status = pw_power_get_battery_status();
-    
-    // // Update battery bar value with smooth animation
-    // lv_bar_set_value(battery_bar, battery_status.percent, LV_ANIM_ON);
-    
-    // // Update battery label with percentage
-    // if (battery_label) 
-    // {
-    //     static char battery_text[32];
-    //     snprintf(battery_text, sizeof(battery_text), "Battery: %d%%", battery_status.percent);
-    //     lv_label_set_text(battery_label, battery_text);
-    // }
-    
-    return true;
-}
-
-/********************************************************************************
  * @brief           Tileview Event Callback - triggered when tiles change
  * @param event     LVGL event from tileview
 ********************************************************************************/
@@ -346,19 +319,12 @@ static void tileview_event_callback(lv_event_t * event)
     
     if (event->code == LV_EVENT_SCROLL_END) 
     {
-        // Force immediate battery update when tile changes
-        repeating_battery_timer_callback(NULL);
-        printf("[Debug] Tile changed - battery updated\n");
+        pw_power_status_t battery_status = pw_power_get_status();
+        lv_bar_set_value(battery_bar, battery_status.percent, LV_ANIM_ON);
+        static char battery_text[32];
+        snprintf(battery_text, sizeof(battery_text), "Battery: %d%%", battery_status.percent);
+        lv_label_set_text(battery_label, battery_text);
     }
-}
-
-/********************************************************************************
- * @brief           Manual Battery Update (can be called externally)
- * @param N/A
-********************************************************************************/
-void pw_screen_update_battery()
-{
-    repeating_battery_timer_callback(NULL);
 }
 
 /*
@@ -670,12 +636,6 @@ void pw_screen_init()
     lv_obj_align(battery_label, LV_ALIGN_CENTER, 0, 60);
     lv_obj_set_style_text_font(battery_label, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(battery_label, lv_color_black(), 0);
-    
-    // Start battery update timer (update every 30 seconds)
-    add_repeating_timer_ms(30000, repeating_battery_timer_callback, NULL, &battery_timer);
-    
-    // Initial battery reading
-    repeating_battery_timer_callback(NULL);
 
     // EEPROM Menu Tile
     lv_obj_t *tile_eeprom = lv_tileview_add_tile(tile_view, 0, 2, LV_DIR_TOP);
@@ -1183,9 +1143,8 @@ void pw_screen_sleep()
     ST7789V2_Set_PWM(0);
     ST7789V2_Sleep();
 
-    // Stop LVGL processing and battery updates
+    // Stop LVGL processing updates
     cancel_repeating_timer(&lvgl_timer);
-    cancel_repeating_timer(&battery_timer);
     is_sleeping = true;
 }
 
@@ -1200,13 +1159,9 @@ void pw_screen_wake()
     sleep_ms(120);
     ST7789V2_Set_PWM(10);
 
-    // Restart LVGL processing and battery updates
+    // Restart LVGL processing
     add_repeating_timer_ms(5, repeating_lvgl_timer_callback, NULL, &lvgl_timer);
-    add_repeating_timer_ms(30000, repeating_battery_timer_callback, NULL, &battery_timer);
     is_sleeping = false;
-    
-    // Update battery immediately on wake
-    repeating_battery_timer_callback(NULL);
 }
 
 /********************************************************************************
