@@ -103,18 +103,25 @@ static const palette_t palettes[] = {
         [PW_SCREEN_BLACK] = LV_COLOR_MAKE(20,  35,  15 ),
     },
     // Mode 2: Greyscale (Redish)
-    { 
-        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(205, 185, 185),
-        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(161, 110, 110),
-        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(110, 60,  60 ),
-        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(35,  10,  10 ),
+    // { 
+    //     [PW_SCREEN_WHITE] = LV_COLOR_MAKE(205, 185, 185),
+    //     [PW_SCREEN_LGREY] = LV_COLOR_MAKE(161, 110, 110),
+    //     [PW_SCREEN_DGREY] = LV_COLOR_MAKE(110, 60,  60 ),
+    //     [PW_SCREEN_BLACK] = LV_COLOR_MAKE(35,  10,  10 ),
+    // },
+    // Mode 2: Greyscale (Zenith)
+    {
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(183, 184, 176),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(128, 129, 115),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(102, 101, 89 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(31,  26,  23 ),
     },
     // Mode 3: Color
     {
-        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(255, 255, 255),
-        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(170, 170, 170),
-        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(85,  85,  85 ),
-        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(0,   0,   0  ),
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(251, 251, 251),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(132, 132, 165),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(84,  84,  146),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(34,  29,  35 ),
     }
 
 };

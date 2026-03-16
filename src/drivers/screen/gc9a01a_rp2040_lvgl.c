@@ -99,10 +99,10 @@ static const palette_t palettes[] = {
     },
     // Mode 3: Color
     {
-        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(255, 255, 255),
-        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(170, 170, 170),
-        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(85,  85,  85 ),
-        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(0,   0,   0  ),
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(251, 251, 251),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(132, 132, 165),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(84,  84,  146),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(34,  29,  35 ),
     }
 
 };

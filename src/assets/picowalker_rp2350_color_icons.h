@@ -14,8 +14,8 @@ typedef struct {
     uint16_t height;            // Height in pixels
 } color_icons_t;
 
-#define ICONS_COUNT 47
-#define ICONS_BIN_SIZE 12027
+#define ICONS_COUNT 65
+#define ICONS_BIN_SIZE 13576
 
 extern const color_icons_t icons_map[ICONS_COUNT];
 extern uint8_t color_icons[ICONS_BIN_SIZE];
@@ -32,3 +32,4 @@ const color_icons_t* find_icon_by_eeprom_address(uint16_t eeprom_address);
 #endif // __ASSEMBLER__
 
 #endif // ICONS_MAP_H
+
