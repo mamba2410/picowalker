@@ -59,7 +59,20 @@ void audio_irq_callback() {
 
     // Set note value
     pwm_set_wrap(pwm_gpio_to_slice_num(AUDIO_SPEAKER_PIN), audio_queue.pwm_values[audio_queue.head]);
-    pwm_set_gpio_level(AUDIO_SPEAKER_PIN, audio_queue.pwm_values[audio_queue.head]/2);
+    pw_volume_t volume = pw_audio_get_volume();
+    uint16_t duty_cycle;
+    switch(volume) {
+        case VOLUME_NONE:
+            duty_cycle = 0;
+            break;
+        case VOLUME_HALF:
+            duty_cycle = audio_queue.pwm_values[audio_queue.head] / 1.5;
+            break;
+        case VOLUME_FULL:
+            duty_cycle = audio_queue.pwm_values[audio_queue.head] / 2;
+            break;
+    }
+    pwm_set_gpio_level(AUDIO_SPEAKER_PIN, duty_cycle); //audio_queue.pwm_values[audio_queue.head]/2);
 
     // Set timer for note duration and callback
     hw_set_bits(&timer_hw->inte, 1u<<AUDIO_ALARM_NUM);
