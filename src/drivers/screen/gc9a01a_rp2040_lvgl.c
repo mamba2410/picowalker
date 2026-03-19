@@ -78,24 +78,24 @@ typedef lv_color_t palette_t[4];
 static const palette_t palettes[] = {
     // Mode 0: Greyscale (original)
     {
-        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(195, 205, 185),
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(195, 195, 195),
         [PW_SCREEN_LGREY] = LV_COLOR_MAKE(170, 170, 170),
         [PW_SCREEN_DGREY] = LV_COLOR_MAKE(85,  85,  85 ),
         [PW_SCREEN_BLACK] = LV_COLOR_MAKE(0,   0,   0  ),
     },
-    // Mode 1: Greyscale (Greenish)
+    // Mode 1: Greyscale (Greenish LCD)
     { 
         [PW_SCREEN_WHITE] = LV_COLOR_MAKE(168, 182, 106),
         [PW_SCREEN_LGREY] = LV_COLOR_MAKE(110, 130, 70 ),
         [PW_SCREEN_DGREY] = LV_COLOR_MAKE(60,  80,  40 ),
         [PW_SCREEN_BLACK] = LV_COLOR_MAKE(20,  35,  15 ),
     },
-    // Mode 2: Greyscale (Redish)
-    { 
-        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(205, 185, 185),
-        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(161, 110, 110),
-        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(110, 60,  60 ),
-        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(35,  10,  10 ),
+    // Mode 2: Greyscale (Poketch)
+    {
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(112, 176, 112),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(80,  128, 80 ),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(56,  80,  48 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(16,  40,  24 )
     },
     // Mode 3: Color
     {
