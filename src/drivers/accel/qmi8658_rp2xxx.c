@@ -7,66 +7,118 @@
 struct QMI8658_Config qmi8658_config;
 struct QMI8658_PedoConfig pedo_config;
 
-// Pedometer Step Counting variables
+// Hardware Pedometer Engine Step Counting variables
 static volatile bool pedometer_data_ready = false;
 static uint32_t last_read_steps = 0;
 static uint32_t add_steps = 0;
 
-// Software fallback variables
+// Software Pedometer Engine variables (mimics hardware engine)
 uint32_t accumulated_steps = 0;
 static unsigned int previous_hardware_steps = 0;
 static struct repeating_timer step_timer;
-static float prev_magnitude = 0.0f;
+static uint32_t timer_callback_ms = 20; // get as close to QMI8658_AccOdr_62_5Hz sample rating
+const uint32_t min_step_interval_ms = 1000; // Minimum time between steps
+#define MAX_SAMPLES 50
+static float accel_history[MAX_SAMPLES];
+static uint8_t history_index = 0;
+static bool history_filled = false;
 static uint32_t last_step_time = 0;
-static float step_threshold = 1.2f;
-static uint32_t min_step_interval_ms = 300;
-static float magnitude_filter = 0.0f;
-static const float filter_alpha = 0.3f;
+static uint8_t consecutive_signals = 0;
+static bool in_step_motion = false;
+static uint32_t step_motion_start = 0;
 
 /********************************************************************************
- * @brief           Timer callback to continuously process steps
+ * @brief           Timer callback to mimic hardware pedometer engine
  * @param timer     Repeating timer struct
  * @return bool     true to continue timer
 ********************************************************************************/
 static bool step_processing_timer_callback(struct repeating_timer *timer)
 {
     uint32_t current_time = to_ms_since_boot(get_absolute_time());
-    
+
     // Try hardware pedometer first
     unsigned int current_hardware_steps = 0;
     QMI8658_Read_Step_Count(&current_hardware_steps);
     
-    if (current_hardware_steps > previous_hardware_steps) 
+    if (current_hardware_steps > previous_hardware_steps)
     {
         // Hardware pedometer is working
         uint32_t new_hardware_steps = current_hardware_steps - previous_hardware_steps;
         accumulated_steps += new_hardware_steps;
         previous_hardware_steps = current_hardware_steps;
-        
+
         printf("[Debug] Hardware: +%u steps (total: %u)\n", new_hardware_steps, accumulated_steps);
         return true;
     }
-    
-    // Fallback to software detection if hardware isn't working
+
+    // Software pedometer using pedo_config parameters
     float accel[3];
     QMI8658_Read_Acc_XYZ(accel);
-    
+
+    // Calculate magnitude (total acceleration)
     float magnitude = sqrtf(accel[0] * accel[0] + accel[1] * accel[1] + accel[2] * accel[2]);
-    magnitude_filter = (filter_alpha * magnitude) + ((1.0f - filter_alpha) * magnitude_filter);
-    float magnitude_diff = magnitude_filter - prev_magnitude;
-    
-    if (magnitude_diff > step_threshold && 
-        (current_time - last_step_time) > min_step_interval_ms) 
+
+    // Sliding continuous buffer history
+    accel_history[history_index] = magnitude;
+    history_index = (history_index + 1) % pedo_config.sample_count;
+    if (history_index == 0) history_filled = true;
+    if (!history_filled) return true;
+
+    // Find crest and trough in the sample window
+    float crest = accel_history[0];
+    float trough = accel_history[0];
+    for (uint8_t i = 1; i < pedo_config.sample_count; i++)
     {
-        
-        accumulated_steps++;
-        last_step_time = current_time;
-        
-        printf("[Debug] Software: Step detected! Total: %u, Mag: %.2f\n", 
-               accumulated_steps, magnitude_filter);
+        if (accel_history[i] > crest) crest = accel_history[i];
+        if (accel_history[i] < trough) trough = accel_history[i];
     }
-    
-    prev_magnitude = magnitude_filter;
+
+    // Check if current motion qualifies as a step signal
+    float peak2peak = crest - trough;
+    float peak_deviation = fabsf(crest - 9.8f); // against a baseline gravity
+    bool is_step_signal = (peak2peak > (pedo_config.fix_peak2peak / 100.0f)) && 
+                          (peak_deviation > (pedo_config.fix_peak / 100.0f));
+    uint32_t time_since_last_step = current_time - last_step_time;
+
+    // Don't start new motion until minimum interval has passed since last step
+    if (is_step_signal && !in_step_motion && time_since_last_step >= min_step_interval_ms)
+    {
+        in_step_motion = true;
+        step_motion_start = current_time;
+        consecutive_signals = 1;
+    }
+    else if (is_step_signal && in_step_motion)
+    {
+        consecutive_signals++;
+        uint32_t motion_duration = current_time - step_motion_start;
+
+        // Check if we have enough signals to confirm a step
+        if (consecutive_signals >= pedo_config.signal_count &&
+            motion_duration >= pedo_config.time_low &&
+            motion_duration <= pedo_config.time_up)
+        {
+            accumulated_steps++;
+            last_step_time = current_time;
+            in_step_motion = false;
+            consecutive_signals = 0;
+
+            printf("[Debug] Software: Step detected! Total: %u, P2P: %.2f, Peak: %.2f, Signals: %u, Duration: %ums\n",
+                   accumulated_steps, peak2peak, peak_deviation, pedo_config.signal_count, motion_duration);
+        }
+        else if (motion_duration > pedo_config.time_up)
+        {
+            // Motion too long - reset
+            in_step_motion = false;
+            consecutive_signals = 0;
+        }
+    }
+    else if (!is_step_signal && in_step_motion)
+    {
+        // Motion ended - reset
+        in_step_motion = false;
+        consecutive_signals = 0;
+    }
+
     return true;
 }
 
@@ -140,11 +192,11 @@ void pw_accel_init()
     gpio_set_irq_enabled_with_callback(DOF_INT1, GPIO_IRQ_EDGE_RISE, true, &accel_irq_callback);
 
 #if !PEDOMETER_ENGINE
-    // // Get initial hardware step count
+    // Get initial hardware step count
     QMI8658_Read_Step_Count(&previous_hardware_steps);
     
-    // // Start timer for continuous step processing (100ms interval)
-    add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
+    // Start timer for step processing
+    add_repeating_timer_ms(timer_callback_ms, step_processing_timer_callback, NULL, &step_timer);
 #endif
 }
 
@@ -172,7 +224,9 @@ void pw_accel_wake()
     // Re-enable accelerometer and restart step processing timer
     QMI8658_Enable_Sensors(QMI8658_CTRL7_ACC_ENABLE);
 #if !PEDOMETER_ENGINE
-    add_repeating_timer_ms(100, step_processing_timer_callback, NULL, &step_timer);
+    history_filled = false;
+    history_index = 0;
+    add_repeating_timer_ms(timer_callback_ms, step_processing_timer_callback, NULL, &step_timer);
 #endif
     printf("[Debug] Accelerometer wake up - timer restarted\n");
 }
@@ -243,7 +297,8 @@ uint32_t pw_accel_get_new_steps()
     // printf("================================\n");
 
     // // Read accelerometer multiple times to see if data is changing
-    // for (int i = 0; i < 5; i++) {
+    // for (int i = 0; i < 5; i++) 
+    // {
     //     float acc[3];
     //     QMI8658_Read_Acc_XYZ(acc);
     //     printf("[TEST %d] Accel: X=%.2f Y=%.2f Z=%.2f m/s²\n", i, acc[0], acc[1], acc[2]);
@@ -271,15 +326,22 @@ void pw_accel_reset_steps()
     previous_hardware_steps = 0;
     last_read_steps = 0;
 
-    // Reset software fallback variables
-    prev_magnitude = 0.0f;
+    // Reset Software Pedometer Engine
+    history_index = 0;
+    history_filled = false;
     last_step_time = 0;
-    magnitude_filter = 0.0f;
+    consecutive_signals = 0;
+    in_step_motion = false;
+    step_motion_start = 0;
+    for (uint8_t i = 0; i < MAX_SAMPLES; i++) 
+    {
+        accel_history[i] = 0.0f;
+    }
 
     // Try to reset hardware counter
     QMI8658_Reset_Step_Count();
     QMI8658_Read_Step_Count(&previous_hardware_steps);
-    
+
     printf("[Debug] Step counter reset - Hardware + Software\n");
 }
 
