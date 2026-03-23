@@ -60,9 +60,6 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
 static void direct_memory_access_handler(void);
 static bool repeating_lvgl_timer_callback(struct repeating_timer *timer);
 
-// Battery functions
-void pw_screen_update_battery();
-
 // Image color functions
 lv_color_t get_color(uint16_t color, bool is_color);
 

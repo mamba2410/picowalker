@@ -11,6 +11,10 @@
 #include "../../picowalker_structures.h"
 #include "../../picowalker_core.h"
 
+#ifndef AUDIO_SCALE
+#define AUDIO_SCALE 1
+#endif
+
 #define AUDIO_CLKDIV 4.0f
 #define AUDIO_PWM_RANGE ((1<<16)-1)
 
@@ -55,7 +59,20 @@ void audio_irq_callback() {
 
     // Set note value
     pwm_set_wrap(pwm_gpio_to_slice_num(AUDIO_SPEAKER_PIN), audio_queue.pwm_values[audio_queue.head]);
-    pwm_set_gpio_level(AUDIO_SPEAKER_PIN, audio_queue.pwm_values[audio_queue.head]/2);
+    pw_volume_t volume = pw_audio_get_volume();
+    uint16_t duty_cycle;
+    switch(volume) {
+        case VOLUME_NONE:
+            duty_cycle = 0;
+            break;
+        case VOLUME_HALF:
+            duty_cycle = audio_queue.pwm_values[audio_queue.head] / 1.5;
+            break;
+        case VOLUME_FULL:
+            duty_cycle = audio_queue.pwm_values[audio_queue.head] / 2;
+            break;
+    }
+    pwm_set_gpio_level(AUDIO_SPEAKER_PIN, duty_cycle); //audio_queue.pwm_values[audio_queue.head]/2);
 
     // Set timer for note duration and callback
     hw_set_bits(&timer_hw->inte, 1u<<AUDIO_ALARM_NUM);
@@ -147,7 +164,7 @@ void pw_audio_play_sound_data(const pw_sound_frame_t *sound_data, size_t sz) {
             duration = (0x1400 * sf.info/sh) - 0x14;
         }
 
-        audio_queue.pwm_values[audio_queue.len] = PW_AUDIO_PERIODTAB[sf.period_idx & 0x7f] << 8;
+        audio_queue.pwm_values[audio_queue.len] = (PW_AUDIO_PERIODTAB[sf.period_idx & 0x7f] << 8) * AUDIO_SCALE; // 8;
         audio_queue.durations[audio_queue.len] = duration;
 
         //printf("[Debug] Adding period %d, duration %d\n",

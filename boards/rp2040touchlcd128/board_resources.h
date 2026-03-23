@@ -62,10 +62,11 @@
 /********************************************************************************
  * Board Specific Functions
 ********************************************************************************/
-#define TOUCH           1       // Touch variant
-#define IR_SERIAL       1       // Serial IR
-#define SCREEN_ROTATION 0       // 0 = 0d, 1 = 90d, 2 = 180d, 3 = 270d
-#define CANVAS_SCALE    2       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
+#define TOUCH            1       // Touch variant
+#define IR_SERIAL        1       // Serial IR
+#define SCREEN_ROTATION  0       // 0 = 0d, 1 = 90d, 2 = 180d, 3 = 270d
+#define CANVAS_SCALE     2       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
+#define PEDOMETER_ENGINE true
 
 void board_spi_init();
 void board_i2c_init();

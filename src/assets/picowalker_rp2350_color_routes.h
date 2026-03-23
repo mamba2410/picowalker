@@ -15,7 +15,7 @@ typedef struct {
 } color_routes_t;
 
 #define ROUTES_COUNT 8
-#define ROUTES_BIN_SIZE 2561
+#define ROUTES_BIN_SIZE 2599
 
 extern const color_routes_t routes_map[ROUTES_COUNT];
 extern uint8_t color_routes[ROUTES_BIN_SIZE];
@@ -32,3 +32,4 @@ const color_routes_t* find_route_by_index(uint8_t route_index);
 #endif // __ASSEMBLER__
 
 #endif // ROUTES_MAP_H
+

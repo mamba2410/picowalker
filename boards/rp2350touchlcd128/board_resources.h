@@ -62,11 +62,13 @@
 /********************************************************************************
  * Board Specific Functions
 ********************************************************************************/
-#define TOUCH           1       // Touch variant
-#define IR_SERIAL       1       // Serial IR
-#define SCREEN_ROTATION 0       // 0 = 0d, 1 = 90d, 2 = 180d, 3 = 270d
-#define CANVAS_SCALE    2       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
-#define RTC_CLK_PIN     20      // RP2350TouchLCD128 doesn't have RTC so labeling it something else
+#define TOUCH            1       // Touch variant
+#define IR_SERIAL        1       // Serial IR
+#define SCREEN_ROTATION  0       // 0 = 0d, 1 = 90d, 2 = 180d, 3 = 270d
+#define CANVAS_SCALE     2       // 1x = 96x64, 1.5x = 144x96, 2x = 192x128
+#define RTC_CLK_PIN      20      // RP2350TouchLCD128 doesn't have RTC so labeling it something else
+#define USE_EXTERNAL_RTC false
+#define PEDOMETER_ENGINE false   // QMI8658 does not have the Pedometer Egine Available...
 
 void board_spi_init();
 void board_i2c_init();

@@ -58,7 +58,6 @@ static lv_obj_t *battery_label;
 static lv_obj_t *tile_view;
 
 static struct repeating_timer lvgl_timer;
-static struct repeating_timer battery_timer;
 bool is_sleeping = false;
 
 // Array of background images
@@ -89,14 +88,14 @@ metadata_t metadata;
 // Define color palettes indexed by pw_color_mode
 typedef lv_color_t palette_t[4];
 static const palette_t palettes[] = {
-    // Mode 0: Greyscale (original)
+    // Mode 0: Greyscale (Original)
     {
-        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(195, 205, 185),
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(195, 195, 195),
         [PW_SCREEN_LGREY] = LV_COLOR_MAKE(170, 170, 170),
         [PW_SCREEN_DGREY] = LV_COLOR_MAKE(85,  85,  85 ),
         [PW_SCREEN_BLACK] = LV_COLOR_MAKE(0,   0,   0  ),
     },
-    // Mode 1: Greyscale (Greenish)
+    // Mode 1: Greyscale (Greenish LCD)
     { 
         [PW_SCREEN_WHITE] = LV_COLOR_MAKE(168, 182, 106),
         [PW_SCREEN_LGREY] = LV_COLOR_MAKE(110, 130, 70 ),
@@ -104,18 +103,32 @@ static const palette_t palettes[] = {
         [PW_SCREEN_BLACK] = LV_COLOR_MAKE(20,  35,  15 ),
     },
     // Mode 2: Greyscale (Redish)
-    { 
-        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(205, 185, 185),
-        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(161, 110, 110),
-        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(110, 60,  60 ),
-        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(35,  10,  10 ),
+    // { 
+    //     [PW_SCREEN_WHITE] = LV_COLOR_MAKE(205, 185, 185),
+    //     [PW_SCREEN_LGREY] = LV_COLOR_MAKE(161, 110, 110),
+    //     [PW_SCREEN_DGREY] = LV_COLOR_MAKE(110, 60,  60 ),
+    //     [PW_SCREEN_BLACK] = LV_COLOR_MAKE(35,  10,  10 ),
+    // },
+    // Mode 2: Greyscale (Zenith)
+    // {
+    //     [PW_SCREEN_WHITE] = LV_COLOR_MAKE(183, 184, 176),
+    //     [PW_SCREEN_LGREY] = LV_COLOR_MAKE(128, 129, 115),
+    //     [PW_SCREEN_DGREY] = LV_COLOR_MAKE(102, 101, 89 ),
+    //     [PW_SCREEN_BLACK] = LV_COLOR_MAKE(31,  26,  23 ),
+    // },
+    // Mode 2: Greyscale (Poketch)
+    {
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(112, 176, 112),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(80,  128, 80 ),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(56,  80,  48 ),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(16,  40,  24 )
     },
     // Mode 3: Color
     {
-        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(255, 255, 255),
-        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(170, 170, 170),
-        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(85,  85,  85 ),
-        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(0,   0,   0  ),
+        [PW_SCREEN_WHITE] = LV_COLOR_MAKE(251, 251, 251),
+        [PW_SCREEN_LGREY] = LV_COLOR_MAKE(132, 132, 165),
+        [PW_SCREEN_DGREY] = LV_COLOR_MAKE(84,  84,  146),
+        [PW_SCREEN_BLACK] = LV_COLOR_MAKE(34,  29,  35 ),
     }
 
 };
@@ -180,13 +193,13 @@ static void display_flush_callback(lv_disp_drv_t *display, const lv_area_t *area
  * @param gpio      Signal PIN
  * @param events    Events from LVGL
 ********************************************************************************/
-static void touch_callback(uint gpio, uint32_t events)
+static void touch_irq_callback(uint gpio, uint32_t events)
 {
     if (gpio == TOUCH_INT_PIN)
     {
         CST816S_Get_Point(SCREEN_ROTATION, ST7789V2_WIDTH, ST7789V2_HEIGHT);
-        touch_x = Touch_CTS816.x_point;
-        touch_y = Touch_CTS816.y_point;
+        touch_x = CST816S.x_point;
+        touch_y = CST816S.y_point;
         touch_state = LV_INDEV_STATE_PRESSED;
     }
 }
@@ -311,32 +324,6 @@ static void eeprom_save_button_callback(lv_event_t * event)
 }
 
 /********************************************************************************
- * @brief           Updates Battery Display
- * @param timer     Repeating Timer Struct
- * @return bool
-********************************************************************************/
-static bool repeating_battery_timer_callback(struct repeating_timer *timer)
-{
-    if (is_sleeping || !battery_bar) return true;
-    
-    // Read battery status
-    // pw_battery_status_t battery_status = pw_power_get_battery_status();
-    
-    // // Update battery bar value with smooth animation
-    // lv_bar_set_value(battery_bar, battery_status.percent, LV_ANIM_ON);
-    
-    // // Update battery label with percentage
-    // if (battery_label) 
-    // {
-    //     static char battery_text[32];
-    //     snprintf(battery_text, sizeof(battery_text), "Battery: %d%%", battery_status.percent);
-    //     lv_label_set_text(battery_label, battery_text);
-    // }
-    
-    return true;
-}
-
-/********************************************************************************
  * @brief           Tileview Event Callback - triggered when tiles change
  * @param event     LVGL event from tileview
 ********************************************************************************/
@@ -346,19 +333,12 @@ static void tileview_event_callback(lv_event_t * event)
     
     if (event->code == LV_EVENT_SCROLL_END) 
     {
-        // Force immediate battery update when tile changes
-        repeating_battery_timer_callback(NULL);
-        printf("[Debug] Tile changed - battery updated\n");
+        pw_power_status_t battery_status = pw_power_get_status();
+        lv_bar_set_value(battery_bar, battery_status.percent, LV_ANIM_ON);
+        static char battery_text[32];
+        snprintf(battery_text, sizeof(battery_text), "Battery: %d%%", battery_status.percent);
+        lv_label_set_text(battery_label, battery_text);
     }
-}
-
-/********************************************************************************
- * @brief           Manual Battery Update (can be called externally)
- * @param N/A
-********************************************************************************/
-void pw_screen_update_battery()
-{
-    repeating_battery_timer_callback(NULL);
 }
 
 /*
@@ -397,7 +377,7 @@ void pw_screen_init()
     driver_touch.type = LV_INDEV_TYPE_POINTER;    
     driver_touch.read_cb = touch_read_callback;            
     lv_indev_t * touch_screen = lv_indev_drv_register(&driver_touch);
-    gpio_set_irq_enabled_with_callback(TOUCH_INT_PIN, GPIO_IRQ_EDGE_RISE, true, &touch_callback);
+    gpio_set_irq_enabled_with_callback(TOUCH_INT_PIN, GPIO_IRQ_EDGE_RISE, true, &touch_irq_callback);
 #endif
     // Initialize DMA Direct Memory Access
     dma_channel_set_irq0_enabled(ST7789V2_DMA_TX, true);
@@ -670,12 +650,6 @@ void pw_screen_init()
     lv_obj_align(battery_label, LV_ALIGN_CENTER, 0, 60);
     lv_obj_set_style_text_font(battery_label, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(battery_label, lv_color_black(), 0);
-    
-    // Start battery update timer (update every 30 seconds)
-    add_repeating_timer_ms(30000, repeating_battery_timer_callback, NULL, &battery_timer);
-    
-    // Initial battery reading
-    repeating_battery_timer_callback(NULL);
 
     // EEPROM Menu Tile
     lv_obj_t *tile_eeprom = lv_tileview_add_tile(tile_view, 0, 2, LV_DIR_TOP);
@@ -1183,9 +1157,8 @@ void pw_screen_sleep()
     ST7789V2_Set_PWM(0);
     ST7789V2_Sleep();
 
-    // Stop LVGL processing and battery updates
+    // Stop LVGL processing updates
     cancel_repeating_timer(&lvgl_timer);
-    cancel_repeating_timer(&battery_timer);
     is_sleeping = true;
 }
 
@@ -1200,13 +1173,9 @@ void pw_screen_wake()
     sleep_ms(120);
     ST7789V2_Set_PWM(10);
 
-    // Restart LVGL processing and battery updates
+    // Restart LVGL processing
     add_repeating_timer_ms(5, repeating_lvgl_timer_callback, NULL, &lvgl_timer);
-    add_repeating_timer_ms(30000, repeating_battery_timer_callback, NULL, &battery_timer);
     is_sleeping = false;
-    
-    // Update battery immediately on wake
-    repeating_battery_timer_callback(NULL);
 }
 
 /********************************************************************************
