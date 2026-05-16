@@ -16,9 +16,9 @@
 extern uint32_t pw_time_get_rtc();
 extern uint32_t pw_time_get_ms();
 
-#define VBAT_ABS_MINIMUM_MV 3500.0f
+#define VBAT_ABS_MINIMUM_MV 3000.0f
 #define VBAT_ABS_MAXIMUM_MV 4225.0f
-#define VBAT_SAFE_MINIMUM_MV 3600.0f
+//#define VBAT_SAFE_MINIMUM_MV 3600.0f
 
 static char log_staging[128] = "";
 
@@ -648,7 +648,8 @@ pw_power_status_t pw_power_get_status() {
     // Read ADC targets
     float vbat = bq25628e_read_vbat();
     //float vsys_f = bq25628e_read_vsys();
-    //float ibat = bq25628e_read_ibat();
+    float ibat = bq25628e_read_ibat();
+    (void)ibat;
 
     float vbat_percent = bq25628e_voltage_to_percent(vbat);
     bs.percent = (uint8_t)vbat_percent;
