@@ -292,6 +292,9 @@ enum bq25628e_reg_address_e {
 #define REG_PART_INFO_DEV_REV_VAL(x)    (((x)>>0)&0x7)
 
 
+#define MINIMUM_CHARGE_CURRENT_MA 40
+#define MAXIMUM_CHARGE_CURRENT_MA 2000
+
 enum {
     CHARGE_STATUS_DISCHARGING = 0,
     CHARGE_STATUS_CC,

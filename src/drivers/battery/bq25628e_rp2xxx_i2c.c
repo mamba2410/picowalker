@@ -345,7 +345,7 @@ void bq25628e_configure_adc_targets() {
     buf[0] = 
         REG_ADC_FUNCTION_DISABLE_0_VPMID |
         REG_ADC_FUNCTION_DISABLE_0_TDIE |
-        REG_ADC_FUNCTION_DISABLE_0_IBAT |
+        //REG_ADC_FUNCTION_DISABLE_0_IBAT |
         REG_ADC_FUNCTION_DISABLE_0_IBUS |
         REG_ADC_FUNCTION_DISABLE_0_VBUS |
         REG_ADC_FUNCTION_DISABLE_0_TS |
@@ -439,6 +439,22 @@ float bq25628e_read_vsys() {
 }
 
 
+float bq25628e_read_ibat() {
+    uint8_t buf[4];
+    bq25628e_read_reg(REG_IBAT_ADC, buf, 2);
+    uint16_t reg_val = ((uint16_t)buf[0] << 0) | ((uint16_t)buf[1] << 8);
+    int16_t adc_counts = REG_IBAT_ADC_VAL(reg_val);
+
+    struct helper {
+        int16_t inner : 14;
+    } helper;
+    helper.inner = adc_counts;
+
+    float ibat = (float)helper.inner * 4000 / (float)0x03e8;
+    return ibat;
+}
+
+
 void bq25628e_clear_adc_state() {
     pmic_info.adc_done = false;
     pmic_info.adc_timeout_stamp = 0;
@@ -473,6 +489,24 @@ void bq25628e_log_vbat(float vbat) {
             );
     (void)len;
     printf(log_staging);
+}
+
+
+void bq25628e_set_charge_current_limit(uint16_t ma) {
+    if(ma > MAXIMUM_CHARGE_CURRENT_MA) {
+        printf("[Error] Charge current limit %u mA greater than max of %u mA\n", ma, MAXIMUM_CHARGE_CURRENT_MA);
+        return;
+    }
+
+    if(ma < MINIMUM_CHARGE_CURRENT_MA) {
+        printf("[Warn ] Charge current limit %u mA below minimum of %u mA, disabling charge instead\n", ma, MINIMUM_CHARGE_CURRENT_MA);
+        bq25628e_disable_charge_pin();
+        return;
+    }
+
+    uint16_t val = ma/40;
+    uint16_t reg_val = val << 5;
+    bq25628e_write_reg(REG_CHARGE_CURRENT_LIMIT, (uint8_t*)&reg_val, sizeof(reg_val));
 }
 
 
@@ -518,6 +552,7 @@ void pw_battery_init() {
     bq25628e_configure_adc_targets();
     bq25628e_configure_adc();
     bq25628e_clear_adc_state();
+    bq25628e_set_charge_current_limit(1000);
 
     bq25628e_enable_charge_pin();
 
@@ -613,6 +648,7 @@ pw_power_status_t pw_power_get_status() {
     // Read ADC targets
     float vbat = bq25628e_read_vbat();
     //float vsys_f = bq25628e_read_vsys();
+    //float ibat = bq25628e_read_ibat();
 
     float vbat_percent = bq25628e_voltage_to_percent(vbat);
     bs.percent = (uint8_t)vbat_percent;
