@@ -294,6 +294,7 @@ enum bq25628e_reg_address_e {
 
 #define MINIMUM_CHARGE_CURRENT_MA 40
 #define MAXIMUM_CHARGE_CURRENT_MA 2000
+#define VBAT_UVLO_MV 2400
 
 enum {
     CHARGE_STATUS_DISCHARGING = 0,

@@ -84,6 +84,9 @@ typedef struct bq25628e_info_s {
 
 static volatile bq25628e_info_t pmic_info = {0};
 
+
+float bq25628e_read_vbat();
+
 static void bq25628e_read_reg(uint8_t reg, uint8_t *buf, size_t len) {
     if(buf == NULL) { return; }
     i2c_write_blocking(BAT_I2C_HW, BAT_I2C_ADDR, &reg, 1, true);
@@ -309,6 +312,48 @@ void bq25628e_disable_charge_pin() {
 
 void bq25628e_enable_charge_pin() {
     gpio_put(BAT_CE_PIN, 0);
+}
+
+
+void bq25628e_start_force_ibatdis() {
+    uint8_t buf[4];
+    bq25628e_read_reg(REG_CHARGER_CONTROL_0, buf, 1);
+    buf[0] &= ~REG_CHARGER_CONTROL_0_FORCE_IBATDIS_MSK;
+    buf[0] |= REG_CHARGER_CONTROL_0_FORCE_IBATDIS_ENABLED;
+    bq25628e_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
+}
+
+
+void bq25628e_stop_force_ibatdis() {
+    uint8_t buf[4];
+    bq25628e_read_reg(REG_CHARGER_CONTROL_0, buf, 1);
+    buf[0] &= ~REG_CHARGER_CONTROL_0_FORCE_IBATDIS_MSK;
+    buf[0] |= REG_CHARGER_CONTROL_0_FORCE_IBATDIS_DISABLED;
+    bq25628e_write_reg(REG_CHARGER_CONTROL_0, buf, 1);
+}
+
+
+/**
+ * Following battery detection method from the TI app note
+ * https://www.ti.com/lit/ab/sluab31a/sluab31a.pdf
+ */
+bool bq25628e_battery_detect() {
+    bq25628e_disable_charge_pin();
+    bq25628e_start_force_ibatdis();
+    sleep_ms(5);
+    bq25628e_stop_force_ibatdis();
+
+    bq25628e_clear_adc_state();
+    do {
+        // Assumes VBAT is set up as an ADC target
+        bq25628e_start_adc_measurement();
+        while(!pmic_info.irq) { }
+        pmic_info.irq = false;
+        bq25628e_service_irq();
+    } while(!pmic_info.adc_done);
+
+    float vbat = bq25628e_read_vbat();
+    return vbat > VBAT_UVLO_MV;
 }
 
 
@@ -553,8 +598,14 @@ void pw_battery_init() {
     bq25628e_configure_adc();
     bq25628e_clear_adc_state();
     bq25628e_set_charge_current_limit(1000);
+    bool battery_detected = bq25628e_battery_detect();
+    if(battery_detected) {
+        printf("[Info ] Battery present, enabling charge\n");
+        bq25628e_enable_charge_pin();
+    } else {
+        printf("[Warn ] Battery not present\n");
+    }
 
-    bq25628e_enable_charge_pin();
 
     // TODO: Set REG_CHARGER_CONTROL_3.IBAT_PK to 0x0 for 1.5A discharge limit
     // TODO: Charge current limit default 320mA, can reprogram. See REG_CHARGE_CURRENT_LIMIT
