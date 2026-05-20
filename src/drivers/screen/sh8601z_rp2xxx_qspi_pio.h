@@ -59,6 +59,7 @@ enum screen_cmd {
     CMD_SWRST           = 0x01,
     CMD_READ_ID         = 0x04,
     CMD_READ_SELFTEST   = 0x0f,
+    CMD_SLEEP_IN        = 0x10,
     CMD_SLEEP_OUT       = 0x11,
     CMD_PARTIAL_ON      = 0x12,
     CMD_NORMAL_DSP      = 0x13,

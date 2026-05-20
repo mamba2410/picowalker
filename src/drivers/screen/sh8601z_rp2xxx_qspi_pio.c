@@ -288,6 +288,8 @@ void amoled_reset() {
     amoled_send_1wire(CMD_SLEEP_OUT, 0, params);
     sleep_ms(150);
 
+    gpio_put(SCREEN_PWREN_PIN, 1);
+
     params[0] = 0xd5;
     //params[0] = 0x55;
     amoled_send_1wire(CMD_PIXEL_FORMAT, 1, params);
@@ -504,6 +506,15 @@ void pw_screen_fill_area(pw_screen_pos_t x, pw_screen_pos_t y,
 
 
 void pw_screen_sleep() {
+    gpio_put(SCREEN_PWREN_PIN, 0);
+
+    // Follow deep standby flow in section 3.3.4 of the datasheet
+    amoled_send_1wire(CMD_DISPLAY_OFF, 0, NULL);
+    amoled_send_1wire(CMD_SLEEP_IN, 0, NULL);
+
+    // Wait min 5 frames, so we wait 10
+    sleep_ms(10*1000/45);
+
     // Enable display standby
     uint8_t params[2] = {0x01};
     amoled_send_1wire(CMD_DSTB_CTRL, 1, params);
