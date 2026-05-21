@@ -10,6 +10,7 @@
 #include "hardware/gpio.h"
 #include "stdio.h"
 
+#include "board_resources.h"
 #include "../sleep/dormant_rp2xxx.h"
 #include "../../picowalker_structures.h"
 
@@ -18,20 +19,28 @@
 
 #define DEFAULT_LPOSC_FREQ 32768ul
 
-static struct timespec next_alarm = {0,};
+static struct timespec next_alarm = {0, 0};
 static uint32_t pw_lposc_freq = DEFAULT_LPOSC_FREQ;
+
+static void set_next_alarm();
 
 
 void pw_timer_periodic_callback() {
+    set_next_alarm();
+    wake_reason |= PW_WAKE_REASON_RTC;
+}
+
+
+static void set_next_alarm() {
     next_alarm.tv_sec += TIMER_INTERVAL_SEC;
     aon_timer_enable_alarm(&next_alarm, pw_timer_periodic_callback, true);
-    wake_reason |= PW_WAKE_REASON_RTC;
 }
 
 
 void run_powman_timer_from_lposc() {
     // Requires sdk 2.1.2 since its bugged before that
     powman_timer_set_1khz_tick_source_lposc_with_hz(pw_lposc_freq);
+    printf("[Debug] Running powman timer at %lu Hz\n", pw_lposc_freq);
 }
 
 static uint32_t read_lposc_value_from_otp() {
@@ -86,19 +95,31 @@ static uint32_t setup_powman_timer_from_external_pin(int pin) {
     // Set powman timer to use clock on external pin
     powman_hw->ext_time_ref = POWMAN_PASSWORD_BITS | reg_val;
 
-    printf("[Info] RTC using external osc on pin %d at %lu Hz\n", pin, DEFAULT_LPOSC_FREQ);
+    printf("[Info ] RTC using external osc on pin %d at %lu Hz\n", pin, DEFAULT_LPOSC_FREQ);
 
     // Assume frequency is 
     return DEFAULT_LPOSC_FREQ;
 }
+
+
+static void set_powman_time(uint32_t sync_time) {
+    // Requires powman timer is stopped
+
+    struct timespec ts = {0, 0};
+    ts.tv_sec = (uint64_t)sync_time;
+    //ts.tv_sec |= sync_time;
+    powman_timer_set_ms(timespec_to_ms(&ts));
+    next_alarm = ts;
+
+    printf("[Debug] Set RTC time to %lu seconds\n", sync_time);
+}
+
 
 /*
  * ============================================================================
  * Functions required by driver
  * ============================================================================
  */
-
-
 
 void pw_time_init_rtc(uint32_t sync_time) {
     // `sync_time` is in seconds since 1st Jan 2000
@@ -112,37 +133,18 @@ void pw_time_init_rtc(uint32_t sync_time) {
 #endif
 
     run_powman_timer_from_lposc();
+    set_powman_time(sync_time);
+    set_next_alarm();
 
-    // Convert pw time to unix time
-    struct timespec ts = {0, 0};
-    //ts.tv_sec = (uint64_t)(sync_time) + UNIX_TIME_OFFSET;
-    
-    // We don't need to run as unix time, its simpler to just use PW time
-    //struct timespec ts = {0, 0};
-    //ts.tv_sec = (uint64_t)(sync_time);
-    ts.tv_sec |= sync_time;
-    printf("[Debug] Initialising RTC to 0x%08lx\n", sync_time);
-
-    bool ok = aon_timer_set_time(&ts);
-    if(ok) {
-        powman_timer_set_ms(timespec_to_ms(&ts));
-        powman_timer_start();
-    }
-
-    ts.tv_sec += TIMER_INTERVAL_SEC;
-    next_alarm = ts;
-    aon_timer_enable_alarm(&next_alarm, pw_timer_periodic_callback, true);
-    
+    powman_timer_start();
+    printf("[Info ] RTC running\n");
 }
 
 void pw_time_set_rtc(uint32_t sync_time) {
-    // We don't need to run as unix time, its simpler to just use PW time
-    struct timespec ts = {0, 0};
-    //ts.tv_sec = (uint64_t)(sync_time);
-    ts.tv_sec |= sync_time;
-    //ts.tv_sec = (uint64_t)(sync_time) + UNIX_TIME_OFFSET;
-    printf("[Debug] Setting RTC to 0x%08lx\n", sync_time);
-    aon_timer_set_time(&ts);
+    powman_timer_stop();
+    set_powman_time(sync_time);
+    set_next_alarm();
+    powman_timer_start();
 }
 
 uint32_t pw_time_get_rtc() {
