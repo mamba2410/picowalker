@@ -86,6 +86,8 @@ static volatile bq25628e_info_t pmic_info = {0};
 
 
 float bq25628e_read_vbat();
+void bq25628e_clear_adc_state();
+void bq25628e_start_adc_measurement();
 
 static void bq25628e_read_reg(uint8_t reg, uint8_t *buf, size_t len) {
     if(buf == NULL) { return; }
@@ -345,6 +347,7 @@ bool bq25628e_battery_detect() {
 
     bq25628e_clear_adc_state();
     do {
+        // Dump IRQs until we find the ADC one
         // Assumes VBAT is set up as an ADC target
         bq25628e_start_adc_measurement();
         while(!pmic_info.irq) { }
@@ -675,11 +678,21 @@ pw_power_status_t pw_power_get_status() {
     if(pmic_info.plugged) {
         pmic_info.plugged = false;
         bs.flags |= PW_POWER_STATUS_FLAGS_PLUGGED;
+        bool battery_present = bq25628e_battery_detect();
+	    if(battery_present) {
+	        printf("[Info ] Battery present, enabling charge\n");
+	        bq25628e_enable_charge_pin();
+	    } else {
+	        printf("[Warn ] Battery not present\n");
+	    }
     }
 
     if(pmic_info.unplugged) {
         pmic_info.unplugged = false;
         bs.flags |= PW_POWER_STATUS_FLAGS_UNPLUGGED;
+        printf("[Info ] Disabling charge\n");
+	    bq25628e_disable_charge_pin();
+
     }
 
     if(bq25628e_adc_timed_out()) {
