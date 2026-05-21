@@ -38,9 +38,11 @@ static void set_next_alarm() {
 
 
 void run_powman_timer_from_lposc() {
+    uint64_t powman_ms = powman_timer_get_ms();
     // Requires sdk 2.1.2 since its bugged before that
     powman_timer_set_1khz_tick_source_lposc_with_hz(pw_lposc_freq);
-    printf("[Debug] Running powman timer at %lu Hz\n", pw_lposc_freq);
+    powman_timer_set_ms(powman_ms);
+    //printf("[Debug] Running powman timer at %lu Hz\n", pw_lposc_freq);
 }
 
 static uint32_t read_lposc_value_from_otp() {

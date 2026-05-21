@@ -68,12 +68,41 @@ void pw_power_enable_sleep() {
 }
 
 
-static void run_from_lposc() {
-    struct timespec ts;
-    aon_timer_get_time(&ts);
+static void dormant_sleep_danger_zone() {
+    // Set ROSC as main clock source and disable XOSC
+    // Note: can't use XOSC as that will disable ROSC and LPOSC,
+    // meaning powman will never wake us up
+    //sleep_run_from_rosc();
+    // For some reason running from ROSC means we don't wake up either...
+    sleep_run_from_lposc();
+
+    // Only let POWMAN clock run
+    clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
+    clocks_hw->sleep_en1 = 0;
+
+    // Enable deep sleep on the ARM core
+    scb_hw->scr |= ARM_CPU_PREFIXED(SCR_SLEEPDEEP_BITS);
+
+    // Choose GPIOs to set as wake source - max 4
+    //gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, GPIO_IRQ_EDGE_RISE, true);
+    gpio_set_dormant_irq_enabled(BAT_INT_PIN, GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_dormant_irq_enabled(BUTTON_MIDDLE_PIN, GPIO_IRQ_EDGE_FALL, true);
+    // We should also be allowed to wake from AON timer
+
+    // Go to sleep by turning off the ROSC
+    rosc_set_dormant();
+
+    // Interrupts happen here straight after waking up
+    // Note: peripheral clocks aren't up and running yet so IO will likely be wonky
+
+    // Reconfigure clock chain after sleeping
+    sleep_power_up();
+
+    // Reconfigure powman timer to run from lposc,
+    // since sleep_power_up() reset that
     run_powman_timer_from_lposc();
-    aon_timer_set_time(&ts);
 }
+
 
 void pw_power_enter_sleep() {
 
@@ -83,41 +112,8 @@ void pw_power_enter_sleep() {
 
     wake_reason = 0;
 
-    // Make sure the powman timer is running from the LPOSC
-    // otherwise we might not wake up
-    run_from_lposc();
-
-    // Actually do the sleep
-    //printf("[Debug] Sleeping MCU at 0x%08x s\n", (uint32_t)ts.tv_sec);
-
-    // === Start of danger zone ===
-
-    // Set XOSC as dormant clock source
-    // Also reconfigures UART to run from XOSC
-    sleep_run_from_lposc();
-    //sleep_run_from_xosc();
-
-    // Only let POWMAN clock run
-    clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
-    clocks_hw->sleep_en1 = 0;
-    scb_hw->scr |= ARM_CPU_PREFIXED(SCR_SLEEPDEEP_BITS);
-
-    //gpio_set_dormant_irq_enabled(ACCEL_INT_PIN, GPIO_IRQ_EDGE_RISE, true);
-    gpio_set_dormant_irq_enabled(BAT_INT_PIN, GPIO_IRQ_EDGE_FALL, true);
-    gpio_set_dormant_irq_enabled(BUTTON_MIDDLE_PIN, GPIO_IRQ_EDGE_FALL, true);
-    // We should also be allowed to wake from AON timer
-
-    // Go to sleep
-    rosc_set_dormant();
-    //xosc_dormant();
-
-    // Interrupts happen here straight after waking up
-    // Note: peripheral clocks aren't up and running yet so IO will likely be wonky
-
-    sleep_power_up();
+    dormant_sleep_danger_zone();
     printf("[Debug] MCU is awake, wake reason: 0x%02x\n", wake_reason);
-
-    // === End of danger zone ===
 
     // Re-configure buttons since the config got clobbered from sleeping
     pw_button_init();
