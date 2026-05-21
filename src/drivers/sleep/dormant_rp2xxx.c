@@ -21,7 +21,7 @@
 static volatile bool power_should_sleep;
 volatile bool power_sleep_enabled = true;
 volatile pw_wake_reason_t wake_reason;
-extern int lposc_value;
+extern void run_powman_timer_from_lposc();
 
 extern void pw_button_init();
 
@@ -68,6 +68,13 @@ void pw_power_enable_sleep() {
 }
 
 
+static void run_from_lposc() {
+    struct timespec ts;
+    aon_timer_get_time(&ts);
+    run_powman_timer_from_lposc();
+    aon_timer_set_time(&ts);
+}
+
 void pw_power_enter_sleep() {
 
     // Going to sleep, we don't want to respond to button presses
@@ -76,10 +83,9 @@ void pw_power_enter_sleep() {
 
     wake_reason = 0;
 
-    struct timespec ts;
-    aon_timer_get_time(&ts);
-    powman_timer_set_1khz_tick_source_lposc_with_hz(lposc_value);
-    aon_timer_set_time(&ts);
+    // Make sure the powman timer is running from the LPOSC
+    // otherwise we might not wake up
+    run_from_lposc();
 
     // Actually do the sleep
     //printf("[Debug] Sleeping MCU at 0x%08x s\n", (uint32_t)ts.tv_sec);
