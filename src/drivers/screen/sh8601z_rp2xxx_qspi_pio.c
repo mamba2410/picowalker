@@ -273,16 +273,29 @@ void amoled_clear_screen() {
 
 }
 
+
+void amoled_disable_panel_power() {
+    gpio_put(SCREEN_PWREN_PIN, 0);
+}
+
+
+void amoled_enable_panel_power() {
+    gpio_put(SCREEN_PWREN_PIN, 1);
+}
+
+
 void amoled_reset() {
     uint8_t params[4] = {0};
 
     /*
      * Screen initialise sequence
      */
-    gpio_put(SCREEN_RST_PIN, 0);
-    sleep_ms(3);
     gpio_put(SCREEN_RST_PIN, 1);
-    sleep_ms(50);
+    sleep_ms(10);
+    gpio_put(SCREEN_RST_PIN, 0);
+    sleep_ms(10);
+    gpio_put(SCREEN_RST_PIN, 1);
+    sleep_ms(150);
 
     params[0] = 0x00;
     amoled_send_1wire(CMD_SLEEP_OUT, 0, params);
@@ -335,6 +348,8 @@ void amoled_reset() {
 
     amoled_send_1wire(CMD_PARTIAL_ON, 0, params);
 
+    amoled_enable_panel_power();
+
     amoled_send_1wire(CMD_DISPLAY_ON, 0, params);
 }
 
@@ -345,34 +360,36 @@ void amoled_reset() {
  * ============================================================================
  */
 
-void pw_screen_init() {
-
-    /*
-     * Set up HSTX
-     * Adapted from https://github.com/raspberrypi/pico-examples/blob/master/hstx/spi_lcd/hstx_spi_lcd.c
-     * From SPI 1-lane to 4
-     */
-
-    /*
-     * Set up manual CSB
-     */
+void pw_screen_init_pins() {
+    // Chip select, default high
     gpio_init(SCREEN_CSB_PIN);
-    gpio_init(SCREEN_PWREN_PIN);
-    gpio_init(SCREEN_RST_PIN);
     gpio_set_dir(SCREEN_CSB_PIN, GPIO_OUT);
-    gpio_set_dir(SCREEN_PWREN_PIN, GPIO_OUT);
-    gpio_set_dir(SCREEN_RST_PIN, GPIO_OUT);
     gpio_put(SCREEN_CSB_PIN, 1);
-    gpio_put(SCREEN_PWREN_PIN, 1);
+
+    // Reset
+    // Section 3.3.1 of the SH8601Z datasheet implies keeping it low during
+    // power-on then raise it high
+    gpio_init(SCREEN_RST_PIN);
+    gpio_set_dir(SCREEN_RST_PIN, GPIO_OUT);
     gpio_put(SCREEN_RST_PIN, 0);
 
+    sleep_ms(16);
+
+    // Panel power
+    gpio_init(SCREEN_PWREN_PIN);
+    gpio_set_dir(SCREEN_PWREN_PIN, GPIO_OUT);
+    amoled_disable_panel_power();
+
+    // PIO state machines
     pio_config.pio = SCREEN_PIO_HW;
     pio_config.sm = SCREEN_PIO_SM;
     pio_config.qspi_4wire_offset = pio_add_program(pio_config.pio, &qspi_4wire_tx_cpha0_program);
     pio_config.qspi_1wire_offset = pio_add_program(pio_config.pio, &qspi_1wire_tx_cpha0_program);
+}
 
-    // Each SPI clock is 4 PIO cycles
 
+void pw_screen_init() {
+    pw_screen_init_pins();
     amoled_reset();
 }
 
@@ -506,10 +523,11 @@ void pw_screen_fill_area(pw_screen_pos_t x, pw_screen_pos_t y,
 
 
 void pw_screen_sleep() {
-    gpio_put(SCREEN_PWREN_PIN, 0);
+    amoled_disable_panel_power();
 
     // Follow deep standby flow in section 3.3.4 of the datasheet
     amoled_send_1wire(CMD_DISPLAY_OFF, 0, NULL);
+    sleep_ms(5);
     amoled_send_1wire(CMD_SLEEP_IN, 0, NULL);
 
     // Wait min 5 frames, so we wait 10
