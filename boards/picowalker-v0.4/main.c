@@ -41,7 +41,10 @@ int main() {
     bi_decl(bi_program_description("picowalker"));
     stdio_init_all();
 
-    printf("[Info ] ==== Hello, picowalker! ====\n");
+    i2c_is_inited = false;
+    spi_is_inited = false;
+
+    printf("\n\n[Info ] ==== Hello, picowalker! ====\n");
 
     // Start picowalker-core
     pw_setup();
