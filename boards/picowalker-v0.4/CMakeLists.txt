@@ -69,6 +69,7 @@ pico_add_extra_outputs(picowalker)
 ## Link these libs together
 target_link_libraries(picowalker
 	pico_stdlib
+    pico_bootsel_via_double_reset
     pico_aon_timer
     pico_multicore
     hardware_sleep
