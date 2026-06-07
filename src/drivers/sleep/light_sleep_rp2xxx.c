@@ -12,14 +12,21 @@
 #include "pico/stdlib.h"
 #include "stdio.h"
 
+#include "dormant_rp2xxx.h"
+
 static volatile bool power_should_sleep;
 extern volatile bool acknowledge_button_presses;
 
+extern void run_powman_timer_from_lposc();
 
 void pw_power_enter_light_sleep() {
     acknowledge_button_presses = false;
 
+    wake_reason = 0;
+
     // Clocks allowed to run:
+    uint32_t clocks0 = clocks_hw->sleep_en0;
+    uint32_t clocks1 = clocks_hw->sleep_en1;
     clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
     clocks_hw->sleep_en1 = CLOCKS_SLEEP_EN1_CLK_REF_TICKS_BITS | CLOCKS_SLEEP_EN1_CLK_SYS_TIMER0_BITS;
     scb_hw->scr |= ARM_CPU_PREFIXED(SCR_SLEEPDEEP_BITS);
@@ -30,7 +37,12 @@ void pw_power_enter_light_sleep() {
     __wfi();
 
     sleep_power_up();
+    run_powman_timer_from_lposc();
     // END OF DANGER ZONE
+
+    // Restore clocks so calling `wfi` in a different place behaves as expected
+    clocks_hw->sleep_en0 = clocks0;
+    clocks_hw->sleep_en1 = clocks1;
 
     //power_should_sleep = false;
     //set_user_idle_timer();
@@ -39,23 +51,16 @@ void pw_power_enter_light_sleep() {
 }
 
 
-void light_sleep_timer_callback() {
-    hw_clear_bits(&timer_hw->intr, 1u<<LIGHT_SLEEP_ALARM_NUM);
+int64_t light_sleep_timer_callback(alarm_id_t id, void *data) {
+    (void)id;
+    (void)data;
+    return 0;
 }
 
 
 void pw_power_light_sleep_for(uint32_t delay_ms) {
     // Start hardware timer
-    hw_set_bits(&timer_hw->inte, 1u<<LIGHT_SLEEP_ALARM_NUM);
-    uint user_idle_irq_num = timer_hardware_alarm_get_irq_num(timer_hw, LIGHT_SLEEP_ALARM_NUM);
-    irq_set_exclusive_handler(user_idle_irq_num, light_sleep_timer_callback);
-    irq_set_enabled(user_idle_irq_num, true);
-
-    // Note: timer hardware is 32 bits in microseconds
-    // So that's max 4294 seconds since start
-    uint64_t target = timer_hw->timerawl + (1000*delay_ms);
-
-    timer_hw->alarm[LIGHT_SLEEP_ALARM_NUM] = (uint32_t)target;
+    add_alarm_in_ms(delay_ms, light_sleep_timer_callback, NULL, false);
 
     // Go to sleep
     pw_power_enter_light_sleep();

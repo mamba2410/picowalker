@@ -77,6 +77,8 @@ static void dormant_sleep_danger_zone() {
     sleep_run_from_lposc();
 
     // Only let POWMAN clock run
+    uint32_t clocks0 = clocks_hw->sleep_en0;
+    uint32_t clocks1 = clocks_hw->sleep_en1;
     clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
     clocks_hw->sleep_en1 = 0;
 
@@ -101,6 +103,10 @@ static void dormant_sleep_danger_zone() {
     // Reconfigure powman timer to run from lposc,
     // since sleep_power_up() reset that
     run_powman_timer_from_lposc();
+
+    // Restore clocks so calling `wfi` in a different place behaves as expected
+    clocks_hw->sleep_en0 = clocks0;
+    clocks_hw->sleep_en1 = clocks1;
 }
 
 
