@@ -39,6 +39,8 @@ add_executable(picowalker
     ${MAIN_SRC_DIR}/drivers/sleep/dormant_rp2xxx.c
     ${MAIN_SRC_DIR}/drivers/sleep/dormant_rp2xxx.h
     ${MAIN_SRC_DIR}/drivers/sleep/light_sleep_rp2xxx.c
+    ${MAIN_SRC_DIR}/drivers/touch/ft3x68_i2c_rp2xxx.c
+    ${MAIN_SRC_DIR}/drivers/touch/ft3x68_i2c_rp2xxx.h
     ${MAIN_SRC_DIR}/drivers/time/rp2350_powman.c
     ${MAIN_SRC_DIR}/assets/picowalker_rp2xxx_inbuilt.S
     ${MAIN_SRC_DIR}/assets/picowalker_rp2xxx_inbuilt.h

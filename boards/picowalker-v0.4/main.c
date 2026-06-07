@@ -13,6 +13,8 @@
 
 #include "board_resources.h"
 
+#include "drivers/touch/ft3x68_i2c_rp2xxx.h"
+
 static bool spi_is_inited = false;
 static bool i2c_is_inited = false;
 
@@ -48,6 +50,8 @@ int main() {
 
     // Start picowalker-core
     pw_setup();
+
+    pw_touch_init();
 
     extern void (*pw_current_loop)(void);
     while(1) {
