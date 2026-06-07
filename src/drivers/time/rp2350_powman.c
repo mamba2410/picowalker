@@ -25,13 +25,13 @@ static uint32_t pw_lposc_freq = DEFAULT_LPOSC_FREQ;
 static void set_next_alarm();
 
 
-void pw_timer_periodic_callback() {
+void __attribute__((noinline)) pw_timer_periodic_callback() {
     set_next_alarm();
     wake_reason |= PW_WAKE_REASON_RTC;
 }
 
 
-static void set_next_alarm() {
+void __attribute__((noinline)) set_next_alarm() {
     next_alarm.tv_sec += TIMER_INTERVAL_SEC;
     aon_timer_enable_alarm(&next_alarm, pw_timer_periodic_callback, true);
 }
