@@ -151,6 +151,16 @@ uint32_t pw_accel_get_new_steps() {
     return new_steps;
 }
 
+
+uint8_t pw_accel_get_activity() {
+    uint8_t buf[4];
+    buf[0] = ACCEL_REG_STEP_STAT;
+    pw_accel_read_spi(buf, 1);
+    uint8_t activity = buf[0] & 0x03;
+    return activity;
+}
+
+
 void pw_accel_init() {
     gpio_init(ACCEL_CSB_PIN);
     gpio_set_dir(ACCEL_CSB_PIN, GPIO_OUT);
