@@ -144,6 +144,7 @@ void pw_time_init_rtc(uint32_t sync_time) {
 
 void pw_time_set_rtc(uint32_t sync_time) {
     powman_timer_stop();
+    aon_timer_disable_alarm();
     set_powman_time(sync_time);
     set_next_alarm();
     powman_timer_start();
