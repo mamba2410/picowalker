@@ -1,10 +1,8 @@
-#include <stdint.h>
-#include <stddef.h>
-
-#include <string.h>
-
 #include "ram_rp2xxx.h"
 
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 
 extern uint8_t pw_ram_eeprom[DRIVER_EEPROM_SIZE];
 
