@@ -131,7 +131,7 @@ void pio_configure_4wire() {
     pio_config.is_4wire = true;
 }
 
-void __time_critical_func(pio_put_word)(uint8_t word) {
+void pio_put_word(uint8_t word) {
     // Doesn't work?
     // pio_sm_put_blocking(pio_config.pio, pio_config.sm, word);
 
@@ -140,45 +140,38 @@ void __time_critical_func(pio_put_word)(uint8_t word) {
     *txfifo = word;
 }
 
-void __time_critical_func(amoled_send_1wire)(uint8_t cmd, size_t len, uint8_t data[len]) {
-    // can pack inst + addr into single 32-bit
-    pio_configure_1wire();
-    gpio_put(SCREEN_CSB_PIN, 0);
-    pio_put_word(0x02);  // 1 wire write
-    pio_put_word(0x00);
-    pio_put_word(cmd & 0xff);
-    pio_put_word(0x00);
+static void amoled_wait_pio_fifo_empty() {
+    while (!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
+    sleep_us(50);
+}
 
-    // send args
+static void amoled_transmit_data(size_t len, const uint8_t *data) {
     for (size_t i = 0; i < len; i++) {
         pio_put_word(data[i]);
     }
 
-    while (!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
-    sleep_us(10);
+    amoled_wait_pio_fifo_empty();
+}
+
+void amoled_send_1wire(uint8_t cmd, size_t len, const uint8_t data[len]) {
+    gpio_put(SCREEN_CSB_PIN, 0);
+
+    pio_configure_1wire();
+    uint8_t header[] = {0x02, 0x00, cmd & 0xff, 0x00};
+    amoled_transmit_data(sizeof(header), header);
+    amoled_transmit_data(len, data);
 
     gpio_put(SCREEN_CSB_PIN, 1);
 }
 
-void __time_critical_func(amoled_send_4wire)(uint8_t cmd, size_t len, uint8_t data[len]) {
-    // can pack inst + addr into single 32-bit
-    pio_configure_1wire();
+void amoled_send_4wire(uint8_t cmd, size_t len, const uint8_t data[len]) {
     gpio_put(SCREEN_CSB_PIN, 0);
-    pio_put_word(0x32);  // 4 wire write
-    pio_put_word(0x00);
-    pio_put_word(cmd & 0xff);
-    pio_put_word(0x00);
 
-    while (!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
-    sleep_us(10);
-
+    pio_configure_1wire();
+    uint8_t header[] = {0x32, 0x00, cmd & 0xff, 0x00};
+    amoled_transmit_data(sizeof(header), header);
     pio_configure_4wire();
-    for (size_t i = 0; i < len; i++) {
-        pio_put_word(data[i]);
-    }
-
-    while (!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
-    sleep_us(10);
+    amoled_transmit_data(len, data);
 
     gpio_put(SCREEN_CSB_PIN, 1);
 }
