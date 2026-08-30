@@ -1,31 +1,26 @@
+#include "ft3x68_i2c_rp2xxx.h"
+
+#include <hardware/gpio.h>
+#include <hardware/i2c.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include "hardware/i2c.h"
-#include "hardware/gpio.h"
-
 #include <stdio.h>
 
 #include "board_resources.h"
-#include "ft3x68_i2c_rp2xxx.h"
 
 static void ft3x68_read_reg(ft3x68_register_t reg, uint8_t *buf, size_t len) {
     i2c_write_blocking(BAT_I2C_HW, FT3X68_I2C_ADDR, &reg, 1, true);
     i2c_read_blocking(BAT_I2C_HW, FT3X68_I2C_ADDR, buf, len, false);
 }
 
-
 static void ft3x68_write_reg(ft3x68_register_t reg, uint8_t *buf, size_t len) {
-
     uint8_t buf2[8];
     buf2[0] = reg;
-    for(uint8_t i = 1; i <= len; i++)
-        buf2[i] = buf[i-1];
+    for (uint8_t i = 1; i <= len; i++) buf2[i] = buf[i - 1];
 
-    i2c_write_blocking(BAT_I2C_HW, FT3X68_I2C_ADDR, buf2, len+1, false);
+    i2c_write_blocking(BAT_I2C_HW, FT3X68_I2C_ADDR, buf2, len + 1, false);
 }
-
 
 ft3x68_info_t ft3x68_get_part_info() {
     /*
@@ -50,16 +45,14 @@ ft3x68_info_t ft3x68_get_part_info() {
 
     ft3x68_read_reg(FT3X68_REG_ID_G_RELEASE_CODE_ID, &buf[8], 1);
 
-    return *(ft3x68_info_t*)buf;
+    return *(ft3x68_info_t *)buf;
 }
-
 
 ft3x68_point_t ft3x68_get_point(uint8_t n) {
     (void)n;
     ft3x68_point_t point = {0};
     return point;
 }
-
 
 void ft3x68_peripheral_init() {
     board_i2c_init();
@@ -71,7 +64,6 @@ void ft3x68_peripheral_init() {
     gpio_init(TOUCH_INT_PIN);
     gpio_set_dir(TOUCH_INT_PIN, GPIO_IN);
     gpio_pull_up(TOUCH_INT_PIN);
-
 }
 
 void ft3x68_reset() {
@@ -86,12 +78,10 @@ void ft3x68_reset() {
     sleep_ms(100);
 }
 
-
 void ft3x68_sleep() {
     uint8_t buf[] = {FT3X68_POWER_MODE_HIBERNATE};
     ft3x68_write_reg(FT3X68_REG_ID_G_PMODE, buf, 1);
 }
-
 
 void pw_touch_init() {
     ft3x68_peripheral_init();
@@ -100,4 +90,3 @@ void pw_touch_init() {
     printf("[Debug] TP chip ID: 0x%06lx\n", info.cipher);
     ft3x68_sleep();
 }
-
