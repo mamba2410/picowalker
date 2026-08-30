@@ -1,10 +1,9 @@
 #ifndef PW_DRIVER_PICO_BUTTONS_H
 #define PW_DRIVER_PICO_BUTTONS_H
 
-#include <stdint.h>
+#include <pico/types.h>
 #include <stdbool.h>
-
-#include "pico/types.h"
+#include <stdint.h>
 
 extern bool acknowledge_button_presses;
 
