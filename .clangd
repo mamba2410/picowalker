@@ -1,0 +1,10 @@
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+
+CompileFlags:
+  Add:
+    - --target=arm-none-eabi
+    - -mcpu=cortex-m33
+    - -mthumb

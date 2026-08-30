@@ -1,0 +1,15 @@
+---
+BasedOnStyle: Google
+Language: C
+AlignAfterOpenBracket: false
+ColumnLimit: 120
+IndentWidth: 4
+DerivePointerAlignment: false
+PointerAlignment: Right
+AllowShortFunctionsOnASingleLine: false
+AlignConsecutiveMacros: true
+#BinPackArguments: OnePerLine
+#PackArguments:
+#  BinPack: OnePerLine
+#  BreakAfter: 4
+---
