@@ -1,25 +1,23 @@
 #include <stdio.h>
-#include "pico/stdlib.h"
-#include "pico/binary_info.h"
 
-#include "hardware/spi.h"
-#include "hardware/i2c.h"
 #include "hardware/clocks.h"
+#include "hardware/i2c.h"
 #include "hardware/pll.h"
+#include "hardware/spi.h"
+#include "pico/binary_info.h"
+#include "pico/stdlib.h"
 
-//#include "drivers/eeprom/m95512_rp2xxx_spi.h"
-#include "picowalker_structures.h"
-#include "picowalker_core.h"
-
+// #include "drivers/eeprom/m95512_rp2xxx_spi.h"
 #include "board_resources.h"
-
 #include "drivers/touch/ft3x68_i2c_rp2xxx.h"
+#include "picowalker_core.h"
+#include "picowalker_structures.h"
 
 static bool spi_is_inited = false;
 static bool i2c_is_inited = false;
 
 void board_spi_init() {
-    if(spi_is_inited) return;
+    if (spi_is_inited) return;
 
     spi_init(COMMON_SPI_HW, COMMON_SPI_SPEED_HZ);
     spi_set_format(COMMON_SPI_HW, 8, 0, 0, SPI_MSB_FIRST);
@@ -31,11 +29,13 @@ void board_spi_init() {
 }
 
 void board_i2c_init() {
-    if(i2c_is_inited) return;
+    if (i2c_is_inited) return;
     i2c_init(COMMON_I2C_HW, COMMON_I2C_SPEED_HZ);
     gpio_set_function(COMMON_I2C_SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(COMMON_I2C_SCK_PIN, GPIO_FUNC_I2C);
     // hardware pullups
+    gpio_pull_up(COMMON_I2C_SDA_PIN);
+    gpio_pull_up(COMMON_I2C_SCK_PIN);
     i2c_is_inited = true;
 }
 
@@ -54,11 +54,10 @@ int main() {
     pw_touch_init();
 
     extern void (*pw_current_loop)(void);
-    while(1) {
+    while (1) {
         pw_current_loop();
     }
 
     // unreachable
-    while(1);
+    while (1);
 }
-
