@@ -1,20 +1,19 @@
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-
 #include <hardware/gpio.h>
 #include <hardware/pwm.h>
-#include "hardware/timer.h"
+#include <hardware/timer.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 
-#include "board_resources.h"
-#include "../../picowalker_structures.h"
 #include "../../picowalker_core.h"
+#include "../../picowalker_structures.h"
+#include "board_resources.h"
 
-#define AUDIO_CLKDIV 4.0f
-#define AUDIO_PWM_RANGE ((1<<16)-1)
+#define AUDIO_CLKDIV    4.0f
+#define AUDIO_PWM_RANGE ((1 << 16) - 1)
 
-#define AUDIO_SAMPLE_RATE 44100 // 44.1 kHz standard sampling
+#define AUDIO_SAMPLE_RATE 44100  // 44.1 kHz standard sampling
 
 struct audio_queue_s {
     uint16_t pwm_values[127];
@@ -30,7 +29,7 @@ bool pw_audio_is_playing_sound();
  * Notes on the audio
  *
  * Audio comes as (PWM period, duration) pairs, the units of which are unknown,
- * I also don't know the original clock rate but in theory, we can jsut take the 
+ * I also don't know the original clock rate but in theory, we can jsut take the
  * period and duration and scale it to our PWM period and duration.
  *
  * CUrrently, the code is blocking which is awful.
@@ -41,13 +40,12 @@ bool pw_audio_is_playing_sound();
  *
  */
 
-
 void audio_irq_callback() {
     // Ack this interrupt
-    hw_clear_bits(&timer_hw->intr, 1u<<AUDIO_ALARM_NUM);
+    hw_clear_bits(&timer_hw->intr, 1u << AUDIO_ALARM_NUM);
 
     // Check if we should continue
-    if(audio_queue.head >= audio_queue.len) {
+    if (audio_queue.head >= audio_queue.len) {
         audio_queue.len = 0;
         pwm_set_gpio_level(AUDIO_SPEAKER_PIN, 0);
         return;
@@ -55,17 +53,17 @@ void audio_irq_callback() {
 
     // Set note value
     pwm_set_wrap(pwm_gpio_to_slice_num(AUDIO_SPEAKER_PIN), audio_queue.pwm_values[audio_queue.head]);
-    pwm_set_gpio_level(AUDIO_SPEAKER_PIN, audio_queue.pwm_values[audio_queue.head]/2);
+    pwm_set_gpio_level(AUDIO_SPEAKER_PIN, audio_queue.pwm_values[audio_queue.head] / 2);
 
     // Set timer for note duration and callback
-    hw_set_bits(&timer_hw->inte, 1u<<AUDIO_ALARM_NUM);
+    hw_set_bits(&timer_hw->inte, 1u << AUDIO_ALARM_NUM);
     uint irq_num = timer_hardware_alarm_get_irq_num(timer_hw, AUDIO_ALARM_NUM);
     irq_set_exclusive_handler(irq_num, audio_irq_callback);
     irq_set_enabled(irq_num, true);
 
-    uint64_t target = timer_hw->timerawl + (audio_queue.durations[audio_queue.head]*1000);
+    uint64_t target = timer_hw->timerawl + (audio_queue.durations[audio_queue.head] * 1000);
     timer_hw->alarm[AUDIO_ALARM_NUM] = (uint32_t)target;
-    
+
     // Increment note counter
     audio_queue.head++;
 }
@@ -99,9 +97,9 @@ void audio_play_queue() {
     audio_irq_callback();
 
     // No more sound
-    //pwm_set_gpio_level(AUDIO_SPEAKER_PIN, 0);
-    //audio_queue.len = 0;
-    //audio_queue.head = 0;
+    // pwm_set_gpio_level(AUDIO_SPEAKER_PIN, 0);
+    // audio_queue.len = 0;
+    // audio_queue.head = 0;
 }
 
 /*
@@ -113,7 +111,7 @@ void pw_audio_init() {
     uint slice_num = pwm_gpio_to_slice_num(AUDIO_SPEAKER_PIN);
 
     pwm_config config = pwm_get_default_config();
-    // TODO: Modify the clockdiv to make 
+    // TODO: Modify the clockdiv to make
     pwm_config_set_clkdiv(&config, 8.f);
     pwm_set_gpio_level(AUDIO_SPEAKER_PIN, 0);
     pwm_init(slice_num, &config, true);
@@ -121,55 +119,50 @@ void pw_audio_init() {
 }
 
 void pw_audio_play_sound_data(const pw_sound_frame_t *sound_data, size_t sz) {
-    if(pw_audio_is_playing_sound()) return;
-    for(size_t i = 0; i < sz; i++) {
+    if (pw_audio_is_playing_sound()) return;
+    for (size_t i = 0; i < sz; i++) {
         pw_sound_frame_t sf = sound_data[i];
 
         uint8_t sh = 0xff;
-        if(sf.period_idx == 0x7b) {
+        if (sf.period_idx == 0x7b) {
             sh = sf.info;
             continue;
         }
 
-        if(sf.period_idx == 0x7f) {
+        if (sf.period_idx == 0x7f) {
             break;
         }
 
-        if(sf.period_idx == 0x7d) {
+        if (sf.period_idx == 0x7d) {
             printf("[Warn] Encountered `period_idx`=0x7d\n");
             continue;
         }
 
         uint16_t duration = 0;
-        if(sf.period_idx > 0x80) {
-            duration = (0x1400 * sf.info/sh);
+        if (sf.period_idx > 0x80) {
+            duration = (0x1400 * sf.info / sh);
         } else {
-            duration = (0x1400 * sf.info/sh) - 0x14;
+            duration = (0x1400 * sf.info / sh) - 0x14;
         }
 
         audio_queue.pwm_values[audio_queue.len] = PW_AUDIO_PERIODTAB[sf.period_idx & 0x7f] << 8;
         audio_queue.durations[audio_queue.len] = duration;
 
-        //printf("[Debug] Adding period %d, duration %d\n",
-        //    audio_queue.pwm_values[audio_queue.len],
-        //    audio_queue.durations[audio_queue.len]
+        // printf("[Debug] Adding period %d, duration %d\n",
+        //     audio_queue.pwm_values[audio_queue.len],
+        //     audio_queue.durations[audio_queue.len]
         //);
         audio_queue.len++;
 
         audio_queue.pwm_values[audio_queue.len] = 0;
         audio_queue.durations[audio_queue.len] = 20;
         audio_queue.len++;
-
     }
 
     printf("[Debug] Playing audio queue of length %d\n", audio_queue.len);
     audio_play_queue();
-    
 }
-
 
 bool pw_audio_is_playing_sound() {
     return audio_queue.len > 0;
 }
-
-
