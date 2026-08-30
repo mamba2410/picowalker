@@ -1,20 +1,19 @@
-#include <stdint.h>
-#include <stddef.h>
+#include <hardware/gpio.h>
+#include <hardware/powman.h>
+#include <pico/aon_timer.h>
+#include <pico/bootrom.h>
+#include <pico/time.h>
+#include <pico/types.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 
-#include "hardware/powman.h"
-#include "pico/bootrom.h"
-#include "pico/time.h"
-#include "pico/types.h"
-#include "pico/aon_timer.h"
-#include "hardware/gpio.h"
-#include "stdio.h"
-
-#include "board_resources.h"
-#include "../sleep/dormant_rp2xxx.h"
 #include "../../picowalker_structures.h"
+#include "../sleep/dormant_rp2xxx.h"
+#include "board_resources.h"
 
-#define UNIX_TIME_OFFSET 946684800ul
+#define UNIX_TIME_OFFSET   946684800ul
 #define TIMER_INTERVAL_SEC 60
 
 #define DEFAULT_LPOSC_FREQ 32768ul
@@ -24,25 +23,22 @@ static uint32_t pw_lposc_freq = DEFAULT_LPOSC_FREQ;
 
 static void set_next_alarm();
 
-
 void __attribute__((noinline)) pw_timer_periodic_callback() {
     set_next_alarm();
     wake_reason |= PW_WAKE_REASON_RTC;
 }
-
 
 void __attribute__((noinline)) set_next_alarm() {
     next_alarm.tv_sec += TIMER_INTERVAL_SEC;
     aon_timer_enable_alarm(&next_alarm, pw_timer_periodic_callback, true);
 }
 
-
 void run_powman_timer_from_lposc() {
     uint64_t powman_ms = powman_timer_get_ms();
     // Requires sdk 2.1.2 since its bugged before that
     powman_timer_set_1khz_tick_source_lposc_with_hz(pw_lposc_freq);
     powman_timer_set_ms(powman_ms);
-    //printf("[Debug] Running powman timer at %lu Hz\n", pw_lposc_freq);
+    // printf("[Debug] Running powman timer at %lu Hz\n", pw_lposc_freq);
 }
 
 static uint32_t read_lposc_value_from_otp() {
@@ -52,20 +48,19 @@ static uint32_t read_lposc_value_from_otp() {
     uint8_t raw_value[4];
     int ret = rom_func_otp_access(raw_value, 4, cmd);
     uint32_t val = 0;
-    if(ret == BOOTROM_OK) {
-        val = *(uint32_t*)raw_value;
-        val &= (1<<16)-1; // Get the lower 16 bits of the value
+    if (ret == BOOTROM_OK) {
+        val = *(uint32_t *)raw_value;
+        val &= (1 << 16) - 1;  // Get the lower 16 bits of the value
     } else {
         printf("[Warn ] Error reading LPOSC value from bootrom\n");
     }
     return val;
 }
 
-
 static uint32_t setup_powman_timer_from_lposc() {
     uint32_t freq = read_lposc_value_from_otp();
 
-    if(freq == 0) {
+    if (freq == 0) {
         // Couldn't read, so we use default frequency
         freq = DEFAULT_LPOSC_FREQ;
     }
@@ -78,15 +73,22 @@ static uint32_t setup_powman_timer_from_lposc() {
     return freq;
 }
 
-
 static uint32_t setup_powman_timer_from_external_pin(int pin) {
     gpio_init(pin);
     uint32_t reg_val = 0;
-    switch(pin) {
-        case 12: reg_val = (1<<4) | 0x00; break;
-        case 20: reg_val = (1<<4) | 0x01; break;
-        case 14: reg_val = (1<<4) | 0x02; break;
-        case 22: reg_val = (1<<4) | 0x03; break;
+    switch (pin) {
+        case 12:
+            reg_val = (1 << 4) | 0x00;
+            break;
+        case 20:
+            reg_val = (1 << 4) | 0x01;
+            break;
+        case 14:
+            reg_val = (1 << 4) | 0x02;
+            break;
+        case 22:
+            reg_val = (1 << 4) | 0x03;
+            break;
         default: {
             reg_val = 0x0;
             printf("[Warn ] External clock on pin %d not allowed, reverting to internal LPOSC\n", pin);
@@ -99,23 +101,21 @@ static uint32_t setup_powman_timer_from_external_pin(int pin) {
 
     printf("[Info ] RTC using external osc on pin %d at %lu Hz\n", pin, DEFAULT_LPOSC_FREQ);
 
-    // Assume frequency is 
+    // Assume frequency is
     return DEFAULT_LPOSC_FREQ;
 }
-
 
 static void set_powman_time(uint32_t sync_time) {
     // Requires powman timer is stopped
 
     struct timespec ts = {0, 0};
     ts.tv_sec = (uint64_t)sync_time;
-    //ts.tv_sec |= sync_time;
+    // ts.tv_sec |= sync_time;
     powman_timer_set_ms(timespec_to_ms(&ts));
     next_alarm = ts;
 
     printf("[Debug] Set RTC time to %lu seconds\n", sync_time);
 }
-
 
 /*
  * ============================================================================
@@ -151,20 +151,20 @@ void pw_time_set_rtc(uint32_t sync_time) {
 
 uint32_t pw_time_get_rtc() {
     uint64_t ms = powman_timer_get_ms();
-    //printf("[Debug] Powman timer has 0x%08x ms\n", (uint32_t)ms);
-    return (uint32_t)(ms/1000);
+    // printf("[Debug] Powman timer has 0x%08x ms\n", (uint32_t)ms);
+    return (uint32_t)(ms / 1000);
 }
 
 pw_dhms_t pw_time_get_dhms() {
     uint64_t ms = powman_timer_get_ms();
-    uint64_t units = ms/1000;
+    uint64_t units = ms / 1000;
     pw_dhms_t dhms;
-    dhms.seconds = units%60;
+    dhms.seconds = units % 60;
     units /= 60;
-    dhms.minutes = units%60;
+    dhms.minutes = units % 60;
     units /= 60;
-    dhms.hours = units%24;
-    dhms.days = units/24;
+    dhms.hours = units % 24;
+    dhms.days = units / 24;
     return dhms;
 }
 
@@ -176,7 +176,7 @@ uint32_t pw_time_get_us() {
 uint32_t pw_time_get_ms() {
     absolute_time_t now = get_absolute_time();
     uint64_t long_now = (uint64_t)now;
-    return (uint32_t)(long_now/1000);
+    return (uint32_t)(long_now / 1000);
 }
 
 void pw_time_delay_ms(uint32_t ms) {
@@ -186,7 +186,6 @@ void pw_time_delay_ms(uint32_t ms) {
 void pw_time_delay_us(uint32_t us) {
     sleep_us(us);
 }
-
 
 /*
  * ============================================================================
@@ -198,7 +197,7 @@ uint64_t pw_now_us() {
     absolute_time_t now = get_absolute_time();
     // this is mega hacky, but I don't know how else to get an
     // absolute time stamp in us as a u64
-    //return now._private_us_since_boot;
+    // return now._private_us_since_boot;
     return (uint64_t)now;
 }
 
@@ -209,4 +208,3 @@ void pw_timer_delay_ms(uint64_t ms) {
 void pw_ir_delay_ms(uint64_t ms) {
     pw_timer_delay_ms(ms);
 }
-
