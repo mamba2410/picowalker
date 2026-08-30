@@ -1,16 +1,15 @@
-#include <stdint.h>
+#include <board_resources.h>
+#include <hardware/clocks.h>
+#include <hardware/powman.h>
+#include <hardware/sync.h>
+#include <hardware/timer.h>
+#include <hardware/xosc.h>
+#include <pico/sleep.h>
+#include <pico/stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
-
-#include "board_resources.h"
-#include "hardware/clocks.h"
-#include "hardware/timer.h"
-#include "hardware/sync.h"
-#include "hardware/xosc.h"
-#include "hardware/powman.h"
-#include "pico/sleep.h"
-#include "pico/stdlib.h"
-#include "stdio.h"
+#include <stdint.h>
+#include <stdio.h>
 
 #include "dormant_rp2xxx.h"
 
@@ -44,19 +43,17 @@ void pw_power_enter_light_sleep() {
     clocks_hw->sleep_en0 = clocks0;
     clocks_hw->sleep_en1 = clocks1;
 
-    //power_should_sleep = false;
-    //set_user_idle_timer();
+    // power_should_sleep = false;
+    // set_user_idle_timer();
 
     acknowledge_button_presses = true;
 }
-
 
 int64_t light_sleep_timer_callback(alarm_id_t id, void *data) {
     (void)id;
     (void)data;
     return 0;
 }
-
 
 void pw_power_light_sleep_for(uint32_t delay_ms) {
     // Start hardware timer
@@ -65,4 +62,3 @@ void pw_power_light_sleep_for(uint32_t delay_ms) {
     // Go to sleep
     pw_power_enter_light_sleep();
 }
-
