@@ -5,6 +5,7 @@
 #include <hardware/irq.h>
 #include <hardware/pio.h>
 #include <hardware/uart.h>
+#include <pico/platform.h>
 #include <pico/stdlib.h>
 #include <pico/time.h>
 #include <stdbool.h>
@@ -77,6 +78,8 @@ static volatile struct pw_ir_pio_state_s g_ir_pio_state;
 static uint16_t g_rx_buffer[CIRC_BUF_LEN];
 
 static bool pw_ir_pio_tx_is_ongoing(void);
+void pw_ir_sleep(void);
+void pw_ir_wake(void);
 
 /*
  * Checks if the global TX circular buffer is full
@@ -100,7 +103,7 @@ static bool pw_ir_pio_circ_buf_is_empty(void) {
  * Adds a singular value to the global TX circular buffer
  * Equivalent of `palmcardIrPrvCircBufAdd()`
  */
-static bool pw_ir_pio_circ_buf_add(uint16_t val) {
+static bool __time_critical_func(pw_ir_pio_circ_buf_add)(uint16_t val) {
     uint8_t next_write = ((g_ir_pio_circ_buf.write + 1) == CIRC_BUF_LEN) ? 0 : (g_ir_pio_circ_buf.write + 1);
 
     if (next_write == g_ir_pio_circ_buf.read) {
@@ -130,6 +133,11 @@ static int32_t pw_ir_pio_circ_buf_get(void) {
     g_ir_pio_circ_buf.read = ((next_read + 1) == CIRC_BUF_LEN) ? 0 : (next_read + 1);
 
     return (uint32_t)ret;
+}
+
+static void pw_ir_pio_circ_buf_clear(void) {
+    g_ir_pio_circ_buf.write = 0;
+    g_ir_pio_circ_buf.read = 0;
 }
 
 /*
@@ -162,9 +170,7 @@ static void pw_ir_pio_reset_state() {
     g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl = PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS;
     g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl = 0;
 
-    // clear buffer
-    g_ir_pio_circ_buf.write = 0;
-    g_ir_pio_circ_buf.read = 0;
+    pw_ir_pio_circ_buf_clear();
 
     // clear state
     g_ir_pio_state.state_tx = false;
@@ -221,8 +227,8 @@ static void pw_ir_pio_setup_tx() {
         PIO_SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS;
     g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].pinctrl =
         (SIDE_SET_BITS_USED << PIO_SM1_PINCTRL_SIDESET_COUNT_LSB) | (1 << PIO_SM1_PINCTRL_OUT_COUNT_LSB) |
-        (PIN_IRDA_OUT << PIO_SM1_PINCTRL_OUT_BASE_LSB) | (1 << PIO_SM1_PINCTRL_SET_COUNT_LSB) |
-        (PIN_IRDA_OUT << PIO_SM1_PINCTRL_SET_BASE_LSB);
+        (IR_TX_PIN << PIO_SM1_PINCTRL_OUT_BASE_LSB) | (1 << PIO_SM1_PINCTRL_SET_COUNT_LSB) |
+        (IR_TX_PIN << PIO_SM1_PINCTRL_SET_BASE_LSB);
 
     // set out direction
     g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].instr = I_SET(0, 0, SET_DST_PINDIRS, 1);
@@ -251,6 +257,7 @@ static void pw_ir_pio_setup_tx() {
     channel_config_set_transfer_data_size(&config_tx, DMA_SIZE_16);
     channel_config_set_read_increment(&config_tx, true);
     channel_config_set_write_increment(&config_tx, false);
+    // dma_irqn_set_channel_enabled(g_ir_pio_state.dma_chan, IR_DMA_IRQ_NUM, true);
     channel_config_set_dreq(&config_tx, pio_get_dreq(g_ir_pio_state.pio_hw, g_ir_pio_state.pio_sm, true));
     dma_channel_configure(g_ir_pio_state.dma_chan, &config_tx, &g_ir_pio_state.pio_hw->txf[g_ir_pio_state.pio_sm],
         g_ir_pio_flat_buf, FLAT_BUF_LEN,
@@ -282,7 +289,7 @@ static void pw_ir_pio_setup_rx() {
 
     restartPC = startPC = pc;
     jmpDest1 = pc;
-    g_ir_pio_state.pio_hw->instr_mem[pc++] = I_WAIT(10, 0, 0, WAIT_FOR_GPIO, PIN_IRDA_IN);  // wait for low
+    g_ir_pio_state.pio_hw->instr_mem[pc++] = I_WAIT(10, 0, 0, WAIT_FOR_GPIO, IR_RX_PIN);  // wait for low
     g_ir_pio_state.pio_hw->instr_mem[pc++] =
         I_JMP(0, 0, JMP_PIN, jmpDest1);  // 1us later, if high now, consider it a glitch
 
@@ -301,7 +308,7 @@ static void pw_ir_pio_setup_rx() {
 
     g_ir_pio_state.pio_hw->instr_mem[pc++] = I_IN(0, 0, IN_SRC_ZEROES, 32 - dataBits - stopBits - parityBits);
 
-    g_ir_pio_state.pio_hw->instr_mem[pc++] = I_WAIT(4, 0, 1, WAIT_FOR_GPIO, PIN_IRDA_IN);  // wait for high
+    g_ir_pio_state.pio_hw->instr_mem[pc++] = I_WAIT(4, 0, 1, WAIT_FOR_GPIO, IR_RX_PIN);  // wait for high
     endPC = pc - 1;
 
     g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].clkdiv =
@@ -311,14 +318,14 @@ static void pw_ir_pio_setup_rx() {
         (g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].execctrl &
             ~(PIO_SM0_EXECCTRL_WRAP_TOP_BITS | PIO_SM0_EXECCTRL_WRAP_BOTTOM_BITS | PIO_SM2_EXECCTRL_SIDE_EN_BITS)) |
         (endPC << PIO_SM0_EXECCTRL_WRAP_TOP_LSB) | (restartPC << PIO_SM0_EXECCTRL_WRAP_BOTTOM_LSB) |
-        (SIDE_SET_HAS_ENABLE_BIT ? PIO_SM2_EXECCTRL_SIDE_EN_BITS : 0) | (PIN_IRDA_IN << PIO_SM2_EXECCTRL_JMP_PIN_LSB);
+        (SIDE_SET_HAS_ENABLE_BIT ? PIO_SM2_EXECCTRL_SIDE_EN_BITS : 0) | (IR_RX_PIN << PIO_SM2_EXECCTRL_JMP_PIN_LSB);
     g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl =
         (g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].shiftctrl &
             ~(PIO_SM1_SHIFTCTRL_PULL_THRESH_BITS | PIO_SM1_SHIFTCTRL_PUSH_THRESH_BITS |
                 PIO_SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPULL_BITS)) |
         PIO_SM0_SHIFTCTRL_IN_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPUSH_BITS;
     g_ir_pio_state.pio_hw->sm[g_ir_pio_state.pio_sm].pinctrl =
-        (SIDE_SET_BITS_USED << PIO_SM1_PINCTRL_SIDESET_COUNT_LSB) | (PIN_IRDA_IN << PIO_SM1_PINCTRL_IN_BASE_LSB);
+        (SIDE_SET_BITS_USED << PIO_SM1_PINCTRL_SIDESET_COUNT_LSB) | (IR_RX_PIN << PIO_SM1_PINCTRL_IN_BASE_LSB);
 
     // prepare OSR for SM1
     g_ir_pio_state.pio_hw->txf[g_ir_pio_state.pio_sm] = bitcounterValue;
@@ -625,7 +632,7 @@ uint8_t nPioSms, uint8_t nPioInstrs)
  * On receive data, throw it into the global circular buffer
  * Safe because by the time we want to fill it with TX data, we are done with RX
  */
-void pw_ir_pio_rx_callback(void *context, uint16_t *data, size_t len) {
+void __time_critical_func(pw_ir_pio_rx_callback)(void *context, uint16_t *data, size_t len) {
     (void)context;
     for (size_t i = 0; i < len; i++) {
         if (!(data[i] & PW_IR_PIO_FRAME_ERROR_BIT)) pw_ir_pio_circ_buf_add(data[i]);
@@ -643,10 +650,7 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
     size_t cursor = 0;
     int64_t diff;
 
-    // Reset RX buffer
-    g_ir_pio_circ_buf.read = g_ir_pio_circ_buf.write = 0;
-
-    // Set up PIO SM as RX mode
+    pw_ir_pio_circ_buf_clear();
     pw_ir_pio_setup_rx();
 
     // Spin until either something is in the callback buffer or 50ms has elapsed
@@ -655,7 +659,7 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
     do {
         now = get_absolute_time();
         diff = absolute_time_diff_us(start, now);
-    } while (pw_ir_pio_circ_buf_is_empty() && diff < 50000);
+    } while (pw_ir_pio_circ_buf_is_empty() && diff < PW_IR_WAIT_TIMEOUT_US);
 
     // If something did come through, collect data until time since last byte exceeds 3742us
     diff = 0;
@@ -668,69 +672,30 @@ int pw_ir_read(uint8_t *buf, size_t max_len) {
         }
         now = get_absolute_time();
         diff = absolute_time_diff_us(last_read, now);  // signed difference
-    } while (diff < 3742);
+    } while (diff < PW_IR_BYTE_TIMEOUT_US);
 
-    // (unset PIO RX mode?)
     pw_ir_pio_reset_state();
 
-    /*
-    // Debug
-    printf("read: (%d)", cursor);
-    for(size_t i = 0; i < cursor; i++) {
-        if(i%16 == 0) printf("\n");
-        if(i%i == 0)  printf(" ");
-        printf("%02x", buf[i]^0xaa);
-    }
-    printf("\n");
-    */
-
-    // return number of bytes read
     return cursor;
 }
 
 int pw_ir_write(uint8_t *buf, size_t len) {
-    /*
-     * Set up PIO SM as TX mode
-     * Feed TX cirvc buffer
-     * ???
-     * profit
-     * (unset PIO TX mode)
-     */
     pw_ir_pio_setup_tx();
     // pw_ir_pio_serial_tx_blocking(buf, len);
     pw_ir_pio_serial_tx_dma(buf, len);
     pw_ir_pio_reset_state();
 
-    /*
-    // Debug
-    printf("write: (%d)", len);
-    for(size_t i = 0; i < len; i++) {
-        if(i%16 == 0) printf("\n");
-        if(i%i == 0)  printf(" ");
-        printf("%02x", buf[i]^0xaa);
-    }
-    printf("\n");
-    */
-
     // TODO
     return len;
 }
 
-void pw_ir_init() {
-    // TODO: replace with PIO code
-
-    // ONCE: Set up IR shutdown pin
+static void board_ir_init() {
     gpio_init(IR_SD_PIN);
     gpio_set_dir(IR_SD_PIN, GPIO_OUT);
 
-    pio_gpio_init(pio1, IR_TX_PIN);
+    pio_gpio_init(IR_PIO_HW, IR_TX_PIN);
     gpio_init(IR_RX_PIN);
     gpio_set_dir(IR_RX_PIN, GPIO_IN);
-
-    // De-assert IR_SD
-    gpio_put(IR_SD_PIN, 0);
-
-    // Set `g_ir_pio_state` for callbacks, baud rate, etc.
 
     g_ir_pio_state = (struct pw_ir_pio_state_s){
         .pio_sm = IR_PIO_SM,
@@ -747,16 +712,16 @@ void pw_ir_init() {
         .state_rx = false,
 
         .user_rx_callback = pw_ir_pio_rx_callback,
-
     };
 
-    // Set IRQ handler
+    // TODO: IRQ handler fixed to PIO1
     irq_set_exclusive_handler(PIO1_IRQ_0, pw_ir_pio_irq_handler);
-
-    // unset PIO mode to start PIO SM
     pw_ir_pio_reset_state();
+}
 
-    // done?
+void pw_ir_init() {
+    board_ir_init();
+    pw_ir_wake();
 }
 
 void pw_ir_clear_rx() {
