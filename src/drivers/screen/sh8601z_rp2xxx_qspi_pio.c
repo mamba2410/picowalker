@@ -1,6 +1,7 @@
 #include "sh8601z_rp2xxx_qspi_pio.h"
 
 #include <hardware/clocks.h>
+#include <hardware/dma.h>
 #include <hardware/gpio.h>
 #include <hardware/pio.h>
 #include <hardware/resets.h>
@@ -14,9 +15,13 @@
 #include "board_resources.h"
 #include "qspi.pio.h"
 
+#define SCREEN_DMA_IRQ_PRIORITY PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY
+
 static amoled_t amoled = {0};
 
 static uint8_t amoled_buffer[AMOLED_BUFFER_SIZE] = {0};
+static uint8_t amoled_command_buffer[AMOLED_COMMAND_BUFFER_SIZE] = {0};
+static size_t amoled_buffer_to_write = 0;
 
 static struct {
     PIO pio;
@@ -25,6 +30,18 @@ static struct {
     uint qspi_1wire_offset;
     bool is_4wire;  // true for 4 wire
 } pio_config;
+
+static enum {
+    AMOLED_DMA_IDLE,
+    AMOLED_DMA_TRANSMITTING_COL,
+    AMOLED_DMA_TRANSMITTING_ROW,
+    AMOLED_DMA_TRANSMITTING_WRITE_HEADER,
+    AMOLED_DMA_TRANSMITTING_WRITE_DATA,
+    AMOLED_DMA_TRANSMITTING_CONT_HEADER,
+    AMOLED_DMA_TRANSMITTING_CONT_DATA,
+    AMOLED_DMA_TRANSMITTING_NOP,
+    N_AMOLED_DMA
+} volatile amoled_dma_transmit_status;
 
 /*
  * DWO screen QSPI interface:
@@ -141,8 +158,11 @@ void pio_put_word(uint8_t word) {
 }
 
 static void amoled_wait_pio_fifo_empty() {
-    while (!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
-    sleep_us(100);
+    // while (!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
+    // sleep_us(100);
+
+    while (amoled_dma_transmit_status != AMOLED_DMA_IDLE);
+    dma_channel_wait_for_finish_blocking(SCREEN_DMA_CHAN);
 }
 
 static void amoled_transmit_data(size_t len, const uint8_t *data) {
@@ -152,6 +172,97 @@ static void amoled_transmit_data(size_t len, const uint8_t *data) {
     }
 
     amoled_wait_pio_fifo_empty();
+}
+
+static void amoled_transmit_data_dma_it(size_t len, const uint8_t *data) {
+    dma_channel_transfer_from_buffer_now(SCREEN_DMA_CHAN, data, len);
+}
+
+void amoled_dma_irq_handler() {
+    if (dma_irqn_get_channel_status(SCREEN_DMA_IRQ_NUM, SCREEN_DMA_CHAN)) {
+        dma_irqn_acknowledge_channel(SCREEN_DMA_IRQ_NUM, SCREEN_DMA_CHAN);
+        switch (amoled_dma_transmit_status) {
+            case AMOLED_DMA_TRANSMITTING_COL: {
+                gpio_put(SCREEN_CSB_PIN, 1);
+                amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_ROW;
+                printf("aa");
+                pio_configure_1wire();
+                gpio_put(SCREEN_CSB_PIN, 0);
+                amoled_transmit_data_dma_it(8, &amoled_command_buffer[8]);
+                break;
+            }
+            case AMOLED_DMA_TRANSMITTING_ROW: {
+                gpio_put(SCREEN_CSB_PIN, 1);
+                amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_WRITE_HEADER;
+                printf("bb");
+                pio_configure_1wire();
+                gpio_put(SCREEN_CSB_PIN, 0);
+                amoled_transmit_data_dma_it(4, &amoled_command_buffer[16]);
+                break;
+            }
+            case AMOLED_DMA_TRANSMITTING_WRITE_HEADER: {
+                amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_WRITE_DATA;
+                printf("cc");
+                pio_configure_4wire();
+                amoled_transmit_data_dma_it(amoled_buffer_to_write, amoled_buffer);
+                break;
+            }
+            case AMOLED_DMA_TRANSMITTING_WRITE_DATA: {
+                gpio_put(SCREEN_CSB_PIN, 1);
+                amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_CONT_HEADER;
+                printf("dd");
+                pio_configure_1wire();
+                gpio_put(SCREEN_CSB_PIN, 0);
+                amoled_transmit_data_dma_it(4, &amoled_command_buffer[20]);
+                break;
+            }
+            case AMOLED_DMA_TRANSMITTING_CONT_HEADER: {
+                amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_CONT_DATA;
+                printf("ee");
+                pio_configure_4wire();
+                amoled_transmit_data_dma_it(amoled_buffer_to_write, amoled_buffer);
+                break;
+            }
+            case AMOLED_DMA_TRANSMITTING_CONT_DATA: {
+                gpio_put(SCREEN_CSB_PIN, 1);
+                amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_NOP;
+                printf("ff");
+                pio_configure_1wire();
+                gpio_put(SCREEN_CSB_PIN, 0);
+                amoled_transmit_data_dma_it(4, &amoled_command_buffer[24]);
+                break;
+            }
+            case AMOLED_DMA_TRANSMITTING_NOP: {
+                gpio_put(SCREEN_CSB_PIN, 1);
+                amoled_dma_transmit_status = AMOLED_DMA_IDLE;
+                printf("gg\n");
+                break;
+            }
+            case N_AMOLED_DMA:
+            case AMOLED_DMA_IDLE: {
+                // Shouldn't get here
+                printf("error\n");
+                break;
+            }
+        }
+    }
+}
+
+static void amoled_setup_dma() {
+    // irq_add_shared_handler(dma_get_irq_num(SCREEN_DMA_IRQ_NUM), amoled_dma_irq_handler, SCREEN_DMA_IRQ_PRIORITY);
+    irq_set_exclusive_handler(dma_get_irq_num(SCREEN_DMA_IRQ_NUM), amoled_dma_irq_handler);
+    irq_set_enabled(dma_get_irq_num(SCREEN_DMA_IRQ_NUM), true);
+    // Set up DMA for TX
+    dma_irqn_set_channel_enabled(SCREEN_DMA_IRQ_NUM, SCREEN_DMA_CHAN, true);
+    dma_channel_config config_tx = dma_channel_get_default_config(SCREEN_DMA_CHAN);
+    channel_config_set_transfer_data_size(&config_tx, DMA_SIZE_8);
+    channel_config_set_read_increment(&config_tx, true);
+    channel_config_set_write_increment(&config_tx, false);
+    channel_config_set_dreq(&config_tx, pio_get_dreq(SCREEN_PIO_HW, SCREEN_PIO_SM, true));
+    dma_channel_configure(SCREEN_DMA_CHAN, &config_tx, &SCREEN_PIO_HW->txf[SCREEN_PIO_SM], amoled_command_buffer,
+        AMOLED_COMMAND_BUFFER_SIZE,
+        false  // Don't start yet
+    );
 }
 
 void amoled_send_1wire(uint8_t cmd, size_t len, const uint8_t data[len]) {
@@ -175,6 +286,37 @@ void amoled_send_4wire(uint8_t cmd, size_t len, const uint8_t data[len]) {
     amoled_transmit_data(len, data);
 
     gpio_put(SCREEN_CSB_PIN, 1);
+}
+
+void amoled_serialise_1wire(size_t out_len, uint8_t out[out_len], uint8_t cmd, size_t len, const uint8_t data[len]) {
+    if (out_len < (4 + len)) {
+        printf("[Error] Can't serialise 1wire - no space in buffer\n");
+        return;
+    }
+
+    out[0] = 0x02;
+    out[1] = 0x00;
+    out[2] = cmd & 0xff;
+    out[3] = 0x00;
+    for (size_t i = 0; i < len; i++) {
+        out[4 + i] = data[i];
+    }
+}
+
+void amoled_serialise_4wire_command(
+    size_t out_len, uint8_t out[out_len], uint8_t cmd, size_t len, const uint8_t data[len]) {
+    if (out_len < (4 + len)) {
+        printf("[Error] Can't serialise 1wire - no space in buffer\n");
+        return;
+    }
+
+    out[0] = 0x32;
+    out[1] = 0x00;
+    out[2] = cmd & 0xff;
+    out[3] = 0x00;
+    for (size_t i = 0; i < len; i++) {
+        out[4 + i] = data[i];
+    }
 }
 
 size_t amoled_convert_1wire_to_4wire(const uint8_t *in, size_t in_len, uint8_t *out, size_t out_len) {
@@ -252,6 +394,50 @@ void amoled_draw_buffer_4wire_blocking(
     amoled_send_1wire_via_4wire(CMD_NOP, 0, buf);  // Send NOP to say we are done
 }
 
+/**
+ * Instead of sending the commands straight away, serialise them into a buffer for DMA to then pick from
+ * and the DMA IRQ handler can control.
+ */
+void amoled_draw_buffer_dma_it(int x_start, int y_start, int width, int height, size_t len, const uint8_t buf[len]) {
+    size_t n_bytes = width * height * AMOLED_BYTES_PER_PIXEL;
+    amoled_buffer_to_write = n_bytes;
+    uint8_t params[5] = {0};
+    int x_end = x_start + width - 1;
+    int y_end = y_start + height - 1;
+
+    params[0] = x_start >> 8;
+    params[1] = x_start & 0xff;
+    params[2] = x_end >> 8;
+    params[3] = x_end & 0xff;
+    amoled_serialise_1wire(AMOLED_COMMAND_BUFFER_SIZE, &amoled_command_buffer[0], CMD_COL_SET, 4, params);
+
+    params[0] = y_start >> 8;
+    params[1] = y_start & 0xff;
+    params[2] = y_end >> 8;
+    params[3] = y_end & 0xff;
+    amoled_serialise_1wire(AMOLED_COMMAND_BUFFER_SIZE - 8, &amoled_command_buffer[8], CMD_PAGE_SET, 4, params);
+
+    // amoled_send_4wire(CMD_WRITE_START, n_bytes, buf);     // First send
+    // amoled_send_4wire(CMD_WRITE_CONTINUE, n_bytes, buf);  // Second send
+
+    // amoled_send_1wire(CMD_NOP, 0, buf);  // Send NOP to say we are done
+
+    amoled_serialise_4wire_command(
+        AMOLED_COMMAND_BUFFER_SIZE - 16, &amoled_command_buffer[16], CMD_WRITE_START, 0, NULL);
+    amoled_serialise_4wire_command(
+        AMOLED_COMMAND_BUFFER_SIZE - 20, &amoled_command_buffer[20], CMD_WRITE_CONTINUE, 0, NULL);
+
+    amoled_serialise_1wire(AMOLED_COMMAND_BUFFER_SIZE - 24, &amoled_command_buffer[24], CMD_NOP, 0, NULL);
+
+    // Now everything is set up in `amoled_command_buffer`, so all we need to do is control CSB, change PIO mode and
+    // send the data
+
+    // Kickstart the DMA process
+    gpio_put(SCREEN_CSB_PIN, 0);
+    amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_COL;
+    amoled_transmit_data_dma_it(8, amoled_command_buffer);
+}
+
 void amoled_draw_buffer_blocking(int x_start, int y_start, int width, int height, size_t len, const uint8_t buf[len]) {
     size_t n_bytes = width * height * AMOLED_BYTES_PER_PIXEL;
     uint8_t params[5] = {0};
@@ -283,8 +469,10 @@ void amoled_draw_buffer(int x_start, int y_start, int width, int height, size_t 
         return;
     }
 
-    amoled_draw_buffer_blocking(x_start, y_start, width, height, len, buf);
+    // amoled_draw_buffer_blocking(x_start, y_start, width, height, len, buf);
     // amoled_draw_buffer_4wire_blocking(x_start, y_start, width, height, len, buf);
+    amoled_setup_dma();
+    amoled_draw_buffer_dma_it(x_start, y_start, width, height, len, buf);
 }
 
 void amoled_draw_block(int x_start, int y_start, int width, int height, uint16_t colour) {
@@ -427,6 +615,7 @@ void pw_screen_init() {
 }
 
 void pw_screen_draw_img(pw_img_t *img, pw_screen_pos_t x, pw_screen_pos_t y) {
+    amoled_wait_pio_fifo_empty();
     // TODO: checks image isn't too large
     decode_img(img, AMOLED_BUFFER_SIZE, amoled_buffer);
 
@@ -443,6 +632,7 @@ void pw_screen_draw_img(pw_img_t *img, pw_screen_pos_t x, pw_screen_pos_t y) {
 }
 
 void pw_screen_clear_area(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos_t w, pw_screen_pos_t h) {
+    amoled_wait_pio_fifo_empty();
     screen_area_t amoled_area = transform_pw_to_amoled(
         (screen_area_t){
             .x = x,
@@ -456,6 +646,7 @@ void pw_screen_clear_area(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos_t 
 }
 
 void pw_screen_draw_horiz_line(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos_t w, pw_screen_color_t c) {
+    amoled_wait_pio_fifo_empty();
     screen_area_t amoled_area = transform_pw_to_amoled(
         (screen_area_t){
             .x = x,
@@ -469,6 +660,7 @@ void pw_screen_draw_horiz_line(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_p
 
 void pw_screen_draw_text_box(
     pw_screen_pos_t x1, pw_screen_pos_t y1, pw_screen_pos_t width, pw_screen_pos_t height, pw_screen_color_t c) {
+    amoled_wait_pio_fifo_empty();
     // assume y2 > y1 and x2 > x1
     pw_screen_pos_t x2 = x1 + width - 1;
     pw_screen_pos_t y2 = y1 + height - 1;
@@ -497,6 +689,7 @@ void pw_screen_draw_text_box(
 }
 
 void pw_screen_clear() {
+    amoled_wait_pio_fifo_empty();
     screen_area_t amoled_area = transform_pw_to_amoled(
         (screen_area_t){.x = 0, .y = 0, .width = PW_SCREEN_WIDTH, .height = PW_SCREEN_HEIGHT}, amoled);
     amoled_draw_block(amoled_area.x, amoled_area.y, amoled_area.width, amoled_area.height, colour_map[PW_SCREEN_WHITE]);
@@ -504,6 +697,7 @@ void pw_screen_clear() {
 
 void pw_screen_fill_area(
     pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos_t w, pw_screen_pos_t h, pw_screen_color_t c) {
+    amoled_wait_pio_fifo_empty();
     screen_area_t amoled_area =
         transform_pw_to_amoled((screen_area_t){.x = x, .y = y, .width = w, .height = h}, amoled);
     amoled_draw_block(amoled_area.x, amoled_area.y, amoled_area.width, amoled_area.height, colour_map[c]);
@@ -532,6 +726,7 @@ void pw_screen_wake() {
 }
 
 void pw_screen_set_brightness(uint8_t level) {
+    amoled_wait_pio_fifo_empty();
     if (level > PW_SCREEN_MAX_BRIGHTNESS) return;
 
     uint8_t brightness_range = AMOLED_MAX_BRIGHTNESS - AMOLED_MIN_BRIGHTNESS + 1;
