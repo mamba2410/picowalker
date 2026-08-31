@@ -148,6 +148,7 @@ static void amoled_wait_pio_fifo_empty() {
 static void amoled_transmit_data(size_t len, const uint8_t *data) {
     for (size_t i = 0; i < len; i++) {
         pio_put_word(data[i]);
+        // printf("%02x", data[i]);
     }
 
     amoled_wait_pio_fifo_empty();
@@ -176,7 +177,83 @@ void amoled_send_4wire(uint8_t cmd, size_t len, const uint8_t data[len]) {
     gpio_put(SCREEN_CSB_PIN, 1);
 }
 
-void amoled_draw_buffer(int x_start, int y_start, int width, int height, size_t len, uint8_t buf[len]) {
+size_t amoled_convert_1wire_to_4wire(const uint8_t *in, size_t in_len, uint8_t *out, size_t out_len) {
+    size_t write_idx = 0;
+    for (size_t i = 0; i < in_len; i++) {
+        uint8_t in_byte = in[i];
+        for (size_t j = 0; j < 4; j++) {
+            uint8_t out_byte = 0x00;
+            out_byte |= ((in_byte & (1 << 7)) >> 7) << 7;
+            out_byte |= ((in_byte & (1 << 6)) >> 6) << 3;
+            write_idx = 4 * i + j;
+            if (write_idx >= out_len) {
+                printf("[Error] Screen write index out of bounds\n");
+                return write_idx;
+            }
+            out[write_idx] = out_byte;
+        }
+    }
+    return write_idx;
+}
+
+/**
+ * Assume PIO is configured in 4wire mode
+ */
+void amoled_send_1wire_via_4wire(uint8_t cmd, size_t len, const uint8_t data[len]) {
+    uint8_t tmp_buf[16];
+    gpio_put(SCREEN_CSB_PIN, 0);
+
+    uint8_t header[] = {0x02, 0x00, cmd & 0xff, 0x00};
+    size_t to_transmit = amoled_convert_1wire_to_4wire(header, sizeof(header), tmp_buf, sizeof(tmp_buf));
+    amoled_transmit_data(to_transmit, tmp_buf);
+
+    to_transmit = amoled_convert_1wire_to_4wire(data, len, tmp_buf, sizeof(tmp_buf));
+    amoled_transmit_data(to_transmit, tmp_buf);
+
+    gpio_put(SCREEN_CSB_PIN, 1);
+}
+
+void amoled_send_4wire_via_4wire(uint8_t cmd, size_t len, const uint8_t data[len]) {
+    uint8_t tmp_buf[16];
+    gpio_put(SCREEN_CSB_PIN, 0);
+
+    uint8_t header[] = {0x32, 0x00, cmd & 0xff, 0x00};
+    size_t to_transmit = amoled_convert_1wire_to_4wire(header, sizeof(header), tmp_buf, sizeof(tmp_buf));
+    amoled_transmit_data(to_transmit, tmp_buf);
+
+    amoled_transmit_data(len, data);
+
+    gpio_put(SCREEN_CSB_PIN, 1);
+}
+
+void amoled_draw_buffer_4wire_blocking(
+    int x_start, int y_start, int width, int height, size_t len, const uint8_t buf[len]) {
+    size_t n_bytes = width * height * AMOLED_BYTES_PER_PIXEL;
+    pio_configure_4wire();
+    uint8_t params[5] = {0};
+    int x_end = x_start + width - 1;
+    int y_end = y_start + height - 1;
+
+    params[0] = x_start >> 8;
+    params[1] = x_start & 0xff;
+    params[2] = x_end >> 8;
+    params[3] = x_end & 0xff;
+    amoled_send_1wire_via_4wire(CMD_COL_SET, 4, params);
+
+    params[0] = y_start >> 8;
+    params[1] = y_start & 0xff;
+    params[2] = y_end >> 8;
+    params[3] = y_end & 0xff;
+    amoled_send_1wire_via_4wire(CMD_PAGE_SET, 4, params);
+
+    amoled_send_4wire_via_4wire(CMD_WRITE_START, n_bytes, buf);     // First send
+    amoled_send_4wire_via_4wire(CMD_WRITE_CONTINUE, n_bytes, buf);  // Second send
+
+    amoled_send_1wire_via_4wire(CMD_NOP, 0, buf);  // Send NOP to say we are done
+}
+
+void amoled_draw_buffer_blocking(int x_start, int y_start, int width, int height, size_t len, const uint8_t buf[len]) {
+    size_t n_bytes = width * height * AMOLED_BYTES_PER_PIXEL;
     uint8_t params[5] = {0};
     int x_end = x_start + width - 1;
     int y_end = y_start + height - 1;
@@ -193,18 +270,21 @@ void amoled_draw_buffer(int x_start, int y_start, int width, int height, size_t 
     params[3] = y_end & 0xff;
     amoled_send_1wire(CMD_PAGE_SET, 4, params);
 
+    amoled_send_4wire(CMD_WRITE_START, n_bytes, buf);     // First send
+    amoled_send_4wire(CMD_WRITE_CONTINUE, n_bytes, buf);  // Second send
+
+    amoled_send_1wire(CMD_NOP, 0, buf);  // Send NOP to say we are done
+}
+
+void amoled_draw_buffer(int x_start, int y_start, int width, int height, size_t len, const uint8_t buf[len]) {
     size_t n_bytes = width * height * AMOLED_BYTES_PER_PIXEL;
     if (n_bytes > len) {
-        printf("Error: Drawing %u bytes from undersized (%u) buffer\n", n_bytes, len);
+        printf("[Error] Tried to draw %u bytes from buffer of size %u\n", n_bytes, len);
         return;
     }
 
-    amoled_send_4wire(CMD_WRITE_START, n_bytes, buf);     // First send
-    amoled_send_4wire(CMD_WRITE_CONTINUE, n_bytes, buf);  // Second send
-    // amoled_send_4wire(CMD_WRITE_START,    len, buf);       // First send
-    // amoled_send_4wire(CMD_WRITE_CONTINUE, len, buf);    // Second send
-
-    amoled_send_1wire(CMD_NOP, 0, buf);  // Send NOP to say we are done
+    amoled_draw_buffer_blocking(x_start, y_start, width, height, len, buf);
+    // amoled_draw_buffer_4wire_blocking(x_start, y_start, width, height, len, buf);
 }
 
 void amoled_draw_block(int x_start, int y_start, int width, int height, uint16_t colour) {
