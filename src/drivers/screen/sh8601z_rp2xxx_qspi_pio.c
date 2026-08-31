@@ -142,7 +142,7 @@ void pio_put_word(uint8_t word) {
 
 static void amoled_wait_pio_fifo_empty() {
     while (!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
-    sleep_us(50);
+    sleep_us(100);
 }
 
 static void amoled_transmit_data(size_t len, const uint8_t *data) {
@@ -350,10 +350,6 @@ void pw_screen_draw_img(pw_img_t *img, pw_screen_pos_t x, pw_screen_pos_t y) {
     // TODO: checks image isn't too large
     decode_img(img, AMOLED_BUFFER_SIZE, amoled_buffer);
 
-    // Put decoded, transformed image in `amoled_buffer`
-    decode_img(img, AMOLED_BUFFER_SIZE, amoled_buffer);
-
-    // Transform image area to amoled coordinates
     screen_area_t amoled_area = transform_pw_to_amoled(
         (screen_area_t){
             .x = x,
@@ -362,11 +358,8 @@ void pw_screen_draw_img(pw_img_t *img, pw_screen_pos_t x, pw_screen_pos_t y) {
             .height = img->height,
         },
         amoled);
-    amoled_draw_buffer(
-        //((PW_SCREEN_HEIGHT-img->height-y)*SCREEN_SCALE)+amoled.offset_x, (x*SCREEN_SCALE)+amoled.offset_y,
-        // img->height*SCREEN_SCALE, img->width*SCREEN_SCALE,
-        amoled_area.x, amoled_area.y, amoled_area.width, amoled_area.height, 2 * amoled_area.width * amoled_area.height,
-        amoled_buffer);
+    amoled_draw_buffer(amoled_area.x, amoled_area.y, amoled_area.width, amoled_area.height,
+        2 * amoled_area.width * amoled_area.height, amoled_buffer);
 }
 
 void pw_screen_clear_area(pw_screen_pos_t x, pw_screen_pos_t y, pw_screen_pos_t w, pw_screen_pos_t h) {
