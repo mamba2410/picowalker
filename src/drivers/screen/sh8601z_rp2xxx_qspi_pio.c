@@ -17,6 +17,7 @@
 
 #define SCREEN_DMA_IRQ_PRIORITY        PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY
 #define SCREEN_DMA_CSB_HOLD_NOP_CYCLES 30
+#define DMA_WAIT_TIMEOUT_US            50000
 
 static amoled_t amoled = {0};
 
@@ -167,8 +168,8 @@ static void amoled_wait_pio_fifo_empty() {
     do {
         absolute_time_t now = get_absolute_time();
         diff = absolute_time_diff_us(start_wait, now);
-    } while ((amoled_dma_transmit_status != AMOLED_DMA_IDLE) && (diff < 20000));
-    if (diff >= 20000) {
+    } while ((amoled_dma_transmit_status != AMOLED_DMA_IDLE) && (diff < DMA_WAIT_TIMEOUT_US));
+    if (diff >= DMA_WAIT_TIMEOUT_US) {
         printf("[Error] DMA wait hit timeout\n");
         //_sbrk();
     } else {
