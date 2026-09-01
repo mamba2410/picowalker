@@ -15,7 +15,8 @@
 #include "board_resources.h"
 #include "qspi.pio.h"
 
-#define SCREEN_DMA_IRQ_PRIORITY PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY
+#define SCREEN_DMA_IRQ_PRIORITY        PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY
+#define SCREEN_DMA_CSB_HOLD_NOP_CYCLES 30
 
 static amoled_t amoled = {0};
 
@@ -72,7 +73,6 @@ static enum {
 static void decode_img(pw_img_t *pw_img, size_t out_len, uint8_t out_buf[out_len]) {
     uint8_t pixel_value, bpu, bpl;
     size_t row, col, stride = pw_img->height;
-
     pw_img->size = pw_img->width * pw_img->height * 2 / 8;
 
     // quit if the output buffer can't hold all the data
@@ -161,8 +161,19 @@ static void amoled_wait_pio_fifo_empty() {
     // while (!pio_sm_is_tx_fifo_empty(pio_config.pio, pio_config.sm));
     // sleep_us(100);
 
-    while (amoled_dma_transmit_status != AMOLED_DMA_IDLE);
+    absolute_time_t start_wait = get_absolute_time();
+    int64_t diff = 0;
     dma_channel_wait_for_finish_blocking(SCREEN_DMA_CHAN);
+    do {
+        absolute_time_t now = get_absolute_time();
+        diff = absolute_time_diff_us(start_wait, now);
+    } while ((amoled_dma_transmit_status != AMOLED_DMA_IDLE) && (diff < 20000));
+    if (diff >= 20000) {
+        printf("[Error] DMA wait hit timeout\n");
+        //_sbrk();
+    } else {
+        // printf("[Debug] Time spent waiting for DMA: %llu\n", diff);
+    }
 }
 
 static void amoled_transmit_data(size_t len, const uint8_t *data) {
@@ -178,70 +189,79 @@ static void amoled_transmit_data_dma_it(size_t len, const uint8_t *data) {
     dma_channel_transfer_from_buffer_now(SCREEN_DMA_CHAN, data, len);
 }
 
+static void delay_cycles(size_t s) {
+    for (size_t i = 0; i < s; i++) asm volatile("nop");
+}
+
 void amoled_dma_irq_handler() {
     if (dma_irqn_get_channel_status(SCREEN_DMA_IRQ_NUM, SCREEN_DMA_CHAN)) {
         dma_irqn_acknowledge_channel(SCREEN_DMA_IRQ_NUM, SCREEN_DMA_CHAN);
         switch (amoled_dma_transmit_status) {
             case AMOLED_DMA_TRANSMITTING_COL: {
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 gpio_put(SCREEN_CSB_PIN, 1);
                 amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_ROW;
-                printf("aa");
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 pio_configure_1wire();
                 gpio_put(SCREEN_CSB_PIN, 0);
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 amoled_transmit_data_dma_it(8, &amoled_command_buffer[8]);
                 break;
             }
             case AMOLED_DMA_TRANSMITTING_ROW: {
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 gpio_put(SCREEN_CSB_PIN, 1);
                 amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_WRITE_HEADER;
-                printf("bb");
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 pio_configure_1wire();
                 gpio_put(SCREEN_CSB_PIN, 0);
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 amoled_transmit_data_dma_it(4, &amoled_command_buffer[16]);
                 break;
             }
             case AMOLED_DMA_TRANSMITTING_WRITE_HEADER: {
                 amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_WRITE_DATA;
-                printf("cc");
                 pio_configure_4wire();
                 amoled_transmit_data_dma_it(amoled_buffer_to_write, amoled_buffer);
                 break;
             }
             case AMOLED_DMA_TRANSMITTING_WRITE_DATA: {
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 gpio_put(SCREEN_CSB_PIN, 1);
                 amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_CONT_HEADER;
-                printf("dd");
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 pio_configure_1wire();
                 gpio_put(SCREEN_CSB_PIN, 0);
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 amoled_transmit_data_dma_it(4, &amoled_command_buffer[20]);
                 break;
             }
             case AMOLED_DMA_TRANSMITTING_CONT_HEADER: {
                 amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_CONT_DATA;
-                printf("ee");
                 pio_configure_4wire();
                 amoled_transmit_data_dma_it(amoled_buffer_to_write, amoled_buffer);
                 break;
             }
             case AMOLED_DMA_TRANSMITTING_CONT_DATA: {
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 gpio_put(SCREEN_CSB_PIN, 1);
                 amoled_dma_transmit_status = AMOLED_DMA_TRANSMITTING_NOP;
-                printf("ff");
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 pio_configure_1wire();
                 gpio_put(SCREEN_CSB_PIN, 0);
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 amoled_transmit_data_dma_it(4, &amoled_command_buffer[24]);
                 break;
             }
             case AMOLED_DMA_TRANSMITTING_NOP: {
+                delay_cycles(SCREEN_DMA_CSB_HOLD_NOP_CYCLES);
                 gpio_put(SCREEN_CSB_PIN, 1);
                 amoled_dma_transmit_status = AMOLED_DMA_IDLE;
-                printf("gg\n");
                 break;
             }
             case N_AMOLED_DMA:
             case AMOLED_DMA_IDLE: {
                 // Shouldn't get here
-                printf("error\n");
                 break;
             }
         }
