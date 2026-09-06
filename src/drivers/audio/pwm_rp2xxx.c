@@ -155,7 +155,7 @@ void pw_audio_play_sound_data(const pw_sound_frame_t *sound_data, size_t sz) {
         audio_queue.len++;
 
         audio_queue.pwm_values[audio_queue.len] = 0;
-        audio_queue.durations[audio_queue.len] = 20;
+        audio_queue.durations[audio_queue.len] = 5;
         audio_queue.len++;
     }
 
