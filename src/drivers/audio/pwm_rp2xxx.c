@@ -112,7 +112,7 @@ void pw_audio_init() {
 
     pwm_config config = pwm_get_default_config();
     // TODO: Modify the clockdiv to make
-    pwm_config_set_clkdiv(&config, 8.f);
+    pwm_config_set_clkdiv(&config, 18.3f);
     pwm_set_gpio_level(AUDIO_SPEAKER_PIN, 0);
     pwm_init(slice_num, &config, true);
     // PWM is now running
